@@ -1,0 +1,92 @@
+
+.auth-column {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 480px;
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  background-color: #fff;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.auth-logo {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1rem;
+  background: url('/assets/archivos/logo.jpg') center/cover no-repeat;
+  border-radius: 50%;
+}
+
+.titulo-div {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #222;
+}
+
+.btn-auth {
+  background-color: #e85d04;
+  color: #fff;
+  border: none;
+  padding: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.btn-auth:hover:not(:disabled) {
+  background-color: #c94e00;
+  color: #fff;
+}
+
+.btn-auth:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.benefits-list {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 1.5rem;
+}
+
+.benefits-list li {
+  padding: 0.4rem 0 0.4rem 1.5rem;
+  position: relative;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.benefits-list li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: #e85d04;
+  font-weight: 700;
+}
+
+.text-orange { color: #e85d04; }
+
+.register-section .auth-container {
+  border-left: 4px solid #e85d04;
+}
+
+@media (max-width: 991px) {
+  .auth-container { padding: 1.5rem; }
+  .register-section .auth-container {
+    border-left: none;
+    border-top: 4px solid #e85d04;
+    margin-top: 1rem;
+  }
+}

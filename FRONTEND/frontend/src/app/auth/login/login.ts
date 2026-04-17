@@ -1,88 +1,52 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { Router, ActivatedRoute, RouterModule } from '@angular/router';
-import { AuthService } from '../services/auth.service';
-import { NavbarComponent } from '../../shared/navbar/navbar.component';
-import { FooterComponent } from '../../shared/footer/footer.component';
+import { AuthService } from '../../core/services/auth';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    RouterModule,
-    NavbarComponent,
-    FooterComponent
-  ],
-  templateUrl: './login.component.html',
-  styleUrls: ['./login.component.scss']
+  imports: [CommonModule, ReactiveFormsModule],
+  templateUrl: './login.html',
+  styleUrls: ['./login.css']
 })
-export class LoginComponent implements OnInit {
-
-  // Modelo del formulario
-  credentials = {
-    username: '',
-    password: ''
-  };
-
-  // Estados de mensajes (equivalente a th:if="${param.error}" y th:if="${param.logout}")
-  showError = false;
-  showLogoutSuccess = false;
-  isLoading = false;
+export class LoginComponent {
+  loginForm: FormGroup;
+  errorMessage: string = '';
+  isLoading: boolean = false;
 
   constructor(
+    private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router,
-    private route: ActivatedRoute
-  ) {}
-
-  ngOnInit(): void {
-    // Detecta parámetros de URL: ?logout=true o ?error=true
-    // Equivalente a th:if="${param.logout}" y th:if="${param.error}" en Thymeleaf
-    this.route.queryParams.subscribe(params => {
-      this.showLogoutSuccess = !!params['logout'];
-      this.showError = !!params['error'];
+    private router: Router
+  ) {
+    this.loginForm = this.fb.group({
+      correo: ['', [Validators.required, Validators.email]],
+      contrasena: ['', [Validators.required, Validators.minLength(6)]]
     });
-
-    // Si ya está autenticado, redirige al inicio
-    if (this.authService.isLoggedIn()) {
-      this.router.navigate(['/']);
-    }
   }
 
   onSubmit(): void {
-    if (!this.credentials.username || !this.credentials.password) {
-      return;
-    }
-
+    if (this.loginForm.invalid) return;
+    
     this.isLoading = true;
-    this.showError = false;
-
-    this.authService.login(this.credentials).subscribe({
+    this.errorMessage = '';
+    
+    this.authService.login(this.loginForm.value).subscribe({
       next: (response) => {
         this.isLoading = false;
-        // Redirige según el rol del usuario
-        if (response.role === 'ADMIN') {
+        const rol = response.usuario.rol;
+        if (rol === 'administrador') {
           this.router.navigate(['/admin/dashboard']);
         } else {
-          this.router.navigate(['/']);
+          this.router.navigate(['/productos']);
         }
       },
-      error: (err) => {
+      error: (error) => {
         this.isLoading = false;
-        this.showError = true;
-        console.error('Error de login:', err);
+        this.errorMessage = error.error?.mensaje || 'Credenciales incorrectas';
       }
     });
-  }
-
-  dismissError(): void {
-    this.showError = false;
-  }
-
-  dismissLogout(): void {
-    this.showLogoutSuccess = false;
   }
 }
