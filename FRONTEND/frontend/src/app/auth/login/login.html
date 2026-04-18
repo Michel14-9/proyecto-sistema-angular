@@ -1,0 +1,84 @@
+<p>login works!</p>
+<app-navbar></app-navbar>
+
+<div class="container my-5">
+  <div class="row">
+
+    <!-- Columna Login -->
+    <div class="col-lg-6 auth-column login-section">
+      <div class="auth-container login-container">
+        <div class="auth-header">
+          <div class="auth-logo"></div>
+          <h2 class="titulo-div">Iniciar sesión</h2>
+          <p class="text-muted">Ingresa a tu cuenta de Luren Chicken</p>
+        </div>
+
+        <!-- Mensaje logout exitoso - equivalente a th:if="${param.logout}" -->
+        <div *ngIf="showLogoutSuccess" class="alert alert-success alert-dismissible">
+          <i class="fas fa-check-circle"></i> Has cerrado sesión exitosamente
+          <button type="button" class="btn-close" (click)="dismissLogout()"></button>
+        </div>
+
+        <!-- Mensaje error - equivalente a th:if="${param.error}" -->
+        <div *ngIf="showError" class="alert alert-danger alert-dismissible">
+          <i class="fas fa-exclamation-circle"></i> Usuario o contraseña incorrectos
+          <button type="button" class="btn-close" (click)="dismissError()"></button>
+        </div>
+
+        <!-- Formulario - equivalente a <form th:action="@{/login}" method="post"> -->
+        <!-- No necesita CSRF token: Angular usa JWT en su lugar -->
+        <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
+
+          <div class="mb-3">
+            <label for="login-email" class="form-label">Correo electrónico *</label>
+            <input type="email" class="form-control" id="login-email"
+                   name="username" [(ngModel)]="credentials.username"
+                   placeholder="Ej. nombre@mail.com" required #usernameInput="ngModel">
+            <div *ngIf="usernameInput.invalid && usernameInput.touched" class="text-danger small mt-1">
+              <span *ngIf="usernameInput.errors?.['required']">El correo es requerido.</span>
+              <span *ngIf="usernameInput.errors?.['email']">Ingresa un correo válido.</span>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="login-password" class="form-label">Contraseña *</label>
+            <input type="password" class="form-control" id="login-password"
+                   name="password" [(ngModel)]="credentials.password"
+                   placeholder="Aa12345" required #passwordInput="ngModel">
+            <div *ngIf="passwordInput.invalid && passwordInput.touched" class="text-danger small mt-1">
+              <span *ngIf="passwordInput.errors?.['required']">La contraseña es requerida.</span>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-auth w-100"
+                  [disabled]="loginForm.invalid || isLoading">
+            <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+            {{ isLoading ? 'Iniciando sesión...' : 'Iniciar sesión' }}
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Columna Registro -->
+    <div class="col-lg-6 auth-column register-section">
+      <div class="auth-container register-container">
+        <div class="auth-header">
+          <div class="auth-logo"></div>
+          <h2 class="titulo-div">Crear cuenta</h2>
+          <p class="text-muted">Crea una y aprovecha los beneficios:</p>
+          <ul class="benefits-list text-start">
+            <li>Realiza tus compras de manera más ágil.</li>
+            <li>Guarda múltiples direcciones de envío y facturación.</li>
+            <li>Realiza el seguimiento a tus compras y revisa tus pedidos realizados.</li>
+            <li>Haz una lista de productos favoritos.</li>
+          </ul>
+          <!-- routerLink equivale a th:href="@{/registrate}" -->
+          <a routerLink="/registrate" class="btn btn-primary w-100">Crear cuenta</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<app-footer></app-footer>
