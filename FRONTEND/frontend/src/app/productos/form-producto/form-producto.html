@@ -1,1 +1,186 @@
 <p>form-producto works!</p>
+<!-- Main Content -->
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <!-- Breadcrumb -->
+      <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a routerLink="/admin/dashboard" class="text-decoration-none">
+              <i class="fas fa-tachometer-alt me-1"></i> Dashboard
+            </a>
+          </li>
+          <li class="breadcrumb-item">
+            <a routerLink="/admin/productos" class="text-decoration-none">
+              <i class="fas fa-utensils me-1"></i> Productos
+            </a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">
+            <i [class]="esEdicion ? 'fas fa-edit' : 'fas fa-plus-circle' + ' me-1'"></i>
+            {{ tituloPagina }}
+          </li>
+        </ol>
+      </nav>
+
+      <!-- Alerta flotante -->
+      @if (alerta) {
+        <div class="alert alert-{{ alerta.tipo }} alert-dismissible fade show floating-alert" role="alert">
+          <i class="fas fa-{{ getAlertaIcon() }} me-2"></i>
+          {{ alerta.mensaje }}
+          <button type="button" class="btn-close" (click)="cerrarAlerta()"></button>
+        </div>
+      }
+
+      <!-- Main Card -->
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white py-3">
+          <div class="d-flex align-items-center">
+            <i class="fas fa-utensils fa-2x me-3"></i>
+            <div>
+              <h3 class="mb-0">{{ tituloPagina }}</h3>
+              <small class="opacity-75">Completa la información del producto</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-body p-4">
+          <form [formGroup]="productoForm" (ngSubmit)="onSubmit()">
+            <!-- Nombre y Tipo -->
+            <div class="row">
+              <div class="col-md-8 mb-3">
+                <label for="nombre" class="form-label required-field">Nombre del Producto</label>
+                <input type="text" 
+                       class="form-control" 
+                       id="nombre" 
+                       formControlName="nombre"
+                       [class.is-invalid]="isFieldInvalid('nombre')"
+                       [class.is-valid]="nombre?.valid && nombre?.touched"
+                       placeholder="Ej: Pollo a la Brasa Familiar">
+                @if (isFieldInvalid('nombre')) {
+                  <div class="invalid-feedback d-block">{{ getFieldError('nombre') }}</div>
+                }
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label for="tipo" class="form-label required-field">Tipo/Categoría</label>
+                <select class="form-select" 
+                        id="tipo" 
+                        formControlName="tipo"
+                        [class.is-invalid]="isFieldInvalid('tipo')"
+                        [class.is-valid]="tipo?.valid && tipo?.touched">
+                  <option value="">Seleccionar tipo</option>
+                  @for (categoria of categorias; track categoria.value) {
+                    <option [value]="categoria.value">{{ categoria.label }}</option>
+                  }
+                </select>
+                @if (isFieldInvalid('tipo')) {
+                  <div class="invalid-feedback d-block">{{ getFieldError('tipo') }}</div>
+                }
+              </div>
+            </div>
+
+            <!-- Descripción -->
+            <div class="mb-3">
+              <label for="descripcion" class="form-label">Descripción del Producto</label>
+              <textarea class="form-control" 
+                        id="descripcion" 
+                        formControlName="descripcion"
+                        [class.is-invalid]="isFieldInvalid('descripcion')"
+                        rows="3" 
+                        placeholder="Describe el producto, ingredientes, porciones..."></textarea>
+              <div class="form-text">
+                <span [class]="contadorClass">{{ descripcionLength }}/{{ MAX_DESCRIPCION }} caracteres</span>
+                @if (caracteresRestantes < 50 && caracteresRestantes > 0) {
+                  <span class="text-warning ms-2">
+                    <i class="fas fa-exclamation-triangle"></i> Quedan {{ caracteresRestantes }} caracteres
+                  </span>
+                } @else if (caracteresRestantes <= 0) {
+                  <span class="text-danger ms-2">
+                    <i class="fas fa-exclamation-triangle"></i> Máximo alcanzado
+                  </span>
+                }
+              </div>
+              @if (isFieldInvalid('descripcion')) {
+                <div class="invalid-feedback d-block">{{ getFieldError('descripcion') }}</div>
+              }
+            </div>
+
+            <!-- Precio -->
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="precio" class="form-label required-field">Precio (S/.)</label>
+                <div class="input-group">
+                  <span class="input-group-text">S/.</span>
+                  <input type="number" 
+                         class="form-control" 
+                         id="precio" 
+                         formControlName="precio"
+                         [class.is-invalid]="isFieldInvalid('precio')"
+                         [class.is-valid]="precio?.valid && precio?.touched"
+                         step="0.01" 
+                         min="0" 
+                         placeholder="0.00">
+                </div>
+                @if (isFieldInvalid('precio')) {
+                  <div class="invalid-feedback d-block">{{ getFieldError('precio') }}</div>
+                }
+              </div>
+            </div>
+
+            <!-- URL de Imagen -->
+            <div class="mb-4">
+              <label for="imagenUrl" class="form-label">URL de la Imagen</label>
+              <input type="text" 
+                     class="form-control" 
+                     id="imagenUrl" 
+                     formControlName="imagenUrl"
+                     [class.is-invalid]="isFieldInvalid('imagenUrl')"
+                     [class.is-valid]="imagenUrl?.valid && imagenUrl?.touched"
+                     placeholder="Ej: /imagenes/pollo-brasa.jpg">
+              <div class="form-text">
+                Ingresa la ruta de la imagen. Ej: /imagenes/pollo-brasa.jpg
+                <br>@if (esEdicion) {
+                  Si se deja vacío, se mantendrá la imagen actual.
+                } @else {
+                  Si se deja vacío, se usará: <code>/imagenes/default-product.jpg</code>
+                }
+              </div>
+              @if (isFieldInvalid('imagenUrl')) {
+                <div class="invalid-feedback d-block">{{ getFieldError('imagenUrl') }}</div>
+              }
+
+              <!-- Preview de imagen -->
+              @if (mostrarPreview) {
+                <div class="mt-3 text-center">
+                  <img [src]="imagenPreview" 
+                       (error)="onImagenError()"
+                       class="img-thumbnail" 
+                       alt="Vista previa" 
+                       style="max-width: 200px; max-height: 200px;">
+                </div>
+              }
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end border-top pt-4">
+              <button type="button" class="btn btn-secondary me-md-2" (click)="cancelar()">
+                <i class="fas fa-times me-2"></i> Cancelar
+              </button>
+              <button type="button" class="btn btn-outline-secondary me-md-2" (click)="volverAlPanel()">
+                <i class="fas fa-arrow-left me-2"></i> Volver al Panel
+              </button>
+              <button type="submit" class="btn btn-primary" [disabled]="isLoading">
+                @if (isLoading) {
+                  <i class="fas fa-spinner fa-spin me-2"></i> Procesando...
+                } @else {
+                  <i class="fas {{ iconoBoton }} me-2"></i> {{ textoBoton }}
+                }
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
