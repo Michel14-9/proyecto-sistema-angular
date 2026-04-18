@@ -1,1 +1,467 @@
 <p>registro-pago works!</p>
+<!-- CONTENIDO PRINCIPAL - PAGO -->
+<main class="pago-page py-4">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <!-- Progreso del pedido -->
+        <div class="progreso-pedido mb-5">
+          <div class="d-flex justify-content-between align-items-center position-relative">
+            <div class="text-center">
+              <div class="progreso-paso completado">
+                <i class="fas fa-shopping-cart"></i>
+              </div>
+              <span class="d-block mt-2 small fw-bold">Carrito</span>
+            </div>
+            <div class="progreso-linea completado"></div>
+            <div class="text-center">
+              <div class="progreso-paso activo">
+                <i class="fas fa-credit-card"></i>
+              </div>
+              <span class="d-block mt-2 small fw-bold">Pago</span>
+            </div>
+            <div class="progreso-linea"></div>
+            <div class="text-center">
+              <div class="progreso-paso">
+                <i class="fas fa-check"></i>
+              </div>
+              <span class="d-block mt-2 small fw-bold">Confirmación</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Header del pago -->
+        <div class="pago-header mb-4">
+          <div class="d-flex justify-content-between align-items-center">
+            <button class="btn btn-outline-secondary btn-volver" (click)="volverAlCarrito()">
+              <i class="fas fa-arrow-left me-2"></i>VOLVER AL CARRITO
+            </button>
+            <h2 class="pago-title mb-0">PROCESO DE PAGO</h2>
+            <div class="d-flex align-items-center text-muted seguridad-pago">
+              <i class="fas fa-lock me-2"></i>
+              <span>Pago 100% Seguro</span>
+            </div>
+          </div>
+        </div>
+
+        <form [formGroup]="pagoForm" (ngSubmit)="confirmarPedido()">
+          <div class="row">
+            <!-- Columna izquierda - Información del pedido -->
+            <div class="col-lg-8">
+              <!-- Información de entrega -->
+              <div class="info-entrega card mb-4">
+                <div class="card-header bg-light">
+                  <h5 class="mb-0">
+                    <i class="fas fa-truck me-2 text-orange"></i>
+                    INFORMACIÓN DE ENTREGA
+                  </h5>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label fw-bold">Tipo de entrega *</label>
+                      <select class="form-select" formControlName="tipoEntrega" (change)="onTipoEntregaChange()">
+                        <option value="delivery">Delivery a domicilio</option>
+                        <option value="recojo">Recojo en tienda</option>
+                      </select>
+                    </div>
+
+                    @if (tipoEntregaSeleccionado === 'delivery') {
+                      <div class="col-md-6 mb-3" id="direccionField">
+                        <label class="form-label fw-bold">Dirección de entrega *</label>
+                        
+                        @if (direcciones.length > 0) {
+                          <select class="form-select mb-2" (change)="onDireccionSelectChange($event)">
+                            <option value="">Seleccionar dirección guardada...</option>
+                            @for (direccion of direcciones; track direccion.id) {
+                              <option [value]="direccion.direccion">
+                                {{ direccion.nombre }} - {{ direccion.direccion }}
+                              </option>
+                            }
+                            <option value="nueva">+ Agregar nueva dirección</option>
+                          </select>
+                        }
+
+                        <input type="text" 
+                               class="form-control" 
+                               formControlName="direccion"
+                               [class.is-invalid]="isFieldInvalid('direccion')"
+                               placeholder="Ingresa tu dirección completa">
+                        
+                        @if (isFieldInvalid('direccion')) {
+                          <small class="text-danger">La dirección es requerida</small>
+                        } @else {
+                          <small class="text-muted">Ej: Av. Principal #123, Urbanización, Referencia</small>
+                        }
+                      </div>
+                    }
+
+                    <div class="col-12 mb-3">
+                      <label class="form-label fw-bold">Instrucciones adicionales</label>
+                      <textarea class="form-control" 
+                                formControlName="instrucciones" 
+                                rows="3"
+                                placeholder="Ej: Timbre blanco, dejar con portero, llamar antes de llegar..."></textarea>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label fw-bold">Fecha de entrega *</label>
+                      <input type="date" 
+                             class="form-control" 
+                             formControlName="fechaEntrega"
+                             [min]="fechaMinima"
+                             [max]="fechaMaxima"
+                             [class.is-invalid]="isFieldInvalid('fechaEntrega')">
+                      @if (isFieldInvalid('fechaEntrega')) {
+                        <small class="text-danger">Selecciona una fecha válida</small>
+                      }
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label fw-bold">Hora de entrega *</label>
+                      <select class="form-select" formControlName="horaEntrega" [class.is-invalid]="isFieldInvalid('horaEntrega')">
+                        <option value="">Seleccionar hora...</option>
+                        @for (hora of horariosEntrega; track hora) {
+                          <option [value]="hora">{{ hora }} {{ hora >= '12:00' ? 'PM' : 'AM' }}</option>
+                        }
+                      </select>
+                      @if (isFieldInvalid('horaEntrega')) {
+                        <small class="text-danger">Selecciona una hora</small>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Información de contacto -->
+              <div class="info-contacto card mb-4">
+                <div class="card-header bg-light">
+                  <h5 class="mb-0">
+                    <i class="fas fa-user me-2 text-orange"></i>
+                    INFORMACIÓN DE CONTACTO
+                  </h5>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label fw-bold">Nombres *</label>
+                      <input type="text" 
+                             class="form-control" 
+                             formControlName="nombres"
+                             [class.is-invalid]="isFieldInvalid('nombres')"
+                             placeholder="Tus nombres">
+                      @if (isFieldInvalid('nombres')) {
+                        <small class="text-danger">Los nombres son requeridos</small>
+                      }
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label fw-bold">Apellidos *</label>
+                      <input type="text" 
+                             class="form-control" 
+                             formControlName="apellidos"
+                             [class.is-invalid]="isFieldInvalid('apellidos')"
+                             placeholder="Tus apellidos">
+                      @if (isFieldInvalid('apellidos')) {
+                        <small class="text-danger">Los apellidos son requeridos</small>
+                      }
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label fw-bold">Teléfono *</label>
+                      <input type="tel" 
+                             class="form-control" 
+                             formControlName="telefono"
+                             [class.is-invalid]="isFieldInvalid('telefono')"
+                             placeholder="+51 XXX XXX XXX">
+                      @if (isFieldInvalid('telefono')) {
+                        <small class="text-danger">Teléfono válido requerido</small>
+                      }
+                    </div>
+
+                    <div class="col-12 mb-3">
+                      <label class="form-label fw-bold">Correo electrónico *</label>
+                      <input type="email" 
+                             class="form-control" 
+                             formControlName="email"
+                             readonly>
+                    </div>
+
+                    <div class="col-12">
+                      <div class="form-check">
+                        <input class="form-check-input" 
+                               type="checkbox" 
+                               formControlName="recibirOfertas"
+                               id="recibirOfertas">
+                        <label class="form-check-label text-muted" for="recibirOfertas">
+                          Quiero recibir ofertas y promociones especiales
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Métodos de pago -->
+              <div class="metodos-pago card mb-4">
+                <div class="card-header bg-light">
+                  <h5 class="mb-0">
+                    <i class="fas fa-credit-card me-2 text-orange"></i>
+                    MÉTODO DE PAGO
+                  </h5>
+                </div>
+                <div class="card-body">
+                  <!-- Efectivo -->
+                  <div class="metodo-item mb-3 p-3 border rounded">
+                    <div class="form-check">
+                      <input class="form-check-input" 
+                             type="radio" 
+                             formControlName="metodoPago" 
+                             id="efectivo"
+                             value="efectivo"
+                             (change)="onMetodoPagoChange()">
+                      <label class="form-check-label fw-bold" for="efectivo">
+                        <i class="fas fa-money-bill-wave me-2 text-success"></i>
+                        Pago en Efectivo
+                      </label>
+                    </div>
+                    <p class="text-muted ms-4 mb-0 mt-2">
+                      <i class="fas fa-info-circle me-1"></i>
+                      Paga cuando recibas tu pedido. Ten el monto exacto disponible.
+                    </p>
+                  </div>
+
+                  <!-- Tarjeta -->
+                  <div class="metodo-item mb-3 p-3 border rounded">
+                    <div class="form-check">
+                      <input class="form-check-input" 
+                             type="radio" 
+                             formControlName="metodoPago" 
+                             id="tarjeta"
+                             value="tarjeta"
+                             (change)="onMetodoPagoChange()">
+                      <label class="form-check-label fw-bold" for="tarjeta">
+                        <i class="fas fa-credit-card me-2 text-primary"></i>
+                        Tarjeta de Crédito/Débito
+                      </label>
+                    </div>
+
+                    @if (mostrarTarjetaInfo) {
+                      <div class="tarjeta-info ms-4 mt-3">
+                        <form [formGroup]="tarjetaForm">
+                          <div class="row">
+                            <div class="col-12 mb-3">
+                              <label class="form-label fw-bold">Número de tarjeta *</label>
+                              <input type="text" 
+                                     class="form-control"
+                                     formControlName="numeroTarjeta"
+                                     (input)="formatearNumeroTarjeta($event)"
+                                     [class.is-invalid]="isTarjetaFieldInvalid('numeroTarjeta')"
+                                     placeholder="1234 5678 9012 3456" 
+                                     maxlength="19">
+                              @if (isTarjetaFieldInvalid('numeroTarjeta')) {
+                                <small class="text-danger">Número de tarjeta inválido</small>
+                              }
+                            </div>
+                            <div class="col-md-6 mb-3">
+                              <label class="form-label fw-bold">Fecha de vencimiento *</label>
+                              <input type="text" 
+                                     class="form-control"
+                                     formControlName="fechaVencimiento"
+                                     (input)="formatearFechaVencimiento($event)"
+                                     [class.is-invalid]="isTarjetaFieldInvalid('fechaVencimiento')"
+                                     placeholder="MM/AA" 
+                                     maxlength="5">
+                              @if (isTarjetaFieldInvalid('fechaVencimiento')) {
+                                <small class="text-danger">Formato MM/AA requerido</small>
+                              }
+                            </div>
+                            <div class="col-md-6 mb-3">
+                              <label class="form-label fw-bold">CVV *</label>
+                              <input type="text" 
+                                     class="form-control"
+                                     formControlName="cvv"
+                                     (input)="formatearCVV($event)"
+                                     [class.is-invalid]="isTarjetaFieldInvalid('cvv')"
+                                     placeholder="123" 
+                                     maxlength="3">
+                              @if (isTarjetaFieldInvalid('cvv')) {
+                                <small class="text-danger">CVV debe tener 3 dígitos</small>
+                              }
+                            </div>
+                            <div class="col-12 mb-3">
+                              <label class="form-label fw-bold">Nombre en la tarjeta *</label>
+                              <input type="text" 
+                                     class="form-control"
+                                     formControlName="nombreTarjeta"
+                                     [class.is-invalid]="isTarjetaFieldInvalid('nombreTarjeta')"
+                                     placeholder="Como aparece en la tarjeta">
+                              @if (isTarjetaFieldInvalid('nombreTarjeta')) {
+                                <small class="text-danger">Nombre requerido</small>
+                              }
+                            </div>
+                          </div>
+                        </form>
+                      </div>
+                    }
+
+                    <div class="tarjetas-icons ms-4 mt-2">
+                      <img src="/archivos/visa_PNG30.png" alt="Visa" class="tarjeta-icon me-2">
+                      <img src="/archivos/mastercard-og-image.png" alt="Mastercard" class="tarjeta-icon me-2">
+                    </div>
+                  </div>
+
+                  <!-- Yape/Plin -->
+                  <div class="metodo-item p-3 border rounded">
+                    <div class="form-check">
+                      <input class="form-check-input" 
+                             type="radio" 
+                             formControlName="metodoPago" 
+                             id="yape"
+                             value="yape"
+                             (change)="onMetodoPagoChange()">
+                      <label class="form-check-label fw-bold" for="yape">
+                        <i class="fas fa-mobile-alt me-2 text-info"></i>
+                        Yape o Plin
+                      </label>
+                    </div>
+
+                    @if (mostrarYapeInfo) {
+                      <div class="yape-info ms-4 mt-3">
+                        <div class="alert alert-info">
+                          <strong>Instrucciones:</strong><br>
+                          1. Abre Yape o Plin en tu celular<br>
+                          2. Escanea el código QR que aparecerá<br>
+                          3. Confirma el pago de <strong>S/ {{ formatearPrecio(total) }}</strong>
+                        </div>
+                      </div>
+                    }
+
+                    <p class="text-muted ms-4 mb-0 mt-2">
+                      <i class="fas fa-info-circle me-1"></i>
+                      Paga con tu app de billetera digital de forma rápida y segura.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Columna derecha - Resumen -->
+            <div class="col-lg-4">
+              <div class="resumen-pedido card mb-4 resumen-sticky">
+                <div class="card-header bg-orange text-white">
+                  <h4 class="mb-0">
+                    <i class="fas fa-receipt me-2"></i>
+                    RESUMEN DE TU PEDIDO
+                  </h4>
+                </div>
+                <div class="card-body">
+                  <!-- Productos -->
+                  <div class="productos-lista mb-3">
+                    @if (!carritoVacio) {
+                      @for (item of carrito; track item.id) {
+                        <div class="producto-resumen d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                          <div class="producto-info">
+                            <div class="fw-bold">{{ item.producto.nombre }}</div>
+                            <small class="text-muted">Cantidad: {{ item.cantidad }}</small>
+                          </div>
+                          <div class="producto-precio fw-bold text-success">
+                            S/ {{ formatearPrecio(getSubtotalItem(item)) }}
+                          </div>
+                        </div>
+                      }
+                    } @else {
+                      <div class="text-center py-3">
+                        <i class="fas fa-shopping-cart text-muted me-2"></i>No hay productos en el carrito
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Desglose de costos -->
+                  <div class="costos-desglose mb-3">
+                    <div class="d-flex justify-content-between mb-2">
+                      <span class="text-muted">Subtotal:</span>
+                      <span>S/ {{ formatearPrecio(subtotal) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                      <span class="text-muted">Delivery:</span>
+                      <span [class.text-success]="envioGratis">
+                        @if (envioGratis) {
+                          GRATIS
+                        } @else {
+                          S/ {{ formatearPrecio(costoEnvio) }}
+                        }
+                      </span>
+                    </div>
+                    @if (hayDescuento) {
+                      <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Descuento:</span>
+                        <span class="text-success">-S/ {{ formatearPrecio(descuento) }}</span>
+                      </div>
+                    }
+                  </div>
+
+                  <hr>
+
+                  <!-- Total -->
+                  <div class="resumen-total d-flex justify-content-between align-items-center">
+                    <span class="fw-bold fs-5">TOTAL A PAGAR</span>
+                    <span class="fw-bold fs-5 text-orange">S/ {{ formatearPrecio(total) }}</span>
+                  </div>
+
+                  <!-- Tiempo estimado -->
+                  <div class="tiempo-entrega text-center mt-3 p-3 bg-light rounded">
+                    <i class="fas fa-clock text-orange me-2"></i>
+                    <strong>Tiempo estimado:</strong>
+                    <span class="text-muted">{{ tiempoEstimado }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Garantías -->
+              <div class="garantias card">
+                <div class="card-body text-center">
+                  <div class="mb-3">
+                    <i class="fas fa-shield-alt fa-2x text-success mb-2"></i>
+                    <h6 class="fw-bold">Compra 100% Segura</h6>
+                  </div>
+                  <div class="mb-3">
+                    <i class="fas fa-truck fa-2x text-primary mb-2"></i>
+                    <h6 class="fw-bold">Entrega en 30-45 min</h6>
+                  </div>
+                  <div>
+                    <i class="fas fa-undo fa-2x text-warning mb-2"></i>
+                    <h6 class="fw-bold">Devolución Garantizada</h6>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botón de confirmar pedido -->
+          <div class="confirmar-pedido text-center mt-4">
+            <button type="submit" 
+                    class="btn btn-confirmar btn-lg w-100 py-3"
+                    [disabled]="carritoVacio || isLoading">
+              @if (isLoading) {
+                <i class="fas fa-spinner fa-spin me-2"></i>PROCESANDO...
+              } @else if (!carritoVacio) {
+                <i class="fas fa-check-circle me-2"></i>
+                CONFIRMAR Y PAGAR PEDIDO - S/ {{ formatearPrecio(total) }}
+              } @else {
+                <i class="fas fa-exclamation-circle me-2"></i>
+                CARRITO VACÍO
+              }
+            </button>
+            <p class="text-muted mt-2 small">
+              <i class="fas fa-lock me-1"></i>
+              Tus datos están protegidos. Al confirmar tu pedido, aceptas nuestros
+              <a routerLink="/terminos" class="text-orange">términos y condiciones</a> y
+              <a routerLink="/politica-datos" class="text-orange">política de privacidad</a>.
+            </p>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>
