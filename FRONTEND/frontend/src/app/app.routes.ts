@@ -7,6 +7,10 @@ export const routes: Routes = [
     redirectTo: '/productos',
     pathMatch: 'full'
   },
+
+  { path: '', 
+    loadChildren: () => import('./index/index-module').then(m => m.IndexModule) 
+  },
   {
     path: 'auth',
     loadChildren: () => import('./auth/auth.module').then(m => m.AuthModule)
