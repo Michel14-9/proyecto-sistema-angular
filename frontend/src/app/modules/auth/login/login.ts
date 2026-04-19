@@ -1,5 +1,5 @@
 // src/app/modules/auth/login/login.ts
-import { Component, OnInit, AfterViewInit, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
@@ -16,16 +16,11 @@ import { CarritoService } from '../../../core/services/carrito';
 })
 export class LoginComponent implements OnInit {
 
-  // Formulario
   loginEmail: string = '';
   loginPassword: string = '';
-
-  // Estados
   errorLogin: boolean = false;
   logoutExitoso: boolean = false;
   cargando: boolean = false;
-
-  // Navbar
   isAuthenticated: boolean = false;
   username: string = '';
   totalCarrito: number = 0;
@@ -40,19 +35,16 @@ export class LoginComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Equivalente a: if (window.location.pathname === "/login-success")
     if (window.location.pathname === '/login-success') {
       this.router.navigate(['/']);
       return;
     }
 
-    // Si ya está logueado, redirigir al inicio
     if (this.authService.isAuthenticated()) {
       this.router.navigate(['/']);
       return;
     }
 
-    // Verificar si viene de un logout
     this.route.queryParams.subscribe(params => {
       if (params['logout']) {
         this.logoutExitoso = true;
@@ -60,11 +52,9 @@ export class LoginComponent implements OnInit {
       }
     });
 
-    // Datos navbar
     this.isAuthenticated = this.authService.isAuthenticated();
     this.username = this.authService.getUsername();
 
-    // Total carrito
     this.carritoService.getTotal().subscribe({
       next: (total: number) => {
         this.totalCarrito = total;
@@ -73,34 +63,35 @@ export class LoginComponent implements OnInit {
   }
 
   iniciarSesion(): void {
-    // Validar campos vacíos
     if (!this.loginEmail || !this.loginPassword) {
       this.errorLogin = true;
       return;
     }
 
-    // Equivalente a: submitBtn.disabled = true + spinner
     this.cargando = true;
     this.errorLogin = false;
 
-    this.authService.login({ username: this.loginEmail, password: this.loginPassword }).subscribe({
+    this.authService.login(this.loginEmail, this.loginPassword).subscribe({
       next: (response: any) => {
         this.cargando = false;
-        console.log('Login exitoso:', response);
-        this.router.navigate(['/']);
+        console.log('Respuesta:', response);
+
+        if (response.success) {
+          this.authService.saveSession('session_' + Date.now(), response.username, response.role);
+          this.router.navigate(['/']);
+        } else {
+          this.errorLogin = true;
+        }
       },
       error: (err: any) => {
         console.error('Error login:', err);
         this.errorLogin = true;
-
-        // Equivalente al setTimeout de 5 segundos del JS original
-        setTimeout(() => {
-          this.cargando = false;
-        }, 5000);
+        this.cargando = false;
       }
     });
   }
 
+  // ✅ Agrega este método
   logout(): void {
     this.authService.logout().subscribe({
       next: () => {
@@ -109,4 +100,3 @@ export class LoginComponent implements OnInit {
     });
   }
 }
-

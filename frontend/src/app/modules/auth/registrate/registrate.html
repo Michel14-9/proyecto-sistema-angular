@@ -1,1 +1,259 @@
-<p>registrate works!</p>
+<!-- src/app/modules/auth/registrate/registrate.component.html -->
+<header>
+  <nav class="navbar navbar-expand-lg navbar-light">
+    <div class="container-fluid">
+      <!-- Logo -->
+      <a class="navbar-brand" routerLink="/">
+        <img src="assets/archivos/logo.png" alt="Logo" class="nav-logo">
+      </a>
+
+      <!-- Botón móvil -->
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarLuren"
+              aria-controls="navbarLuren" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <!-- Links -->
+      <div class="collapse navbar-collapse" id="navbarLuren">
+        <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-3 justify-content-center align-items-center">
+          <li class="nav-item">
+            <a class="nav-link" routerLink="/menu">Menú</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" routerLink="/nuestros-locales">Local</a>
+          </li>
+          <li class="nav-item d-flex align-items-center">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          </li>
+          <li class="nav-item d-lg-none">
+            <a routerLink="/favoritos" class="nav-link">
+              <i class="fa-solid fa-star"></i> Mis favoritos
+            </a>
+          </li>
+          <li class="nav-item d-lg-none">
+            <a routerLink="/carrito" class="nav-link">Carrito</a>
+          </li>
+          <li class="nav-item d-lg-none">
+            <a routerLink="/sigue-tu-pedido" class="nav-link">Sigue tu pedido</a>
+          </li>
+        </ul>
+
+        <!-- Lado derecho (escritorio) -->
+        <ul class="navbar-nav ms-auto gap-3 align-items-center">
+          <li class="nav-item d-flex align-items-center nav-icon-item">
+            <i class="fa-brands fa-whatsapp nav-icon whatsapp-icon"></i>
+            <div class="nav-text">Pide por <br><span class="text-orange">WHATSAPP</span></div>
+          </li>
+          <li class="nav-item d-flex align-items-center nav-icon-item">
+            <i class="fa-solid fa-phone nav-icon phone-icon"></i>
+            <div class="nav-text">Llámanos <br><span class="text-orange">123-456-7890</span></div>
+          </li>
+          <li class="nav-item d-flex align-items-center nav-icon-item">
+            <i class="fa-solid fa-user nav-icon user-icon"></i>
+            <div class="nav-text">
+              <!-- Usuario NO logueado -->
+              <div *ngIf="!isAuthenticated">
+                Hola, <br>
+                <a routerLink="/login" class="text-orange text-decoration-none">Iniciar sesión</a>
+              </div>
+
+              <!-- Usuario SÍ logueado -->
+              <div *ngIf="isAuthenticated">
+                Hola, {{ username }}
+                <br>
+                <a (click)="logout()" class="text-decoration-none text-muted small" style="cursor: pointer;">Cerrar sesión</a>
+              </div>
+            </div>
+          </li>
+
+          <li class="nav-item">
+            <a routerLink="/carrito" class="btn btn-success carrito-btn">
+              <i class="fa-solid fa-cart-shopping"></i> S/. {{ totalCarrito }}
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Links rápidos escritorio -->
+  <div class="bg-light py-2 px-3 border-bottom d-none d-lg-block">
+    <div class="container-fluid d-flex justify-content-end gap-4 small">
+      <a routerLink="/favoritos" class="text-decoration-none text-reset">
+        <i class="fa-solid fa-star"></i> Mis favoritos
+      </a>
+      <a routerLink="/sigue-tu-pedido" class="text-decoration-none text-reset">
+        <i class="fa-solid fa-truck"></i> Sigue tu pedido
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- FORMULARIO REGISTRO -->
+<div class="registro-container">
+  <h2 class="text-center mb-4">¿Aún no tienes cuenta? Regístrate</h2>
+
+  <!-- Mensajes de éxito/error -->
+  <div *ngIf="registroExitoso" class="alert alert-success mt-3">
+    Registro exitoso. ¡Bienvenido a Luren Chicken!
+  </div>
+  <div *ngIf="errorMensaje" class="alert alert-danger mt-3">
+    {{ errorMensaje }}
+  </div>
+
+  <form #registroForm="ngForm" (ngSubmit)="registrar()" novalidate>
+    <!-- Información personal -->
+    <h5 class="section-title">Información personal</h5>
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <label class="form-label">Nombre</label>
+        <input type="text" class="form-control" name="nombres" [(ngModel)]="registroData.nombres" required>
+        <div class="invalid-feedback">Por favor ingresa tu nombre</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Apellido</label>
+        <input type="text" class="form-control" name="apellidos" [(ngModel)]="registroData.apellidos" required>
+        <div class="invalid-feedback">Por favor ingresa tu apellido</div>
+      </div>
+    </div>
+
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <label class="form-label">Tipo de documento</label>
+        <select class="form-select" name="tipoDocumento" [(ngModel)]="registroData.tipoDocumento">
+          <option value="">Seleccione...</option>
+          <option value="DNI">DNI</option>
+          <option value="Pasaporte">Pasaporte</option>
+          <option value="Carné de extranjería">Carné de extranjería</option>
+        </select>
+        <div class="invalid-feedback">Por favor selecciona un tipo de documento</div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Número de documento</label>
+        <input type="text" class="form-control" name="numeroDocumento" [(ngModel)]="registroData.numeroDocumento">
+        <div class="invalid-feedback">Por favor ingresa tu número de documento</div>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Teléfono</label>
+      <input type="tel" class="form-control" name="telefono" [(ngModel)]="registroData.telefono">
+      <div class="invalid-feedback">Por favor ingresa tu teléfono</div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Fecha de nacimiento</label>
+      <input type="date" class="form-control" name="fechaNacimiento" [(ngModel)]="registroData.fechaNacimiento">
+      <div class="invalid-feedback">Por favor ingresa tu fecha de nacimiento</div>
+    </div>
+
+    <!-- Información de inicio de sesión -->
+    <h5 class="section-title">Información de inicio de sesión</h5>
+    <div class="mb-3">
+      <label class="form-label">Correo electrónico</label>
+      <input type="email" class="form-control" name="email" [(ngModel)]="registroData.email" required>
+      <div class="invalid-feedback">Por favor ingresa un email válido</div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Contraseña</label>
+      <input type="password" class="form-control" id="password" name="password" [(ngModel)]="registroData.password" (input)="validarPassword()">
+      <div class="invalid-feedback">La contraseña debe tener al menos 6 caracteres, una mayúscula, una minúscula y un número</div>
+
+      <div class="form-text">
+        <small>La contraseña debe contener:</small>
+        <ul class="small mb-1 password-requirements">
+          <li [class.text-success]="passwordValid.minLength">✓ Mínimo 6 caracteres</li>
+          <li [class.text-success]="passwordValid.hasUpperCase">✓ Al menos 1 letra mayúscula</li>
+          <li [class.text-success]="passwordValid.hasLowerCase">✓ Al menos 1 letra minúscula</li>
+          <li [class.text-success]="passwordValid.hasNumber">✓ Al menos 1 número</li>
+        </ul>
+      </div>
+
+      <div class="password-strength mt-2" id="passwordStrength">
+        <div *ngIf="passwordStrength" class="alert alert-info small">
+          Fortaleza: {{ passwordStrength }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Checkboxes -->
+    <div class="form-check mb-2">
+      <input class="form-check-input" type="checkbox" id="promoCheck" name="recibirPromos" [(ngModel)]="registroData.recibirPromos">
+      <label class="form-check-label" for="promoCheck">Acepto recibir promociones</label>
+    </div>
+    <div class="form-check mb-4">
+      <input class="form-check-input" type="checkbox" id="dataCheck" name="aceptaDatos" [(ngModel)]="registroData.aceptaDatos" required>
+      <label class="form-check-label" for="dataCheck">Acepto la transferencia de datos</label>
+      <div class="invalid-feedback">Debes aceptar la transferencia de datos</div>
+    </div>
+
+    <div class="d-grid">
+      <button type="submit" class="btn btn-luren" [disabled]="cargando">
+        <span *ngIf="cargando" class="spinner-border spinner-border-sm me-2"></span>
+        {{ cargando ? 'Registrando...' : 'Crear Cuenta' }}
+      </button>
+    </div>
+  </form>
+</div>
+
+<footer class="bg-light pt-5 pb-3">
+  <div class="container-fluid px-4">
+    <div class="row">
+      <div class="col-md-3 mb-4">
+        <div class="d-flex flex-column align-items-md-start align-items-center">
+          <img src="assets/archivos/logo.png" alt="Logo" class="footer-logo mb-3">
+          <h5 class="fw-bold mb-2 text-md-start text-center">Conéctate con nosotros</h5>
+          <div class="d-flex gap-2">
+            <a href="https://www.instagram.com" target="_blank" class="btn btn-outline-secondary rounded-circle social-btn">
+              <i class="fab fa-instagram"></i>
+            </a>
+            <a href="https://www.facebook.com" target="_blank" class="btn btn-outline-secondary rounded-circle social-btn">
+              <i class="fab fa-facebook-f"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3 mb-4">
+        <h5 class="fw-bold mb-3">Nuestros Productos</h5>
+        <ul class="list-unstyled">
+          <li><a routerLink="/menu#pollos" class="text-decoration-none text-dark">Pollo a la brasa</a></li>
+          <li><a routerLink="/menu#parrillas" class="text-decoration-none text-dark">Parrillas</a></li>
+          <li><a routerLink="/menu#chicharron" class="text-decoration-none text-dark">Chicharrón</a></li>
+          <li><a routerLink="/menu#broaster" class="text-decoration-none text-dark">Broster</a></li>
+          <li><a routerLink="/menu#hamburguesas" class="text-decoration-none text-dark">Hamburguesas</a></li>
+          <li><a routerLink="/menu#criollos" class="text-decoration-none text-dark">Criollos</a></li>
+          <li><a routerLink="/menu#combos" class="text-decoration-none text-dark">Combos</a></li>
+        </ul>
+      </div>
+
+      <div class="col-md-3 mb-4">
+        <h5 class="fw-bold mb-3">Ayuda</h5>
+        <ul class="list-unstyled">
+          <li><a routerLink="/politica-datos" class="text-decoration-none text-dark">Política de Datos Personales</a></li>
+          <li><a routerLink="/terminos" class="text-decoration-none text-dark">Términos y Condiciones</a></li>
+          <li><a routerLink="/nuestros-locales" class="text-decoration-none text-dark">Nuestro Local</a></li>
+          <li><a routerLink="/politica-cookies" class="text-decoration-none text-dark">Política de cookies</a></li>
+        </ul>
+      </div>
+
+      <div class="col-md-3 mb-4">
+        <h5 class="fw-bold mb-3">Libro de reclamaciones</h5>
+        <a routerLink="/libro-reclamaciones">
+          <img src="assets/archivos/libro.png" alt="Libro de Reclamaciones" class="footer-libro-img mb-3">
+        </a>
+        <h5 class="fw-bold mb-3">Métodos de Pago</h5>
+        <div class="d-flex gap-2 align-items-center">
+          <img src="assets/archivos/visa_PNG30.png" alt="Visa" class="footer-payment-img">
+          <img src="assets/archivos/mastercard-og-image.png" alt="Mastercard" class="footer-payment-img">
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-4">
+    <div class="d-flex justify-content-center text-center">
+      <small>&copy; 2024 D'LurenChicken. Todos los derechos reservados.</small>
+    </div>
+  </div>
+</footer>

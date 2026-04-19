@@ -1,4 +1,4 @@
-
+/* src/app/modules/publico/index/index.css */
 
 /* ======== PALETA DE COLORES ======== */
 :root {
@@ -16,6 +16,8 @@
   font-family: 'Poppins', sans-serif;
   background-color: var(--blanco);
   color: var(--gris);
+  margin: 0;
+  padding: 0;
 }
 
 .text-orange {
@@ -213,6 +215,10 @@ header .navbar-toggler {
   border-radius: 2px;
 }
 
+.combo-carousel-item {
+  padding: 20px;
+}
+
 .combo-card {
   background: white;
   border-radius: 20px;
@@ -226,6 +232,12 @@ header .navbar-toggler {
 .combo-card:hover {
   transform: translateY(-10px);
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+}
+
+.combo-image {
+  height: 250px;
+  object-fit: cover;
+  width: 100%;
 }
 
 .combo-image-carousel {
@@ -277,10 +289,22 @@ header .navbar-toggler {
   margin-bottom: 20px;
 }
 
+.old-price {
+  text-decoration: line-through;
+  color: #999;
+  font-size: 1rem;
+}
+
 .current-price {
   color: var(--verde);
   font-size: 1.8rem;
   font-weight: bold;
+}
+
+.discount-price {
+  color: var(--rojo);
+  font-weight: bold;
+  font-size: 0.9rem;
 }
 
 .agregar-combo-btn {
@@ -516,6 +540,18 @@ header .navbar-toggler {
   border-color: #dc3545;
 }
 
+.notificacion-index.notificacion-warning {
+  background: rgba(255, 243, 205, 0.95);
+  color: #856404;
+  border-color: #ffc107;
+}
+
+.notificacion-index.notificacion-info {
+  background: rgba(209, 236, 241, 0.95);
+  color: #0c5460;
+  border-color: #17a2b8;
+}
+
 .btn-close-notif {
   background: rgba(0, 0, 0, 0.1);
   border: none;
@@ -532,11 +568,21 @@ header .navbar-toggler {
   border-radius: 50%;
   margin-left: 12px;
   transition: all 0.2s ease;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .btn-close-notif:hover {
   background-color: rgba(0, 0, 0, 0.2);
   transform: rotate(90deg);
+}
+
+.btn-close-notif:active {
+  transform: rotate(90deg) scale(0.9);
+}
+
+.notificacion-index i {
+  font-size: 1.2rem;
 }
 
 /* ======= ANIMACIONES ======= */
@@ -626,6 +672,11 @@ footer small {
   font-size: 0.9rem;
 }
 
+/* ======= EFECTOS SUAVES ======= */
+img, .btn, .nav-link {
+  transition: all 0.3s ease;
+}
+
 /* ======= CARRUSEL ======= */
 .carousel-control-prev-icon,
 .carousel-control-next-icon {
@@ -636,6 +687,10 @@ footer small {
 
 .carousel-indicators button {
   background-color: var(--naranja);
+}
+
+.text-shadow {
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 /* ======= RESPONSIVE ======= */
@@ -652,8 +707,23 @@ footer small {
     font-size: 2rem;
   }
 
-  .category-card,
-  .combo-card {
+  .combo-carousel-item {
+    padding: 10px;
+  }
+
+  header .navbar-nav {
+    text-align: center;
+  }
+
+  footer .row {
+    text-align: center;
+  }
+
+  footer .d-flex {
+    justify-content: center;
+  }
+
+  .category-card, .combo-card {
     margin-bottom: 20px;
   }
 
@@ -667,11 +737,23 @@ footer small {
   .combo-image-carousel {
     height: 180px;
   }
+
+  .agregar-combo-btn {
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+  }
 }
 
 @media (max-width: 480px) {
-  .hero-title {
-    font-size: 1.8rem;
+  .notificacion-flotante-index {
+    padding: 12px 16px;
+    top: 10px;
+  }
+
+  .btn-close-notif {
+    width: 24px;
+    height: 24px;
+    font-size: 20px;
   }
 
   .combo-image-carousel {

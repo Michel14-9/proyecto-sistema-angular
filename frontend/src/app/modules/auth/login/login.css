@@ -1,5 +1,4 @@
-
-Copiar
+/* src/app/modules/auth/login/login.css */
 
 /* ======== PALETA DE COLORES ======== */
 :root {
@@ -12,12 +11,12 @@ Copiar
 }
 
 /* ======= ESTILO GENERAL ======= */
-body {
+:host {
+  display: block;
   font-family: 'Poppins', sans-serif;
   background: linear-gradient(135deg, var(--amarillo) 0%, var(--blanco) 100%);
   color: var(--gris);
-  margin: 0;
-  padding: 0;
+  min-height: 100vh;
 }
 
 /* ======= HEADER ======= */
@@ -59,14 +58,28 @@ header .navbar-toggler {
   gap: 0.2rem;
 }
 
-.nav-icon { font-size: 1.5rem; }
-.whatsapp-icon { font-size: 1.8rem; }
-.phone-icon { font-size: 1.5rem; }
-.user-icon { font-size: 1.5rem; }
-.search-icon { font-size: 1rem; }
+.nav-icon {
+  font-size: 1.5rem;
+}
+
+.whatsapp-icon {
+  font-size: 1.8rem;
+}
+
+.phone-icon {
+  font-size: 1.5rem;
+}
+
+.user-icon {
+  font-size: 1.5rem;
+}
 
 .nav-text {
   line-height: 1.2;
+}
+
+.search-icon {
+  font-size: 1rem;
 }
 
 .carrito-btn {
@@ -78,14 +91,16 @@ header .navbar-toggler {
   color: var(--naranja) !important;
 }
 
+.logout-form {
+  display: inline;
+}
+
 .logout-btn {
   padding: 0;
   text-decoration: none;
   border: none;
   color: var(--gris) !important;
   font-size: 0.875rem;
-  background: none;
-  cursor: pointer;
 }
 
 .logout-btn:hover {
@@ -148,6 +163,7 @@ header .navbar-toggler {
   display: flex;
   justify-content: center;
   align-items: center;
+  min-height: 80vh;
 }
 
 .auth-container {
@@ -168,11 +184,14 @@ header .navbar-toggler {
 .auth-header h2.titulo-div {
   color: var(--naranja);
   font-weight: 700;
+  text-align: center;
+  margin-bottom: 20px;
 }
 
 .auth-header p {
   color: var(--gris);
   margin-bottom: 20px;
+  text-align: center;
 }
 
 .form-label {
@@ -185,11 +204,13 @@ header .navbar-toggler {
   border: 1px solid #ddd;
   padding: 10px;
   transition: all 0.3s ease;
+  width: 100%;
 }
 
 .form-control:focus {
   border-color: var(--verde);
   box-shadow: 0 0 8px rgba(129, 199, 132, 0.4);
+  outline: none;
 }
 
 .btn-auth {
@@ -199,13 +220,19 @@ header .navbar-toggler {
   padding: 12px;
   border: none;
   border-radius: 10px;
+  width: 100%;
   transition: all 0.3s ease;
 }
 
-.btn-auth:hover {
+.btn-auth:hover:not(:disabled) {
   background-color: var(--verde);
   transform: scale(1.03);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.btn-auth:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .btn-primary {
@@ -227,6 +254,7 @@ header .navbar-toggler {
   border-radius: 10px;
   padding: 10px 15px;
   font-size: 0.95rem;
+  margin-bottom: 20px;
 }
 
 .alert-success {
@@ -244,6 +272,8 @@ header .navbar-toggler {
 .benefits-list {
   margin-bottom: 20px;
   color: var(--gris);
+  list-style: none;
+  padding-left: 0;
 }
 
 .benefits-list li {
@@ -268,6 +298,14 @@ header .navbar-toggler {
   border-top: 5px solid var(--verde);
 }
 
+.text-center {
+  text-align: center;
+}
+
+.mt-3 {
+  margin-top: 1rem;
+}
+
 /* ======= FOOTER ======= */
 footer {
   background-color: var(--amarillo);
@@ -275,6 +313,7 @@ footer {
   border-top: 4px solid var(--naranja);
   padding-top: 2rem;
   padding-bottom: 1.5rem;
+  margin-top: auto;
 }
 
 footer h5 {
@@ -293,9 +332,18 @@ footer a:hover {
   color: var(--rojo);
 }
 
-.footer-logo { height: 70px; }
-.footer-payment-img { width: 50px; border-radius: 10px; }
-.footer-libro-img { width: 120px; }
+.footer-logo {
+  height: 70px;
+}
+
+.footer-payment-img {
+  width: 50px;
+  border-radius: 10px;
+}
+
+.footer-libro-img {
+  width: 120px;
+}
 
 .social-btn {
   width: 40px;
@@ -316,32 +364,50 @@ footer .btn-outline-secondary:hover {
   color: white;
 }
 
-footer hr { border-color: rgba(0, 0, 0, 0.1); }
-footer small { color: var(--gris); font-size: 0.9rem; }
+footer hr {
+  border-color: rgba(0, 0, 0, 0.1);
+}
 
-/* ======= EFECTOS ======= */
+footer small {
+  color: var(--gris);
+  font-size: 0.9rem;
+}
+
+/* ======= EFECTOS SUAVES ======= */
 img, .btn, .nav-link {
   transition: all 0.3s ease;
 }
 
 /* ======= RESPONSIVO ======= */
-@media (max-width: 992px) {
-  .auth-container {
-    margin-top: 30px;
-  }
-}
-
 @media (max-width: 768px) {
-  header .navbar-nav { text-align: center; }
-  footer .row { text-align: center; }
-  footer .d-flex { justify-content: center; }
+  header .navbar-nav {
+    text-align: center;
+  }
+
+  footer .row {
+    text-align: center;
+  }
+
+  footer .d-flex {
+    justify-content: center;
+  }
 
   .auth-container {
-    margin-top: 30px;
+    margin: 20px;
     padding: 30px 25px;
   }
 
   .auth-header h2.titulo-div {
     font-size: 1.5rem;
+  }
+
+  .auth-column {
+    min-height: 70vh;
+  }
+}
+
+@media (max-width: 992px) {
+  .auth-container {
+    margin: 30px auto;
   }
 }
