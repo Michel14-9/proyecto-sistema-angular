@@ -1,11 +1,15 @@
 import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-cocinero',
-  imports: [],
+  standalone: true,
+  imports: [CommonModule],
   templateUrl: './cocinero.html',
-  styleUrl: './cocinero.css',
+  styleUrls: ['./cocinero.css']
 })
-export class Cocinero {
-
+export class CocineroComponent {
+  constructor() {
+    console.log('CocineroComponent cargado');
+  }
 }

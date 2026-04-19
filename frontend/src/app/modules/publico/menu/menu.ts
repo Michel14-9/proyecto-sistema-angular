@@ -1,11 +1,11 @@
+// src/app/modules/publico/menu/menu.ts
 import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-menu',
-  imports: [],
   templateUrl: './menu.html',
-  styleUrl: './menu.css',
+  styleUrls: ['./menu.css']
 })
-export class Menu {
-
+export class MenuComponent {
+  constructor() {}
 }

@@ -5,8 +5,53 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4e10dce1-a503-4051-8fa1-2dbc492f7fbc" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/frontend/src/assets/archivos/libro.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/assets/archivos/logo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/assets/archivos/mastercard-og-image.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/assets/archivos/visa_PNG30.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/assets/imagenes/LurenChicken.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/assets/imagenes/categoria-broster.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/assets/imagenes/categoria-chicharron.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/assets/imagenes/categoria-criollos.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/assets/imagenes/categoria-hamburguesas.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/assets/imagenes/categoria-parrillas.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/assets/imagenes/categoria-pollo.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/assets/imagenes/local-ica.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/assets/imagenes/pollo-brasa.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/config/SecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/angular.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/angular.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/app.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/app.config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/app.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/app.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/app.routes.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/app.routes.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/app.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/app.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-menu/admin-menu.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-menu/admin-menu.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-module.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-routing-module.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/auth/login/login.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/auth/login/login.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/auth/login/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/auth/login/login.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/auth/login/login.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/auth/login/login.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/auth/registrate/registrate.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/auth/registrate/registrate.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cajero/cajero-module.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cajero/cajero-routing-module.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cliente/cliente-module.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cliente/cliente-routing-module.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cocinero/cocinero-module.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cocinero/cocinero-routing-module.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cocinero/cocinero/cocinero.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cocinero/cocinero/cocinero.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/index/index.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/publico/index/index.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/index/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/publico/index/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/index/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/publico/index/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/locales/locales.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/publico/locales/locales.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/menu/menu.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/publico/menu/menu.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/publico-module.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/publico-routing-module.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/shared/error/error-module.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/shared/error/error-routing-module.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/main.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/main.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
