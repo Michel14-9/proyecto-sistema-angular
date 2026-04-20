@@ -1,0 +1,269 @@
+/* ======= ESTILOS PARA FORMULARIO DE PRODUCTO ======= */
+
+.required-field::after {
+  content: " *";
+  color: #dc3545;
+  font-weight: bold;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+  background-color: transparent;
+  padding: 0;
+}
+
+.breadcrumb-item a {
+  color: #6c757d;
+  transition: color 0.3s ease;
+}
+
+.breadcrumb-item a:hover {
+  color: #ffb74d;
+}
+
+/* Card */
+.card {
+  border: none;
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+.card-header {
+  background: linear-gradient(135deg, #81c784 0%, #66BB6A 100%);
+  border-bottom: none;
+}
+
+/* Formulario */
+.form-label {
+  font-weight: 600;
+  color: #495057;
+}
+
+.form-control,
+.form-select {
+  border-radius: 8px;
+  border: 1.5px solid #e0e0e0;
+  padding: 0.6rem 1rem;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #ffb74d;
+  box-shadow: 0 0 0 0.2rem rgba(255, 183, 77, 0.25);
+}
+
+.form-control.is-invalid,
+.form-select.is-invalid {
+  border-color: #dc3545;
+  background-image: none;
+}
+
+.form-control.is-valid,
+.form-select.is-valid {
+  border-color: #28a745;
+  background-image: none;
+}
+
+.invalid-feedback {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Input group */
+.input-group-text {
+  background-color: #f8f9fa;
+  border: 1.5px solid #e0e0e0;
+  border-right: none;
+  color: #495057;
+  font-weight: 600;
+}
+
+.input-group .form-control {
+  border-left: none;
+}
+
+.input-group .form-control:focus {
+  border-left: 1.5px solid #ffb74d;
+}
+
+/* Textarea */
+textarea.form-control {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Preview de imagen */
+.img-thumbnail {
+  border-radius: 10px;
+  border: 2px dashed #e0e0e0;
+  padding: 0.5rem;
+  background-color: #fafafa;
+  transition: all 0.3s ease;
+}
+
+.img-thumbnail:hover {
+  border-color: #ffb74d;
+  transform: scale(1.02);
+}
+
+/* Botones */
+.btn {
+  border-radius: 25px;
+  padding: 0.6rem 1.5rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background-color: #81c784;
+  border: none;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #66BB6A;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(129, 199, 132, 0.4);
+}
+
+.btn-primary:disabled {
+  background-color: #a5d6a7;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  border: none;
+}
+
+.btn-secondary:hover {
+  background-color: #5a6268;
+  transform: translateY(-2px);
+}
+
+.btn-outline-secondary {
+  border: 2px solid #6c757d;
+  color: #6c757d;
+  background: transparent;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #6c757d;
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Alertas flotantes */
+.floating-alert {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  min-width: 300px;
+  max-width: 400px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: slideInRight 0.3s ease-out;
+  border: none;
+  border-radius: 10px;
+}
+
+.alert-success {
+  background-color: #d4edda;
+  color: #155724;
+  border-left: 4px solid #28a745;
+}
+
+.alert-danger {
+  background-color: #f8d7da;
+  color: #721c24;
+  border-left: 4px solid #dc3545;
+}
+
+.alert-warning {
+  background-color: #fff3cd;
+  color: #856404;
+  border-left: 4px solid #ffc107;
+}
+
+.alert-info {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border-left: 4px solid #17a2b8;
+}
+
+/* Animaciones */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Loading spinner */
+.fa-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+  
+  .card-body {
+    padding: 1.5rem !important;
+  }
+  
+  .btn {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  .d-md-flex {
+    flex-direction: column;
+  }
+  
+  .floating-alert {
+    left: 10px;
+    right: 10px;
+    min-width: auto;
+    max-width: none;
+  }
+}
+
+@media (max-width: 576px) {
+  h3 {
+    font-size: 1.25rem;
+  }
+  
+  .breadcrumb {
+    font-size: 0.85rem;
+  }
+}
+
+/* Utilidades */
+.text-warning {
+  color: #ffc107 !important;
+}
+
+.text-danger {
+  color: #dc3545 !important;
+}
+
+.text-muted {
+  color: #6c757d !important;
+}
+
+.border-top {
+  border-color: #e0e0e0 !important;
+}
