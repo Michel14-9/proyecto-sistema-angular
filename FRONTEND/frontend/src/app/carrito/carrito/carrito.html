@@ -1,0 +1,245 @@
+<p>carrito works!</p>
+<!-- CONTENIDO PRINCIPAL - CARRITO -->
+<main class="carrito-page py-4">
+  <div class="container">
+    <div class="row">
+      <!-- Columna izquierda - Productos del carrito -->
+      <div class="col-lg-8 mb-4">
+        <!-- Header del carrito -->
+        <div class="carrito-header mb-4">
+          <div class="d-flex justify-content-between align-items-center">
+            <button class="btn btn-outline-secondary btn-volver" (click)="seguirComprando()">
+              <i class="fas fa-arrow-left me-2"></i>Seguir Comprando
+            </button>
+            <h1 class="carrito-title mb-0 text-luren">
+              <i class="fas fa-shopping-cart me-2"></i>Mi Carrito
+            </h1>
+            <div class="contador-productos badge bg-luren">
+              <span>{{ cantidadProductos }}</span> productos
+            </div>
+          </div>
+        </div>
+
+        <!-- Alertas -->
+        @if (!isAuthenticated) {
+          <div class="alert alert-warning-custom alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>¡Inicia sesión!</strong> Para guardar tu carrito y continuar más tarde.
+            <a routerLink="/auth/login" class="alert-link">Iniciar sesión</a>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        }
+
+        <!-- Lista de productos -->
+        <div class="carrito-productos">
+          <!-- Productos del carrito -->
+          @for (item of carrito; track item.id) {
+            <div class="producto-item card mb-3 border-0 shadow-sm" [attr.data-id]="item.id">
+              <div class="card-body">
+                <div class="row align-items-center">
+                  <!-- Imagen del producto -->
+                  <div class="col-md-2 col-3">
+                    <img [src]="getImagenProducto(item)" 
+                         alt="Imagen producto"
+                         class="img-fluid rounded producto-imagen">
+                  </div>
+
+                  <!-- Información del producto -->
+                  <div class="col-md-5 col-6">
+                    <h5 class="producto-nombre mb-2">{{ item.producto.nombre }}</h5>
+                    <p class="producto-descripcion text-muted-custom small mb-2">
+                      {{ item.producto.descripcion || 'Sin descripción' }}
+                    </p>
+                    <p class="producto-precio-unitario fw-bold text-success mb-0">
+                      S/ {{ formatearPrecio(item.precioUnitario) }}
+                    </p>
+                  </div>
+
+                  <!-- Controles de cantidad -->
+                  <div class="col-md-3 col-6">
+                    <div class="cantidad-controls d-flex align-items-center justify-content-center">
+                      <button class="btn btn-outline-secondary btn-sm cantidad-btn disminuir"
+                              (click)="disminuirCantidad(item.id)">
+                        <i class="fas fa-minus"></i>
+                      </button>
+                      <span class="cantidad-display mx-3 fw-bold">{{ item.cantidad }}</span>
+                      <button class="btn btn-outline-secondary btn-sm cantidad-btn aumentar"
+                              (click)="aumentarCantidad(item.id)">
+                        <i class="fas fa-plus"></i>
+                      </button>
+                    </div>
+                    <div class="subtotal text-center mt-2">
+                      <small class="text-muted-custom">Subtotal:</small>
+                      <div class="fw-bold text-success">
+                        S/ {{ formatearPrecio(getSubtotalItem(item)) }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Botón eliminar -->
+                  <div class="col-md-2 col-3 text-end">
+                    <button class="btn btn-outline-danger btn-sm eliminar-btn"
+                            (click)="confirmarEliminarItem(item.id)"
+                            title="Eliminar producto">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- Mensaje carrito vacío -->
+          @if (carritoVacio) {
+            <div class="text-center py-5" id="carritoVacio">
+              <div class="empty-cart">
+                <i class="fas fa-shopping-cart fa-4x text-muted mb-3"></i>
+                <h3 class="text-muted">Tu carrito está vacío</h3>
+                <p class="text-muted-custom mb-4">Agrega productos desde nuestro delicioso menú</p>
+                <button class="btn btn-luren btn-lg" (click)="seguirComprando()">
+                  <i class="fas fa-utensils me-2"></i>Explorar Menú
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Promociones y ofertas -->
+        @if (!carritoVacio) {
+          <div class="promociones-card card mt-4">
+            <div class="card-header card-header-custom">
+              <h5 class="mb-0"><i class="fas fa-tag me-2 text-success"></i>Ofertas Especiales</h5>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="promo-item d-flex align-items-center mb-3">
+                    <i class="fas fa-gift text-warning me-3"></i>
+                    <div>
+                      <h6 class="mb-1">Descuento especial</h6>
+                      <small class="text-muted-custom">10% en pedidos mayores a S/ 80.00</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="promo-item d-flex align-items-center mb-3">
+                    <i class="fas fa-shipping-fast text-primary me-3"></i>
+                    <div>
+                      <h6 class="mb-1">Envío gratis</h6>
+                      <small class="text-muted-custom">En pedidos mayores a S/ 50.00</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Columna derecha - Resumen del pedido -->
+      <div class="col-lg-4">
+        <div class="resumen-pedido card sticky-top resumen-sticky">
+          <div class="card-header bg-luren text-white text-center py-3">
+            <h4 class="mb-0"><i class="fas fa-receipt me-2"></i>Resumen del Pedido</h4>
+          </div>
+          <div class="card-body">
+            <!-- Subtotal -->
+            <div class="resumen-item d-flex justify-content-between mb-2">
+              <span class="resumen-label">Subtotal</span>
+              <span class="resumen-valor">S/. {{ formatearPrecio(total) }}</span>
+            </div>
+
+            <!-- Envío -->
+            <div class="resumen-item d-flex justify-content-between mb-2">
+              <span class="resumen-label">Costo de envío</span>
+              <span class="resumen-valor">
+                @if (envioGratis && !carritoVacio) {
+                  <span class="text-success">GRATIS</span>
+                } @else if (!carritoVacio) {
+                  S/. {{ formatearPrecio(costoEnvio) }}
+                } @else {
+                  S/. 0.00
+                }
+              </span>
+            </div>
+
+            <!-- Descuento -->
+            @if (hayDescuento) {
+              <div class="resumen-item d-flex justify-content-between mb-2">
+                <span class="resumen-label text-success">Descuento</span>
+                <span class="resumen-valor text-success">-S/. {{ formatearPrecio(descuento) }}</span>
+              </div>
+            }
+
+            <hr>
+
+            <!-- Total -->
+            <div class="resumen-total d-flex justify-content-between mb-4">
+              <span class="total-label fw-bold">Total a pagar</span>
+              <span class="total-valor fw-bold text-luren">
+                S/. {{ formatearPrecio(totalPagar) }}
+              </span>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="acciones-carrito">
+              @if (!carritoVacio) {
+                <button class="btn btn-pagar w-100 py-3 mb-3" 
+                        (click)="procederAlPago()"
+                        [disabled]="isLoading">
+                  @if (isLoading) {
+                    <i class="fas fa-spinner fa-spin me-2"></i>Procesando...
+                  } @else {
+                    <i class="fas fa-credit-card me-2"></i>Proceder al Pago
+                  }
+                </button>
+              }
+
+              <button class="btn btn-outline-danger w-100 btn-vaciar-carrito"
+                      (click)="confirmarVaciarCarrito()"
+                      [disabled]="carritoVacio">
+                <i class="fas fa-trash me-2"></i>Vaciar Carrito
+              </button>
+            </div>
+
+            <!-- Información adicional -->
+            <div class="info-adicional mt-4">
+              <div class="d-flex align-items-center text-muted-custom small mb-2">
+                <i class="fas fa-shield-alt me-2 text-success"></i>
+                <span>Compra 100% segura</span>
+              </div>
+              <div class="d-flex align-items-center text-muted-custom small mb-2">
+                <i class="fas fa-clock me-2 text-warning"></i>
+                <span>Entrega en 30-45 min</span>
+              </div>
+              <div class="d-flex align-items-center text-muted-custom small">
+                <i class="fas fa-undo me-2 text-info"></i>
+                <span>Devolución garantizada</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Modal de confirmación -->
+<div class="modal fade" id="modalConfirmacion" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content modal-content-custom">
+      <div class="modal-header modal-header-custom">
+        <h5 class="modal-title">Confirmar acción</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="modalMensaje">
+        {{ modalMensaje }}
+      </div>
+      <div class="modal-footer modal-footer-custom">
+        <button type="button" class="btn btn-secondary btn-cancelar" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger btn-confirmar" 
+                (click)="ejecutarAccionPendiente()">Confirmar</button>
+      </div>
+    </div>
+  </div>
+</div>
