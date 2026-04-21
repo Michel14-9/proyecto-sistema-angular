@@ -1,0 +1,33 @@
+<div class="card shadow-sm h-100">
+  <div class="card-header" [class]="claseHeader">
+    <h5 class="mb-0">
+      <i class="bi bi-{{ config.icono }} me-2"></i>{{ config.titulo }}
+      <span class="badge float-end" 
+            [class.bg-dark]="config.tipo === 'por-preparar'"
+            [class.bg-light]="config.tipo !== 'por-preparar'"
+            [class.text-dark]="config.tipo !== 'por-preparar'">
+        {{ pedidos.length }}
+      </span>
+    </h5>
+  </div>
+  
+  <div class="card-body p-0">
+    @if (hayPedidos) {
+      <div class="list-group list-group-flush">
+        @for (pedido of pedidos; track pedido.id) {
+          <app-item-pedido
+            [pedido]="pedido"
+            [tipoColumna]="config.tipo"
+            [class.selected]="isSelected(pedido)"
+            (seleccionar)="onSeleccionarPedido($event)">
+          </app-item-pedido>
+        }
+      </div>
+    } @else {
+      <div class="text-center py-5">
+        <i class="bi bi-{{ config.iconoVacio }} text-muted fs-1"></i>
+        <p class="text-muted mt-2">{{ config.textoVacio }}</p>
+      </div>
+    }
+  </div>
+</div>

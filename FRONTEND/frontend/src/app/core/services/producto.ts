@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface Producto {
+  imagenUrl: string;
+  tipo: string;
   id_producto: number;
   nombre: string;
   descripcion: string;
