@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
-import { AuthService } from '../../core/services/auth';
+import { AuthService, CurrentUser } from '../../core/services/auth.service';
 import { PedidoService } from '../../core/services/pedido';
 import { Subscription } from 'rxjs';
 import { PagoService } from '../../core/services/pago';
@@ -45,8 +45,8 @@ interface UsuarioInfo {
 })
 export class RegistroPagoComponent implements OnInit, OnDestroy {
   // Formularios
-  pagoForm: FormGroup;
-  tarjetaForm: FormGroup;
+  pagoForm!: FormGroup;
+  tarjetaForm!: FormGroup;
   
   // Datos del carrito
   carrito: ItemCarrito[] = [];
@@ -106,10 +106,9 @@ export class RegistroPagoComponent implements OnInit, OnDestroy {
   }
 
   private inicializarFormularios(): void {
-    // Formulario principal de pago
     this.pagoForm = this.fb.group({
       tipoEntrega: ['delivery', Validators.required],
-      direccion: ['', this.tipoEntregaSeleccionado === 'delivery' ? Validators.required : null],
+      direccion: ['', Validators.required],
       instrucciones: [''],
       fechaEntrega: ['', Validators.required],
       horaEntrega: ['', Validators.required],
@@ -121,7 +120,6 @@ export class RegistroPagoComponent implements OnInit, OnDestroy {
       metodoPago: ['efectivo', Validators.required]
     });
 
-    // Formulario para tarjeta
     this.tarjetaForm = this.fb.group({
       numeroTarjeta: ['', [Validators.required, Validators.pattern(/^[\d\s]{16,19}$/)]],
       fechaVencimiento: ['', [Validators.required, Validators.pattern(/^\d{2}\/\d{2}$/)]],
@@ -151,15 +149,29 @@ export class RegistroPagoComponent implements OnInit, OnDestroy {
   }
 
   private verificarAutenticacion(): void {
-    this.authSubscription = this.authService.currentUser$.subscribe(user => {
+    this.authSubscription = this.authService.currentUser$.subscribe((user: CurrentUser | null) => {
       this.isAuthenticated = !!user;
-      this.usuario = user;
       
       if (user) {
-        this.cargarDatosUsuario(user);
+        // Convertir CurrentUser a UsuarioInfo
+        this.usuario = this.convertirAUsuarioInfo(user);
+        this.cargarDatosUsuario(this.usuario);
         this.cargarDirecciones();
+      } else {
+        this.usuario = null;
       }
     });
+  }
+
+  private convertirAUsuarioInfo(currentUser: CurrentUser): UsuarioInfo {
+    return {
+      id_usuario: currentUser.id_usuario,
+      nombres: currentUser.nombres || '',
+      apellidos: currentUser.apellidos || '',
+      correo: currentUser.username || '', // username es el correo
+      telefono: '', // No viene en CurrentUser, se puede obtener de otro lado
+      rol: currentUser.rol || 'cliente'
+    };
   }
 
   private cargarDatosUsuario(user: UsuarioInfo): void {
@@ -257,7 +269,8 @@ export class RegistroPagoComponent implements OnInit, OnDestroy {
 
   // Manejo de cambios en el formulario
   onTipoEntregaChange(): void {
-    this.tipoEntregaSeleccionado = this.pagoForm.get('tipoEntrega')?.value;
+    const tipoEntregaControl = this.pagoForm.get('tipoEntrega');
+    this.tipoEntregaSeleccionado = tipoEntregaControl?.value;
     
     const direccionControl = this.pagoForm.get('direccion');
     if (this.tipoEntregaSeleccionado === 'recojo') {
@@ -273,7 +286,8 @@ export class RegistroPagoComponent implements OnInit, OnDestroy {
   }
 
   onMetodoPagoChange(): void {
-    this.metodoPagoSeleccionado = this.pagoForm.get('metodoPago')?.value;
+    const metodo = this.pagoForm.get('metodoPago')?.value;
+    this.metodoPagoSeleccionado = metodo as 'efectivo' | 'tarjeta' | 'yape';
     this.mostrarTarjetaInfo = this.metodoPagoSeleccionado === 'tarjeta';
     this.mostrarYapeInfo = this.metodoPagoSeleccionado === 'yape';
   }
