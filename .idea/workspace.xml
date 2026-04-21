@@ -6,8 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="4e10dce1-a503-4051-8fa1-2dbc492f7fbc" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/core/interceptors/auth-interceptor.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/core/interceptors/auth-interceptor.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/core/interceptors/error-interceptor.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/core/interceptors/error-interceptor.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package-lock.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
