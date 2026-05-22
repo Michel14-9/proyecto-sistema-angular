@@ -74,6 +74,7 @@ public class SecurityConfig {
                         .ignoringRequestMatchers(
                                 "/api/auth/**",
                                 "/api/direcciones/**",
+                                "/api/pagos/**",
                                 "/cajero/marcar-pagado/**",
                                 "/cajero/marcar-cancelado/**",
                                 "/cocinero/iniciar-preparacion/**",
@@ -104,7 +105,8 @@ public class SecurityConfig {
                                 "/css/**", "/script/**", "/imagenes/**", "/archivos/**", "/webfonts/**",
                                 "/error", "/libro-reclamaciones", "/terminos",
                                 "/politica-datos", "/politica-cookies",
-                                "/menu", "/menu/**"
+                                "/menu", "/menu/**",
+                                "/api/pagos/**"
                         ).permitAll()
                         .requestMatchers("/admin-menu", "/admin/**").hasRole("ADMIN")
                         .requestMatchers("/cajero", "/cajero/**").hasRole("CAJERO")
