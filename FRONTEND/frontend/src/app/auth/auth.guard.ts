@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { AuthService } from '../core/services/auth';
+import { AuthService } from '../core/services/auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -12,7 +12,9 @@ export class AuthGuard {
   ) {}
 
   canActivate(): boolean {
-    if (this.authService.isAuthenticated()) {
+    const isAuthenticated = this.authService.isAuthenticated() as unknown as boolean;
+
+    if (isAuthenticated) {
       return true;
     }
     

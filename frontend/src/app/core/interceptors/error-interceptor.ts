@@ -1,4 +1,4 @@
-// src/app/core/interceptors/error.interceptor.ts
+
 import { Injectable } from '@angular/core';
 import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';

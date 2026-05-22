@@ -1,0 +1,17 @@
+<p>item-pedido works!</p>
+<div class="list-group-item list-group-item-action pedido-item-cocina estado-{{ tipoColumna }}"
+     [class.pedido-urgente]="esUrgente"
+     (click)="onClick()">
+  <div class="d-flex justify-content-between align-items-start">
+    <div class="flex-grow-1">
+      <h6 class="mb-1">{{ numeroPedido }}</h6>
+      <p class="mb-1 text-muted small">{{ nombreCliente }}</p>
+      <div class="d-flex justify-content-between align-items-center">
+        <small class="text-muted">{{ horaPedido }}</small>
+        <span class="badge badge-tiempo" [class]="claseTiempo">
+          {{ tiempoTranscurrido.texto }}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>

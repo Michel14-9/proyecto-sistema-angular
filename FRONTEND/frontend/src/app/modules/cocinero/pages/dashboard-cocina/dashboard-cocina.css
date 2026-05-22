@@ -1,0 +1,184 @@
+/* ======= Paleta ======= */
+:root {
+  --verde: #81c784;
+  --naranja: #ffb74d;
+  --amarillo: #fff9c4;
+  --rojo: #e53935;
+  --gris: #6c757d;
+  --blanco: #fafafa;
+  --azul: #1976d2;
+  --gris-claro: #e9ecef;
+}
+
+body {
+  background-color: var(--blanco);
+  color: var(--gris);
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* ======= Header ======= */
+header.cocinero-header {
+  background: linear-gradient(90deg, var(--verde), var(--naranja));
+  color: white;
+  padding: 10px 20px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.empresa-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.empresa-info img {
+  height: 50px;
+  width: 50px;
+  border-radius: 50%;
+  border: 2px solid var(--amarillo);
+  object-fit: cover;
+}
+
+.empresa-nombre {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #fff;
+}
+
+.usuario-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+}
+
+/* ======= Barra de Estado ======= */
+.cocinero-nav {
+  background-color: var(--amarillo);
+  padding: 8px 20px;
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+  color: var(--gris);
+}
+
+.estado-cocina {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* ======= Tarjetas de Métricas ======= */
+.stat-card {
+  text-align: center;
+  padding: 20px;
+  border-radius: 15px;
+  background-color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card i {
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+.stat-card .number {
+  font-size: 1.8rem;
+  font-weight: bold;
+  line-height: 1.2;
+}
+
+.stat-card .label {
+  color: var(--gris);
+  font-size: 0.95rem;
+  margin-top: 5px;
+}
+
+/* ======= Items de Pedido ======= */
+.pedido-item-cocina {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-left: 4px solid transparent;
+}
+
+.pedido-item-cocina:hover {
+  background-color: var(--amarillo);
+  transform: translateX(2px);
+}
+
+.pedido-item-cocina.selected {
+  background-color: #e7f3ff;
+  border-left-color: var(--azul);
+}
+
+.estado-por-preparar {
+  border-left-color: var(--naranja);
+}
+
+.estado-en-preparacion {
+  border-left-color: var(--azul);
+}
+
+.estado-listos {
+  border-left-color: var(--verde);
+}
+
+.pedido-urgente {
+  border-left-color: var(--rojo) !important;
+  background-color: rgba(229, 57, 53, 0.05);
+}
+
+/* ======= Responsive ======= */
+@media (max-width: 768px) {
+  .header-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .usuario-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .stat-card {
+    padding: 15px;
+    margin-bottom: 15px;
+    min-height: 100px;
+  }
+
+  .stat-card .number {
+    font-size: 1.5rem;
+  }
+}
+
+/* ======= Utilidades ======= */
+.hidden-element {
+  display: none !important;
+}
+
+.visible-element {
+  display: block !important;
+}

@@ -1,0 +1,154 @@
+<header class="cocinero-header">
+  <div class="header-top">
+    <div class="empresa-info">
+      <div class="logo">
+        <img src="/imagenes/LurenChicken.jpg" alt="Luren Chicken">
+      </div>
+      <span class="empresa-nombre">Luren Chicken - Cocina</span>
+    </div>
+    <div class="usuario-info">
+      <span class="usuario">Cocinero: {{ nombreCompleto }}</span>
+      <span class="hora">{{ horaActual }}</span>
+      <button class="btn btn-outline-danger btn-sm ms-2" (click)="logout()">
+        <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+      </button>
+    </div>
+  </div>
+
+  <nav class="cocinero-nav">
+    <div class="estado-cocina">
+      <span class="estado">{{ estadoCocina }}</span>
+      <span class="fecha">{{ fechaActual }}</span>
+    </div>
+  </nav>
+</header>
+
+<div class="container-fluid my-4">
+  @if (isLoading) {
+    <div class="text-center py-5">
+      <div class="spinner-border text-warning" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+      <p class="mt-3 text-muted">Cargando pedidos de cocina...</p>
+    </div>
+  }
+
+  @if (error && !isLoading) {
+    <div class="alert alert-danger">
+      <i class="bi bi-exclamation-triangle me-2"></i>
+      {{ error }}
+      <button class="btn btn-outline-danger btn-sm ms-3" (click)="recargarDatos()">
+        Reintentar
+      </button>
+    </div>
+  }
+
+  @if (!isLoading && !error) {
+    <app-metricas-cocina [metricas]="metricas"></app-metricas-cocina>
+
+    <div class="row">
+      @for (columna of columnasConfig; track columna.tipo) {
+        <div class="col-lg-4">
+          <app-columna-pedidos
+            [pedidos]="columna.tipo === 'por-preparar' ? pedidosPorPreparar : 
+                      columna.tipo === 'en-preparacion' ? pedidosEnPreparacion : 
+                      pedidosListos"
+            [config]="columna"
+            [pedidoSeleccionado]="columnaSeleccionada === columna.tipo ? pedidoSeleccionado : null"
+            (pedidoSelect)="onSeleccionarPedido($event, columna.tipo)">
+          </app-columna-pedidos>
+        </div>
+      }
+    </div>
+
+    @if (pedidoSeleccionado) {
+      <div class="row mt-4" id="detalle-pedido-container">
+        <div class="col-12">
+          <app-detalle-pedido
+            [pedido]="pedidoSeleccionado"
+            [tipoColumna]="columnaSeleccionada"
+            (cerrar)="cerrarDetalle()"
+            (iniciarPreparacion)="abrirModalIniciarPreparacion($event)"
+            (marcarListo)="abrirModalMarcarListo($event)">
+          </app-detalle-pedido>
+        </div>
+      </div>
+    }
+  }
+</div>
+
+<!-- MODAL PARA INICIAR PREPARACIÓN -->
+<div class="modal fade" id="modalIniciarPreparacion" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-egg-fried me-2"></i>Iniciar Preparación
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Está seguro de que desea iniciar la preparación del pedido?</p>
+        <div class="mb-3">
+          <strong>Pedido:</strong>
+          <span class="badge bg-primary">{{ pedidoModalNumero }}</span>
+        </div>
+        <div class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle"></i>
+          Una vez iniciada la preparación, el pedido pasará al estado "En Preparación".
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="confirmarIniciarPreparacion()">
+          <i class="bi bi-egg-fried"></i> Iniciar Preparación
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PARA MARCAR COMO LISTO -->
+<div class="modal fade" id="modalMarcarListo" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-check-circle me-2"></i>Marcar como Listo
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Está seguro de que el pedido está listo para entrega?</p>
+        <div class="mb-3">
+          <strong>Pedido:</strong>
+          <span class="badge bg-success">{{ pedidoModalNumero }}</span>
+        </div>
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle"></i>
+          El pedido pasará al estado "Listo" y estará disponible para el delivery.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-success" (click)="confirmarMarcarListo()">
+          <i class="bi bi-check-circle"></i> Marcar como Listo
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast para Alertas -->
+<div class="toast-container position-fixed top-0 end-0 p-3">
+  <div id="liveAlert" class="toast" role="alert">
+    <div class="toast-header">
+      <i class="bi me-2" id="toast-icon"></i>
+      <strong class="me-auto" id="toast-titulo">Notificación</strong>
+      <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+    </div>
+    <div class="toast-body" id="toast-mensaje">
+      Mensaje de notificación
+    </div>
+  </div>
+</div>
