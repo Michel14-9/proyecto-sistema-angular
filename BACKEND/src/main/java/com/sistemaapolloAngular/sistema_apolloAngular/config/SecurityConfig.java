@@ -76,76 +76,12 @@ public class SecurityConfig {
                                                 .contentTypeOptions(contentType -> {
                                                 }))
 
-                                // CSRF CORREGIDO para Spring Boot 3.x
-                                .csrf(csrf -> csrf
-                                                .csrfTokenRepository(new HttpSessionCsrfTokenRepository())
-                                                .ignoringRequestMatchers(
-                                                                "/api/auth/**",
-                                                                "/api/direcciones/**",
-                                                                "/cajero/marcar-pagado/**",
-                                                                "/cajero/marcar-cancelado/**",
-                                                                "/cocinero/iniciar-preparacion/**",
-                                                                "/cocinero/marcar-listo/**",
-                                                                "/delivery/iniciar-entrega/**",
-                                                                "/delivery/marcar-entregado/**"))
-
-<<<<<<< HEAD
-                                // CONFIGURACIÓN DE SESIÓN
-                                .sessionManagement(session -> session
-                                                .sessionFixation().migrateSession()
-                                                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                                                .maximumSessions(1)
-                                                .maxSessionsPreventsLogin(false)
-                                                .expiredUrl("/login?expired=true"))
-                                .rememberMe(remember -> remember.disable())
-                                // RUTAS Y PERMISOS
-                                .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers(
-                                                                "/", "/index",
-                                                                "/locales", "/nuestros-locales",
-                                                                "/login", "/registrate", "/registro",
-                                                                "/api/auth/**",
-                                                                "/api/direcciones/**",
-                                                                "/api/combos",
-                                                                "/css/**", "/script/**", "/imagenes/**", "/archivos/**",
-                                                                "/webfonts/**",
-                                                                "/error", "/libro-reclamaciones", "/terminos",
-                                                                "/politica-datos", "/politica-cookies",
-                                                                "/menu", "/menu/**")
-                                                .permitAll()
-                                                .requestMatchers("/api/whatsapp/webhook").permitAll()
-                                                .requestMatchers("/admin-menu", "/admin/**").hasRole("ADMIN")
-                                                .requestMatchers("/cajero", "/cajero/**").hasRole("CAJERO")
-                                                .requestMatchers("/cocinero", "/cocinero/**").hasRole("COCINERO")
-                                                .requestMatchers("/delivery", "/delivery/**").hasRole("DELIVERY")
-                                                .requestMatchers("/pedidos-comunes", "/api/pedidos-comunes/**")
-                                                .hasAnyRole("ADMIN", "CAJERO", "COCINERO", "DELIVERY")
-                                                .requestMatchers(
-                                                                "/carrito", "/carrito/**",
-                                                                "/pago", "/pago/**",
-                                                                "/pedido/**", "/pedidos/**",
-                                                                "/api/pedidos/**", "/api/pedido/**",
-                                                                "/crear-pedido", "/confirmar-pedido",
-                                                                "/confirmacion-pedido",
-                                                                "/mis-cuentas", "/mis-datos", "/mis-direcciones",
-                                                                "/mis-favoritos", "/mis-pedidos")
-                                                .authenticated()
-                                                .anyRequest().authenticated())
-
-                                // LOGIN FORM
-                                .formLogin(form -> form
-                                                .loginPage("/login")
-                                                .defaultSuccessUrl("/postLogin", true)
-                                                .failureUrl("/login?error=true")
-                                                .permitAll())
-=======
                 // CSRF CORREGIDO para Spring Boot 3.x
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(new HttpSessionCsrfTokenRepository())
                         .ignoringRequestMatchers(
                                 "/api/auth/**",
                                 "/api/direcciones/**",
-                                "/api/pagos/**",
                                 "/cajero/marcar-pagado/**",
                                 "/cajero/marcar-cancelado/**",
                                 "/cocinero/iniciar-preparacion/**",
@@ -176,8 +112,7 @@ public class SecurityConfig {
                                 "/css/**", "/script/**", "/imagenes/**", "/archivos/**", "/webfonts/**",
                                 "/error", "/libro-reclamaciones", "/terminos",
                                 "/politica-datos", "/politica-cookies",
-                                "/menu", "/menu/**",
-                                "/api/pagos/**"
+                                "/menu", "/menu/**"
                         ).permitAll()
                         .requestMatchers("/admin-menu", "/admin/**").hasRole("ADMIN")
                         .requestMatchers("/cajero", "/cajero/**").hasRole("CAJERO")
@@ -196,7 +131,13 @@ public class SecurityConfig {
                         ).authenticated()
                         .anyRequest().authenticated()
                 )
->>>>>>> main
+
+                                // LOGIN FORM
+                                .formLogin(form -> form
+                                                .loginPage("/login")
+                                                .defaultSuccessUrl("/postLogin", true)
+                                                .failureUrl("/login?error=true")
+                                                .permitAll())
 
                                 // LOGOUT
                                 .logout(logout -> logout
