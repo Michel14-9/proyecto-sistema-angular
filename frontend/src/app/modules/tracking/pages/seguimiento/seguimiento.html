@@ -1,0 +1,60 @@
+<div class="tracking-container">
+
+  <!-- LOADING -->
+  <div *ngIf="cargando" class="tracking-loading">
+    <div class="spinner"></div>
+    <p>Cargando seguimiento de tu pedido...</p>
+  </div>
+
+  <!-- ERROR -->
+  <div *ngIf="!cargando && error" class="tracking-error">
+    <span class="error-icon">⚠️</span>
+    <p>{{ error }}</p>
+    <a routerLink="/productos" class="btn-volver">Volver al menú</a>
+  </div>
+
+  <!-- TRACKING ACTIVO -->
+  <div *ngIf="!cargando && !error && tracking" class="tracking-content">
+
+    <div class="tracking-header">
+      <h2>Sigue tu pedido</h2>
+      <p class="numero-pedido"># {{ numeroPedido }}</p>
+    </div>
+
+    <!-- INFO RÁPIDA -->
+    <div class="tracking-info-bar">
+      <div class="info-card">
+        <span class="info-label">Estado</span>
+        <span class="info-valor estado">{{ estadoTexto }}</span>
+      </div>
+      <div class="info-card" *ngIf="tracking.estado === 'ACTIVE'">
+        <span class="info-label">Tiempo estimado</span>
+        <span class="info-valor eta">{{ etaTexto }}</span>
+      </div>
+      <div class="info-card" *ngIf="tracking.distanciaKm && tracking.estado === 'ACTIVE'">
+        <span class="info-label">Distancia</span>
+        <span class="info-valor">{{ tracking.distanciaKm }} km</span>
+      </div>
+      <div class="info-card" *ngIf="tracking.nombreRepartidor">
+        <span class="info-label">Repartidor</span>
+        <span class="info-valor">{{ tracking.nombreRepartidor }}</span>
+      </div>
+    </div>
+
+    <!-- MAPA -->
+    <div id="mapa-tracking" class="mapa"></div>
+
+    <!-- MENSAJE DE ENTREGADO -->
+    <div *ngIf="tracking.estado === 'COMPLETED'" class="entregado-banner">
+      <span>🎉</span>
+      <p>¡Tu pedido ha sido entregado! Gracias por elegir Pollería Apollo.</p>
+    </div>
+
+    <!-- DIRECCIÓN -->
+    <div class="direccion-info" *ngIf="tracking.direccionCliente">
+      <span class="dir-icon">📍</span>
+      <span>{{ tracking.direccionCliente }}</span>
+    </div>
+
+  </div>
+</div>

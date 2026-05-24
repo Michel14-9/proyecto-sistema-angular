@@ -9,5 +9,6 @@ export const routes: Routes = [
   { path: 'cocinero', loadComponent: () => import('./modules/cocinero/cocinero/cocinero').then(m => m.CocineroComponent) },
   { path: 'menu', loadComponent: () => import('./modules/publico/menu/menu').then(m => m.MenuComponent) },
   { path: 'nuestros-locales', loadComponent: () => import('./modules/publico/locales/locales').then(m => m.LocalesComponent) },
-  { path: '**', redirectTo: '' }
+  { path: '**', redirectTo: '' },
+  {path: 'tracking', loadChildren: () => import('./modules/tracking/tracking.module').then(m => m.TrackingModule)}
 ];

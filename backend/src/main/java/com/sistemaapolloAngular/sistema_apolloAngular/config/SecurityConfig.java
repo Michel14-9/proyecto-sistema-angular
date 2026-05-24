@@ -1,5 +1,7 @@
 package com.sistemaapolloAngular.sistema_apolloAngular.config;
 
+import java.util.Arrays;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -7,27 +9,16 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
 import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 public class SecurityConfig {
@@ -79,7 +70,8 @@ public class SecurityConfig {
                                 "/cocinero/iniciar-preparacion/**",
                                 "/cocinero/marcar-listo/**",
                                 "/delivery/iniciar-entrega/**",
-                                "/delivery/marcar-entregado/**"
+                                "/delivery/marcar-entregado/**",
+                                "/api/tracking/**" 
                         )
                 )
 
@@ -104,7 +96,9 @@ public class SecurityConfig {
                                 "/css/**", "/script/**", "/imagenes/**", "/archivos/**", "/webfonts/**",
                                 "/error", "/libro-reclamaciones", "/terminos",
                                 "/politica-datos", "/politica-cookies",
-                                "/menu", "/menu/**"
+                                "/menu", "/menu/**",
+                                "/api/tracking/**"
+                                
                         ).permitAll()
                         .requestMatchers("/admin-menu", "/admin/**").hasRole("ADMIN")
                         .requestMatchers("/cajero", "/cajero/**").hasRole("CAJERO")
