@@ -65,6 +65,7 @@ public class SecurityConfig {
                         .ignoringRequestMatchers(
                                 "/api/auth/**",
                                 "/api/direcciones/**",
+                                "/api/pagos/**",
                                 "/cajero/marcar-pagado/**",
                                 "/cajero/marcar-cancelado/**",
                                 "/cocinero/iniciar-preparacion/**",
