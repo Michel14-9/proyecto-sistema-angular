@@ -1,4 +1,4 @@
-package com.sistemaapolloAngular.model;
+package com.sistemaapolloAngular.sistema_apolloAngular.model;
 
 import jakarta.persistence.*;
 import lombok.Data;

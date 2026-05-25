@@ -1,10 +1,10 @@
-package com.sistemaapolloAngular.service;
+package com.sistemaapolloAngular.sistema_apolloAngular.service;
 
-import com.sistemaapolloAngular.dto.WhatsAppRequestDTO;
-import com.sistemaapolloAngular.model.Pedido;
-import com.sistemaapolloAngular.model.WhatsAppMessage;
-import com.sistemaapolloAngular.repository.PedidoRepository;
-import com.sistemaapolloAngular.repository.WhatsAppMessageRepository;
+import com.sistemaapolloAngular.sistema_apolloAngular.dto.WhatsAppRequestDTO;
+import com.sistemaapolloAngular.sistema_apolloAngular.model.Pedido;
+import com.sistemaapolloAngular.sistema_apolloAngular.model.WhatsAppMessage;
+import com.sistemaapolloAngular.sistema_apolloAngular.repository.PedidoRepository;
+import com.sistemaapolloAngular.sistema_apolloAngular.repository.WhatsAppMessageRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -61,7 +61,7 @@ public class WhatsAppService {
             "Estado: %s\n\n" +
             "Te avisaremos cuando esté en camino. 🚀",
             pedido.getId(),
-            pedido.getUsuario().getNombre(),
+            pedido.getUsuario().getNombres(),
             pedido.getTotal(),
             pedido.getEstado()
         );
@@ -86,7 +86,7 @@ public class WhatsAppService {
             "Tiempo estimado: 30-45 min.\n\n" +
             "¡Gracias por tu preferencia! 😊",
             pedido.getId(),
-            pedido.getUsuario().getNombre()
+            pedido.getUsuario().getNombres()
         );
 
         WhatsAppRequestDTO dto = new WhatsAppRequestDTO();

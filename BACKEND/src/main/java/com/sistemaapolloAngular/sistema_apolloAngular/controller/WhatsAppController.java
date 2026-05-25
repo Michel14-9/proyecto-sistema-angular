@@ -1,8 +1,8 @@
-package com.sistemaapolloAngular.controller;
+package com.sistemaapolloAngular.sistema_apolloAngular.controller;
 
-import com.sistemaapolloAngular.dto.WhatsAppRequestDTO;
-import com.sistemaapolloAngular.model.WhatsAppMessage;
-import com.sistemaapolloAngular.service.WhatsAppService;
+import com.sistemaapolloAngular.sistema_apolloAngular.dto.WhatsAppRequestDTO;
+import com.sistemaapolloAngular.sistema_apolloAngular.model.WhatsAppMessage;
+import com.sistemaapolloAngular.sistema_apolloAngular.service.WhatsAppService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
