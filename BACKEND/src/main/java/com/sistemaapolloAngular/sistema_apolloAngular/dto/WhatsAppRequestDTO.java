@@ -1,4 +1,4 @@
-package com.sistemaapolloAngular.dto;
+package com.sistemaapolloAngular.sistema_apolloAngular.dto;
 
 import lombok.Data;
 
