@@ -46,7 +46,7 @@ public class CajeroController {
     @GetMapping("")
     public String vistaCajero(Authentication authentication, Model model) {
         try {
-            // Obtener información del usuario cajero
+
             String username = authentication.getName();
             Optional<Usuario> cajeroOpt = usuarioRepository.findByUsername(username);
 
