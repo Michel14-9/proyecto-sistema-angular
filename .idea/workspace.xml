@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4e10dce1-a503-4051-8fa1-2dbc492f7fbc" name="Changes" comment="" />
+    <list default="true" id="4e10dce1-a503-4051-8fa1-2dbc492f7fbc" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/BACKEND/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/MenuController.java" beforeDir="false" afterPath="$PROJECT_DIR$/BACKEND/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/MenuController.java" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
