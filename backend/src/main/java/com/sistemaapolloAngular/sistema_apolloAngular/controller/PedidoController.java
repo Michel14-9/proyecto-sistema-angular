@@ -7,7 +7,6 @@ import com.sistemaapolloAngular.sistema_apolloAngular.model.Usuario;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.PedidoService;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.CarritoService;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.UsuarioService;
-import com.sistemaapolloAngular.sistema_apolloAngular.service.WhatsAppService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -28,17 +27,14 @@ public class PedidoController {
     private final PedidoService pedidoService;
     private final CarritoService carritoService;
     private final UsuarioService usuarioService;
-    private final WhatsAppService whatsAppService;
     private final ObjectMapper objectMapper;
 
     public PedidoController(PedidoService pedidoService,
                             CarritoService carritoService,
-                            UsuarioService usuarioService,
-                            WhatsAppService whatsAppService) {
+                            UsuarioService usuarioService) {
         this.pedidoService = pedidoService;
         this.carritoService = carritoService;
         this.usuarioService = usuarioService;
-        this.whatsAppService = whatsAppService;
         this.objectMapper = new ObjectMapper();
     }
 
@@ -173,34 +169,6 @@ public class PedidoController {
         } catch (Exception e) {
             return ResponseEntity.status(500)
                     .body("Error al cargar el pedido: " + e.getMessage());
-        }
-    }
-
-    @PostMapping("/api/{pedidoId}/confirmar")
-    @ResponseBody
-    public ResponseEntity<?> confirmarPedido(@PathVariable Long pedidoId, Authentication authentication) {
-        try {
-            if (authentication == null || !authentication.isAuthenticated()) {
-                return ResponseEntity.status(401).body("Usuario no autenticado");
-            }
-
-            Optional<Pedido> pedidoOpt = pedidoService.obtenerPedidoPorId(pedidoId);
-            if (pedidoOpt.isEmpty()) {
-                return ResponseEntity.status(404).body("Pedido no encontrado");
-            }
-
-            Pedido pedido = pedidoService.actualizarEstadoPedido(pedidoId, "CONFIRMADO");
-
-            try {
-                whatsAppService.notificarPedidoConfirmado(pedidoId);
-            } catch (Exception whatsappEx) {
-                System.err.println("Error al enviar WhatsApp de confirmación: " + whatsappEx.getMessage());
-            }
-
-            return ResponseEntity.ok(pedido);
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body("Error al confirmar el pedido: " + e.getMessage());
         }
     }
 
