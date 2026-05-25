@@ -42,7 +42,7 @@ public class MenuController {
     }
     @GetMapping("/menu")
     public String menuPublico(Model model) {
-        // Obtener todos los productos de la base de datos
+
         List<ProductoFinal> todosProductos = productoFinalService.obtenerTodos();
 
         System.out.println("=== CARGANDO MENÚ PÚBLICO ===");
