@@ -109,6 +109,7 @@ public class SecurityConfig {
                                 "/api/combos",
                                 "/api/pagos/**",
                                 "/api/menu/**",
+                                "/login",
                                 "/error"
                         ).permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
@@ -134,6 +135,7 @@ public class SecurityConfig {
                 // Devuelve JSON en lugar de redirigir a una vista HTML
                 // -------------------------------------------------------
                 .formLogin(form -> form
+                        .loginPage("/login")
                         .loginProcessingUrl("/api/auth/login")   // Angular hace POST aquí
                         .usernameParameter("username")
                         .passwordParameter("password")
