@@ -12,7 +12,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
@@ -40,14 +39,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // -------------------------------------------------------
-                // CORS
-                // -------------------------------------------------------
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                // -------------------------------------------------------
-                // CABECERAS DE SEGURIDAD
-                // -------------------------------------------------------
                 .headers(headers -> headers
                         .contentSecurityPolicy(csp -> csp
                                 .policyDirectives(
@@ -68,29 +61,19 @@ public class SecurityConfig {
                         .contentTypeOptions(contentType -> {})
                 )
 
-                // -------------------------------------------------------
-                // CSRF — usa cookie para que Angular pueda leerla
-                // Angular HttpClient la envía automáticamente si configuras
-                // withCredentials: true y el interceptor de XSRF
-                // -------------------------------------------------------
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .ignoringRequestMatchers(
                                 "/api/auth/**",
                                 "/api/direcciones/**",
                                 "/api/pagos/**",
-                                "/cajero/marcar-pagado/**",
-                                "/cajero/marcar-cancelado/**",
-                                "/cocinero/iniciar-preparacion/**",
-                                "/cocinero/marcar-listo/**",
-                                "/delivery/iniciar-entrega/**",
-                                "/delivery/marcar-entregado/**"
+                                "/admin-menu/**",              // ← admin puede hacer POST/DELETE
+                                "/cajero/**",
+                                "/cocinero/**",
+                                "/delivery/**"
                         )
                 )
 
-                // -------------------------------------------------------
-                // SESIÓN — basada en cookies (stateful), apta para Angular
-                // -------------------------------------------------------
                 .sessionManagement(session -> session
                         .sessionFixation().migrateSession()
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
@@ -99,10 +82,8 @@ public class SecurityConfig {
                 )
                 .rememberMe(remember -> remember.disable())
 
-                // -------------------------------------------------------
-                // RUTAS Y PERMISOS
-                // -------------------------------------------------------
                 .authorizeHttpRequests(auth -> auth
+                        // ── Rutas públicas ──────────────────────────────
                         .requestMatchers(
                                 "/api/auth/**",
                                 "/api/direcciones/**",
@@ -112,12 +93,24 @@ public class SecurityConfig {
                                 "/login",
                                 "/error"
                         ).permitAll()
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/cajero/**").hasRole("CAJERO")
-                        .requestMatchers("/api/cocinero/**").hasRole("COCINERO")
-                        .requestMatchers("/api/delivery/**").hasRole("DELIVERY")
-                        .requestMatchers("/api/pedidos-comunes/**")
+
+                        // ── ADMIN → solo accede a /admin-menu/** ────────
+                        .requestMatchers("/admin-menu/**").hasRole("ADMIN")
+
+                        // ── CAJERO → solo accede a /cajero/** ───────────
+                        .requestMatchers("/cajero/**").hasRole("CAJERO")
+
+                        // ── COCINERO → solo accede a /cocinero/** ───────
+                        .requestMatchers("/cocinero/**").hasRole("COCINERO")
+
+                        // ── DELIVERY → solo accede a /delivery/** ───────
+                        .requestMatchers("/delivery/**").hasRole("DELIVERY")
+
+                        // ── Pedidos comunes → todos los roles internos ──
+                        .requestMatchers("/pedidos-comunes/**", "/api/pedidos-comunes/**")
                         .hasAnyRole("ADMIN", "CAJERO", "COCINERO", "DELIVERY")
+
+                        // ── Rutas de cliente autenticado ────────────────
                         .requestMatchers(
                                 "/api/carrito/**",
                                 "/api/pedidos/**",
@@ -127,20 +120,16 @@ public class SecurityConfig {
                                 "/api/mis-direcciones/**",
                                 "/api/mis-favoritos/**"
                         ).authenticated()
+
                         .anyRequest().authenticated()
                 )
 
-                // -------------------------------------------------------
-                // LOGIN — procesa POST /api/auth/login
-                // Devuelve JSON en lugar de redirigir a una vista HTML
-                // -------------------------------------------------------
                 .formLogin(form -> form
                         .loginPage("/login")
-                        .loginProcessingUrl("/api/auth/login")   // Angular hace POST aquí
+                        .loginProcessingUrl("/api/auth/login")
                         .usernameParameter("username")
                         .passwordParameter("password")
 
-                        // LOGIN EXITOSO → JSON con datos del usuario y su rol
                         .successHandler((request, response, authentication) -> {
                             response.setStatus(HttpStatus.OK.value());
                             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -161,7 +150,6 @@ public class SecurityConfig {
                             new ObjectMapper().writeValue(response.getWriter(), body);
                         })
 
-                        // LOGIN FALLIDO → JSON con mensaje de error
                         .failureHandler((request, response, exception) -> {
                             response.setStatus(HttpStatus.UNAUTHORIZED.value());
                             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -176,16 +164,11 @@ public class SecurityConfig {
                         .permitAll()
                 )
 
-                // -------------------------------------------------------
-                // LOGOUT — POST /api/auth/logout
-                // Devuelve JSON en lugar de redirigir
-                // -------------------------------------------------------
                 .logout(logout -> logout
                         .logoutRequestMatcher(new AntPathRequestMatcher("/api/auth/logout", "POST"))
                         .invalidateHttpSession(true)
                         .deleteCookies("JSESSIONID")
 
-                        // LOGOUT EXITOSO → JSON
                         .logoutSuccessHandler((request, response, authentication) -> {
                             response.setStatus(HttpStatus.OK.value());
                             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -200,11 +183,7 @@ public class SecurityConfig {
                         .permitAll()
                 )
 
-                // -------------------------------------------------------
-                // EXCEPCIONES — responde JSON en vez de redirigir al login
-                // -------------------------------------------------------
                 .exceptionHandling(exception -> exception
-                        // No autenticado → 401 JSON
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setStatus(HttpStatus.UNAUTHORIZED.value());
                             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -216,7 +195,6 @@ public class SecurityConfig {
 
                             new ObjectMapper().writeValue(response.getWriter(), body);
                         })
-                        // Sin permisos → 403 JSON
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
                             response.setStatus(HttpStatus.FORBIDDEN.value());
                             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -237,9 +215,9 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:4200",   // Angular dev
-                "http://localhost:8080",   // Spring Boot (mismo servidor)
-                "https://tudominio.com"    // Producción
+                "http://localhost:4200",
+                "http://localhost:8080",
+                "https://tudominio.com"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList(
