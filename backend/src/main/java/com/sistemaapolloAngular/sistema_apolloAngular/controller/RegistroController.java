@@ -4,15 +4,17 @@ import com.sistemaapolloAngular.sistema_apolloAngular.model.Usuario;
 import com.sistemaapolloAngular.sistema_apolloAngular.repository.UsuarioRepository;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.CaptchaService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
-import java.time.LocalDate;
-import java.util.Optional;
 
-import static org.springframework.http.ResponseEntity.*;
+import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -27,93 +29,76 @@ public class RegistroController {
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
 
-    // ENDPOINT: OBTENER DATOS DEL USUARIO AUTENTICADO
-
-    /**
-     * Obtiene los datos del usuario actualmente autenticado.
-     * Este endpoint es usado por la página "Mis Datos" para mostrar la información del usuario.
-     *
-     * @param authentication Objeto de autenticación de Spring Security que contiene los datos del usuario logueado
-     * @return ResponseEntity con los datos del usuario o mensaje de error
-     */
     @GetMapping("/datos-usuario")
-    public ResponseEntity<?> obtenerDatosUsuario(Authentication authentication) {
-        try {
-            System.out.println(" === OBTENIENDO DATOS USUARIO ===");
-            System.out.println(" Usuario autenticado: " + authentication.getName());
+    public ResponseEntity<Map<String, Object>> obtenerDatosUsuario(Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
 
-            // Obtener el usuario desde la base de datos usando el email (username) del usuario autenticado
+        try {
+            if (authentication == null || !authentication.isAuthenticated()) {
+                response.put("success", false);
+                response.put("message", "Usuario no autenticado");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+
             String username = authentication.getName();
             Usuario usuario = userRepository.findByUsername(username)
                     .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-            // Crear respuesta con los datos del usuario
-            UsuarioDatosResponse response = new UsuarioDatosResponse();
-            response.setNombre(usuario.getNombres());
-            response.setApellidos(usuario.getApellidos());
-            response.setEmail(usuario.getUsername());
-            response.setTipoDocumento(usuario.getTipoDocumento());
-            response.setNumeroDocumento(usuario.getNumeroDocumento());
-            response.setTelefono(usuario.getTelefono());
-            response.setFechaNacimiento(usuario.getFechaNacimiento());
+            response.put("success", true);
+            response.put("data", Map.of(
+                    "nombre", usuario.getNombres(),
+                    "apellidos", usuario.getApellidos(),
+                    "email", usuario.getUsername(),
+                    "tipoDocumento", usuario.getTipoDocumento(),
+                    "numeroDocumento", usuario.getNumeroDocumento(),
+                    "telefono", usuario.getTelefono(),
+                    "fechaNacimiento", usuario.getFechaNacimiento().toString()
+            ));
 
-            System.out.println(" Datos enviados para: " + usuario.getNombres() + " " + usuario.getApellidos());
-            return ok(response);
+            return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            System.out.println(" Error obteniendo datos del usuario: " + e.getMessage());
-            return badRequest().body("Error al obtener datos del usuario: " + e.getMessage());
+            response.put("success", false);
+            response.put("message", "Error al obtener datos del usuario: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
 
-    // ENDPOINT: ACTUALIZAR DATOS DEL USUARIO
-
-    /**
-     * Actualiza los datos personales del usuario autenticado.
-     * Permite actualizar información básica y/o cambiar la contraseña.
-     *
-     * @param request Objeto con los nuevos datos del usuario
-     * @param authentication Objeto de autenticación de Spring Security
-     * @return ResponseEntity con mensaje de éxito o error
-     */
     @PutMapping("/actualizar-datos")
-    public ResponseEntity<?> actualizarDatos(@RequestBody ActualizarDatosRequest request,
-                                             Authentication authentication) {
-        try {
-            System.out.println(" === ACTUALIZANDO DATOS USUARIO ===");
-            System.out.println(" Usuario: " + authentication.getName());
-            System.out.println(" Datos recibidos: " + request);
+    public ResponseEntity<Map<String, Object>> actualizarDatos(@RequestBody ActualizarDatosRequest request,
+                                                               Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
 
-            // Obtener el usuario actual desde la base de datos
+        try {
+            if (authentication == null || !authentication.isAuthenticated()) {
+                response.put("success", false);
+                response.put("message", "Usuario no autenticado");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+
             String username = authentication.getName();
             Usuario usuario = userRepository.findByUsername(username)
                     .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-
-            // VALIDACIÓN Y ACTUALIZACIÓN DE CONTRASEÑA
-
+            // Cambio de contraseña
             if (request.getNuevaPassword() != null && !request.getNuevaPassword().isEmpty()) {
-                System.out.println(" Solicitado cambio de contraseña");
-
-                // Verificar que se proporcionó la contraseña actual
                 if (request.getPasswordActual() == null || request.getPasswordActual().isEmpty()) {
-                    return badRequest().body("Debes ingresar tu contraseña actual para cambiarla");
+                    response.put("success", false);
+                    response.put("message", "Debes ingresar tu contraseña actual para cambiarla");
+                    return ResponseEntity.badRequest().body(response);
                 }
 
-                // Verificar que la contraseña actual sea correcta
                 if (!passwordEncoder.matches(request.getPasswordActual(), usuario.getPassword())) {
-                    return badRequest().body("La contraseña actual es incorrecta");
+                    response.put("success", false);
+                    response.put("message", "La contraseña actual es incorrecta");
+                    return ResponseEntity.badRequest().body(response);
                 }
 
-                // Actualizar contraseña
                 usuario.setPassword(passwordEncoder.encode(request.getNuevaPassword()));
-                System.out.println(" Contraseña actualizada correctamente");
             }
 
-
-            // ACTUALIZACIÓN DE DATOS PERSONALES
-
+            // Actualizar datos personales
             usuario.setNombres(request.getNombre());
             usuario.setApellidos(request.getApellidos());
             usuario.setTipoDocumento(request.getTipoDocumento());
@@ -121,40 +106,23 @@ public class RegistroController {
             usuario.setTelefono(request.getTelefono());
             usuario.setFechaNacimiento(request.getFechaNacimiento());
 
-            // Guardar cambios en la base de datos
             userRepository.save(usuario);
 
-            System.out.println(" Datos actualizados correctamente para: " + usuario.getNombres());
-            return ok("Datos actualizados correctamente");
+            response.put("success", true);
+            response.put("message", "Datos actualizados correctamente");
+
+            return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            System.out.println(" Error actualizando datos: " + e.getMessage());
-            return badRequest().body("Error al actualizar los datos: " + e.getMessage());
+            response.put("success", false);
+            response.put("message", "Error al actualizar datos: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
 
-    // ENDPOINT: REGISTRO DE NUEVO USUARIO
-
-    /**
-     * Registra un nuevo usuario en el sistema.
-     * Incluye validación de reCAPTCHA v3 para prevenir spam.
-     *
-     * @param nombres Nombre(s) del usuario
-     * @param apellidos Apellido(s) del usuario
-     * @param tipoDocumento Tipo de documento (DNI, Pasaporte, Carné de extranjería)
-     * @param numeroDocumento Número del documento de identidad
-     * @param telefono Número de teléfono (9 dígitos)
-     * @param fechaNacimiento Fecha de nacimiento en formato String (yyyy-MM-dd)
-     * @param email Correo electrónico (usado como nombre de usuario)
-     * @param password Contraseña del usuario
-     * @param rol Rol del usuario (por defecto "CLIENTE")
-     * @param captchaResponse Token de respuesta de Google reCAPTCHA v3
-     * @param request Objeto HttpServletRequest para obtener la IP remota
-     * @return ResponseEntity con mensaje de éxito o error
-     */
     @PostMapping("/registro")
-    public ResponseEntity<String> registrar(
+    public ResponseEntity<Map<String, Object>> registrar(
             @RequestParam String nombres,
             @RequestParam String apellidos,
             @RequestParam String tipoDocumento,
@@ -167,140 +135,143 @@ public class RegistroController {
             @RequestParam(value = "g-recaptcha-response", required = false) String captchaResponse,
             HttpServletRequest request) {
 
-        System.out.println(" === INICIO REGISTRO ===");
-        System.out.println(" Email: " + email);
-        System.out.println(" reCAPTCHA token recibido: " +
-                (captchaResponse != null ? captchaResponse.substring(0, Math.min(20, captchaResponse.length())) + "..." : "NULL"));
+        Map<String, Object> response = new HashMap<>();
 
-        // 1. Validación de reCAPTCHA
-        if (captchaResponse == null || captchaResponse.trim().isEmpty()) {
-            System.out.println(" ERROR: reCAPTCHA response está vacío");
-            return badRequest().body("Error de verificación de seguridad. El token reCAPTCHA es requerido.");
-        }
-
-        String remoteIp = request.getRemoteAddr();
-        System.out.println(" IP remota: " + remoteIp);
-        boolean captchaValido = captchaService.validateCaptchaV3(captchaResponse, remoteIp);
-
-        if (!captchaValido) {
-            System.out.println("reCAPTCHA inválido");
-            return badRequest().body(" Verificación de seguridad fallida. Intente de nuevo.");
-        }
-
-        // 2. Validación de usuario existente (por email/username)
-        if (userRepository.findByUsername(email).isPresent()) {
-            return badRequest().body(" El correo ya está registrado");
-        }
-
-        // 3. Validación de longitud de documento
-        if ("DNI".equalsIgnoreCase(tipoDocumento) && numeroDocumento.length() != 8) {
-            return badRequest().body("El DNI debe tener 8 dígitos");
-        }
-        if ("Pasaporte".equalsIgnoreCase(tipoDocumento) && numeroDocumento.length() < 6) {
-            return badRequest().body("El Pasaporte debe tener al menos 6 caracteres");
-        }
-
-        // 4. Conversión y validación de fecha de nacimiento
-        LocalDate fechaNac;
         try {
-            fechaNac = LocalDate.parse(fechaNacimiento);
+            System.out.println(" === INICIO REGISTRO ===");
+            System.out.println(" Email: " + email);
+
+            // Validar reCAPTCHA
+            if (captchaResponse == null || captchaResponse.trim().isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Error de verificación de seguridad. El token reCAPTCHA es requerido.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            String remoteIp = request.getRemoteAddr();
+            boolean captchaValido = captchaService.validateCaptchaV3(captchaResponse, remoteIp);
+
+            if (!captchaValido) {
+                response.put("success", false);
+                response.put("message", "Verificación de seguridad fallida. Intente de nuevo.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Validar usuario existente
+            if (userRepository.findByUsername(email).isPresent()) {
+                response.put("success", false);
+                response.put("message", "El correo ya está registrado");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Validar documento
+            if ("DNI".equalsIgnoreCase(tipoDocumento) && numeroDocumento.length() != 8) {
+                response.put("success", false);
+                response.put("message", "El DNI debe tener 8 dígitos");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Validar fecha
+            LocalDate fechaNac;
+            try {
+                fechaNac = LocalDate.parse(fechaNacimiento);
+            } catch (Exception e) {
+                response.put("success", false);
+                response.put("message", "Formato de fecha inválido. Use yyyy-MM-dd");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Crear usuario
+            Usuario usuario = new Usuario();
+            usuario.setNombres(nombres);
+            usuario.setApellidos(apellidos);
+            usuario.setTipoDocumento(tipoDocumento);
+            usuario.setNumeroDocumento(numeroDocumento);
+            usuario.setTelefono(telefono);
+            usuario.setFechaNacimiento(fechaNac);
+            usuario.setUsername(email);
+            usuario.setPassword(passwordEncoder.encode(password));
+            usuario.setRol(rol.toUpperCase());
+
+            userRepository.save(usuario);
+
+            response.put("success", true);
+            response.put("message", "Registro exitoso de: " + nombres + " " + apellidos);
+            response.put("email", email);
+
+            return ResponseEntity.ok(response);
+
         } catch (Exception e) {
-            return badRequest().body(" Formato de fecha inválido. Use yyyy-MM-dd");
+            System.err.println(" ERROR en registro: " + e.getMessage());
+            response.put("success", false);
+            response.put("message", "Error en registro: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
-
-        // 5. Creación y guardado del usuario
-        Usuario usuario = new Usuario();
-        usuario.setNombres(nombres);
-        usuario.setApellidos(apellidos);
-        usuario.setTipoDocumento(tipoDocumento);
-        usuario.setNumeroDocumento(numeroDocumento);
-        usuario.setTelefono(telefono);
-        usuario.setFechaNacimiento(fechaNac);
-        usuario.setUsername(email);
-        usuario.setPassword(passwordEncoder.encode(password));
-        usuario.setRol(rol.toUpperCase());
-
-        userRepository.save(usuario);
-        System.out.println(" === REGISTRO EXITOSO ===");
-        return ok(" Registro exitoso de: " + nombres + " " + apellidos);
     }
 
 
-
-
-    /**
-     * Autentica a un usuario verificando sus credenciales.
-     * Nota: En un sistema real, aquí se generaría y devolvería un JWT.
-     *
-     * @param username Correo electrónico del usuario
-     * @param password Contraseña ingresada
-     * @return ResponseEntity con mensaje de bienvenida o error de credenciales
-     */
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestParam String username, @RequestParam String password) {
+    public ResponseEntity<Map<String, Object>> login(@RequestParam String username,
+                                                     @RequestParam String password) {
+        Map<String, Object> response = new HashMap<>();
 
-        System.out.println(" === INICIO LOGIN ===");
-        System.out.println(" Username: " + username);
+        try {
+            System.out.println(" === INICIO LOGIN ===");
+            System.out.println(" Username: " + username);
 
-        Optional<Usuario> optionalUsuario = userRepository.findByUsername(username);
+            Optional<Usuario> optionalUsuario = userRepository.findByUsername(username);
 
-        if (optionalUsuario.isEmpty()) {
-            System.out.println(" Usuario no encontrado: " + username);
-            return badRequest().body("⚠️ Usuario o contraseña incorrecta");
-        }
+            if (optionalUsuario.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Usuario o contraseña incorrecta");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
 
-        Usuario usuario = optionalUsuario.get();
-        if (passwordEncoder.matches(password, usuario.getPassword())) {
-            System.out.println(" Login exitoso para: " + username);
-            return ok(" Bienvenido " + usuario.getNombres() + " (Rol: " + usuario.getRol() + ")");
-        } else {
-            System.out.println(" Contraseña incorrecta para: " + username);
-            return badRequest().body("⚠️ Usuario o contraseña incorrecta");
+            Usuario usuario = optionalUsuario.get();
+
+            if (passwordEncoder.matches(password, usuario.getPassword())) {
+                response.put("success", true);
+                response.put("message", "Login exitoso");
+                response.put("username", usuario.getUsername());
+                response.put("nombre", usuario.getNombres() + " " + usuario.getApellidos());
+                response.put("rol", usuario.getRol());
+                return ResponseEntity.ok(response);
+            } else {
+                response.put("success", false);
+                response.put("message", "Usuario o contraseña incorrecta");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error en login: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
 
+    @GetMapping("/verificar-email")
+    public ResponseEntity<Map<String, Object>> verificarEmail(@RequestParam String email) {
+        Map<String, Object> response = new HashMap<>();
 
+        try {
+            boolean existe = userRepository.findByUsername(email).isPresent();
 
+            response.put("success", true);
+            response.put("disponible", !existe);
+            response.put("email", email);
 
-    /**
-     * DTO para enviar datos del usuario al frontend
-     */
-    public static class UsuarioDatosResponse {
-        private String nombre;
-        private String apellidos;
-        private String email;
-        private String tipoDocumento;
-        private String numeroDocumento;
-        private String telefono;
-        private LocalDate fechaNacimiento;
+            return ResponseEntity.ok(response);
 
-        // Getters y Setters
-        public String getNombre() { return nombre; }
-        public void setNombre(String nombre) { this.nombre = nombre; }
-
-        public String getApellidos() { return apellidos; }
-        public void setApellidos(String apellidos) { this.apellidos = apellidos; }
-
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
-
-        public String getTipoDocumento() { return tipoDocumento; }
-        public void setTipoDocumento(String tipoDocumento) { this.tipoDocumento = tipoDocumento; }
-
-        public String getNumeroDocumento() { return numeroDocumento; }
-        public void setNumeroDocumento(String numeroDocumento) { this.numeroDocumento = numeroDocumento; }
-
-        public String getTelefono() { return telefono; }
-        public void setTelefono(String telefono) { this.telefono = telefono; }
-
-        public LocalDate getFechaNacimiento() { return fechaNacimiento; }
-        public void setFechaNacimiento(LocalDate fechaNacimiento) { this.fechaNacimiento = fechaNacimiento; }
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error al verificar email: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 
-    /**
-     * DTO para recibir datos de actualización del frontend
-     */
+    // ==================== DTOs ====================
+
     public static class ActualizarDatosRequest {
         private String nombre;
         private String apellidos;
@@ -335,18 +306,5 @@ public class RegistroController {
 
         public String getNuevaPassword() { return nuevaPassword; }
         public void setNuevaPassword(String nuevaPassword) { this.nuevaPassword = nuevaPassword; }
-
-        @Override
-        public String toString() {
-            return "ActualizarDatosRequest{" +
-                    "nombre='" + nombre + '\'' +
-                    ", apellidos='" + apellidos + '\'' +
-                    ", tipoDocumento='" + tipoDocumento + '\'' +
-                    ", numeroDocumento='" + numeroDocumento + '\'' +
-                    ", telefono='" + telefono + '\'' +
-                    ", fechaNacimiento=" + fechaNacimiento +
-                    ", cambiarPassword=" + (nuevaPassword != null && !nuevaPassword.isEmpty()) +
-                    '}';
-        }
     }
 }

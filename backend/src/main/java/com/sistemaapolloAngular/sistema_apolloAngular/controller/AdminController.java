@@ -13,8 +13,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -24,7 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Controller
+@RestController
 @RequestMapping("/admin-menu")
 public class AdminController {
 
@@ -43,15 +41,6 @@ public class AdminController {
         this.productoFinalService = productoFinalService;
     }
 
-    @GetMapping("")
-    public String adminMenu(Model model) {
-        List<ProductoFinal> productos = productoFinalService.obtenerTodos();
-        model.addAttribute("productos", productos);
-        model.addAttribute("pagina", "dashboard");
-        return "admin-menu";
-    }
-
-
 
     @GetMapping("/estadisticas-dashboard")
     @ResponseBody
@@ -59,24 +48,18 @@ public class AdminController {
         Map<String, Object> estadisticas = new HashMap<>();
 
         try {
-            // Obtener fechas para hoy
             LocalDate hoy = LocalDate.now();
             LocalDateTime hoyInicio = hoy.atStartOfDay();
             LocalDateTime hoyFin = hoy.atTime(23, 59, 59);
 
-            // Obtener fechas para el mes actual
             LocalDate primerDiaMes = hoy.withDayOfMonth(1);
             LocalDateTime mesInicio = primerDiaMes.atStartOfDay();
             LocalDateTime mesFin = hoy.atTime(23, 59, 59);
 
-            // Estadísticas básicas
             List<ProductoFinal> productos = productoFinalService.obtenerTodos();
             List<Usuario> usuarios = usuarioRepository.findAll();
-
-            // Obtener todos los pedidos
             List<Pedido> todosLosPedidos = pedidoRepository.findAll();
 
-            // Pedidos de hoy
             List<Pedido> pedidosHoy = todosLosPedidos.stream()
                     .filter(pedido -> {
                         if (pedido.getFecha() == null) return false;
@@ -85,13 +68,11 @@ public class AdminController {
                     })
                     .collect(Collectors.toList());
 
-            // Calcular ingresos de hoy (solo pedidos entregados)
             double ingresosHoy = pedidosHoy.stream()
                     .filter(p -> "ENTREGADO".equals(p.getEstado()))
                     .mapToDouble(Pedido::getTotal)
                     .sum();
 
-            // Pedidos del mes
             List<Pedido> pedidosMes = todosLosPedidos.stream()
                     .filter(pedido -> {
                         if (pedido.getFecha() == null) return false;
@@ -100,7 +81,6 @@ public class AdminController {
                     })
                     .collect(Collectors.toList());
 
-            // Estadísticas del mes
             double ventasMesTotal = pedidosMes.stream()
                     .filter(p -> "ENTREGADO".equals(p.getEstado()))
                     .mapToDouble(Pedido::getTotal)
@@ -108,17 +88,14 @@ public class AdminController {
 
             long totalPedidosMes = pedidosMes.size();
 
-            // Venta más alta del mes
             double ventaMaxima = pedidosMes.stream()
                     .filter(p -> "ENTREGADO".equals(p.getEstado()))
                     .mapToDouble(Pedido::getTotal)
                     .max()
                     .orElse(0.0);
 
-            // Promedio diario
             double promedioDiario = hoy.getDayOfMonth() > 0 ? ventasMesTotal / hoy.getDayOfMonth() : 0.0;
 
-            // Llenar las estadísticas
             estadisticas.put("totalProductos", productos.size());
             estadisticas.put("totalUsuarios", usuarios.size());
             estadisticas.put("pedidosHoy", pedidosHoy.size());
@@ -127,7 +104,6 @@ public class AdminController {
             estadisticas.put("totalPedidos", totalPedidosMes);
             estadisticas.put("ventaMaxima", ventaMaxima);
             estadisticas.put("promedioDiario", promedioDiario);
-
             estadisticas.put("success", true);
 
         } catch (Exception e) {
@@ -144,7 +120,6 @@ public class AdminController {
     @ResponseBody
     public List<Map<String, Object>> obtenerVentasRecientes() {
         try {
-            // Usar la nueva consulta que carga items y productos
             List<Pedido> pedidos = pedidoRepository.findAllWithItemsAndProducts()
                     .stream()
                     .limit(10)
@@ -160,7 +135,6 @@ public class AdminController {
                 venta.put("fecha", pedido.getFecha());
                 venta.put("estado", pedido.getEstado());
 
-                // Información del cliente
                 if (pedido.getUsuario() != null) {
                     venta.put("usuario", Map.of(
                             "nombres", pedido.getUsuario().getNombres(),
@@ -170,13 +144,12 @@ public class AdminController {
                     venta.put("usuario", null);
                 }
 
-                // === PARTE CRÍTICA: INCLUIR ITEMS CON PRODUCTOS ===
                 List<Map<String, Object>> itemsData = new ArrayList<>();
                 if (pedido.getItems() != null && !pedido.getItems().isEmpty()) {
                     for (ItemPedido item : pedido.getItems()) {
                         Map<String, Object> itemData = new HashMap<>();
                         itemData.put("nombreProducto", item.getNombreProducto());
-                        itemData.put("nombreProductoSeguro", item.getNombreProductoSeguro()); // NUEVO MÉTODO
+                        itemData.put("nombreProductoSeguro", item.getNombreProductoSeguro());
                         itemData.put("cantidad", item.getCantidad());
                         itemData.put("precio", item.getPrecio());
                         itemData.put("subtotal", item.getSubtotal());
@@ -184,7 +157,6 @@ public class AdminController {
                     }
                 }
                 venta.put("items", itemsData);
-
                 ventas.add(venta);
             }
 
@@ -196,16 +168,15 @@ public class AdminController {
         }
     }
 
+
     @GetMapping("/estadisticas-ventas")
     @ResponseBody
     public Map<String, Object> obtenerEstadisticasVentas() {
         Map<String, Object> estadisticas = new HashMap<>();
 
         try {
-            // Últimos 7 días para el gráfico
             LocalDate hoy = LocalDate.now();
             Map<String, Double> ventasUltimaSemana = new LinkedHashMap<>();
-
             List<Pedido> todosLosPedidos = pedidoRepository.findAll();
 
             for (int i = 6; i >= 0; i--) {
@@ -213,7 +184,6 @@ public class AdminController {
                 LocalDateTime inicioDia = fecha.atStartOfDay();
                 LocalDateTime finDia = fecha.atTime(23, 59, 59);
 
-                // Filtrar pedidos del día
                 double ventasDia = todosLosPedidos.stream()
                         .filter(pedido -> {
                             if (pedido.getFecha() == null) return false;
@@ -244,9 +214,6 @@ public class AdminController {
     }
 
 
-
-
-
     @GetMapping("/exportar-dashboard-excel")
     public void exportarDashboardExcel(HttpServletResponse response) throws IOException {
         try {
@@ -256,13 +223,11 @@ public class AdminController {
             response.setHeader("Content-Disposition", "attachment; filename=" + filename);
 
             List<ProductoFinal> productos = productoFinalService.obtenerTodos();
-
             Workbook workbook = new XSSFWorkbook();
 
-            //  RESUMEN DEL DASHBOARD
+            // Resumen Dashboard
             Sheet resumenSheet = workbook.createSheet("Resumen Dashboard");
 
-            // Estilo para títulos
             CellStyle titleStyle = workbook.createCellStyle();
             titleStyle.setFillForegroundColor(IndexedColors.DARK_BLUE.getIndex());
             titleStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
@@ -271,7 +236,6 @@ public class AdminController {
             titleFont.setColor(IndexedColors.WHITE.getIndex());
             titleStyle.setFont(titleFont);
 
-            // Estilo para métricas
             CellStyle metricStyle = workbook.createCellStyle();
             metricStyle.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
             metricStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
@@ -279,13 +243,11 @@ public class AdminController {
             metricFont.setBold(true);
             metricStyle.setFont(metricFont);
 
-            // Título del reporte
             Row titleRow = resumenSheet.createRow(0);
             Cell titleCell = titleRow.createCell(0);
             titleCell.setCellValue("REPORTE DASHBOARD - SISTEMA APOLLO");
             titleCell.setCellStyle(titleStyle);
 
-            // Métricas principales
             int rowNum = 2;
             String[][] metrics = {
                     {"Total de Productos", String.valueOf(productos.size())},
@@ -304,10 +266,8 @@ public class AdminController {
                 valueCell.setCellStyle(metricStyle);
             }
 
-            //  ESTADÍSTICAS POR CATEGORÍA
+            // Estadísticas por Categoría
             Sheet statsSheet = workbook.createSheet("Estadísticas por Categoría");
-
-            // Encabezados
             Row statsHeader = statsSheet.createRow(0);
             String[] statsHeaders = {"Categoría", "Cantidad", "Precio Promedio", "Precio Máx", "Precio Mín", "Valor Total"};
 
@@ -324,7 +284,6 @@ public class AdminController {
                 cell.setCellStyle(headerStyle);
             }
 
-            // Agrupar por categoría y calcular estadísticas
             Map<String, List<ProductoFinal>> productosPorCategoria = productos.stream()
                     .collect(Collectors.groupingBy(ProductoFinal::getTipo));
 
@@ -333,21 +292,10 @@ public class AdminController {
                 String categoria = entry.getKey();
                 List<ProductoFinal> productosCategoria = entry.getValue();
 
-                double promedio = productosCategoria.stream()
-                        .mapToDouble(ProductoFinal::getPrecio)
-                        .average()
-                        .orElse(0.0);
-                double maxPrecio = productosCategoria.stream()
-                        .mapToDouble(ProductoFinal::getPrecio)
-                        .max()
-                        .orElse(0.0);
-                double minPrecio = productosCategoria.stream()
-                        .mapToDouble(ProductoFinal::getPrecio)
-                        .min()
-                        .orElse(0.0);
-                double valorTotal = productosCategoria.stream()
-                        .mapToDouble(ProductoFinal::getPrecio)
-                        .sum();
+                double promedio = productosCategoria.stream().mapToDouble(ProductoFinal::getPrecio).average().orElse(0.0);
+                double maxPrecio = productosCategoria.stream().mapToDouble(ProductoFinal::getPrecio).max().orElse(0.0);
+                double minPrecio = productosCategoria.stream().mapToDouble(ProductoFinal::getPrecio).min().orElse(0.0);
+                double valorTotal = productosCategoria.stream().mapToDouble(ProductoFinal::getPrecio).sum();
 
                 Row statsRow = statsSheet.createRow(statsRowNum++);
                 statsRow.createCell(0).setCellValue(categoria);
@@ -358,7 +306,7 @@ public class AdminController {
                 statsRow.createCell(5).setCellValue(valorTotal);
             }
 
-            // LISTA COMPLETA DE PRODUCTOS
+            // Lista de Productos
             Sheet productosSheet = workbook.createSheet("Todos los Productos");
             Row productosHeader = productosSheet.createRow(0);
             String[] productosHeaders = {"ID", "Nombre", "Categoría", "Precio", "Descripción"};
@@ -379,7 +327,6 @@ public class AdminController {
                 row.createCell(4).setCellValue(producto.getDescripcion() != null ? producto.getDescripcion() : "");
             }
 
-
             for (int i = 0; i < 6; i++) {
                 resumenSheet.autoSizeColumn(i);
                 statsSheet.autoSizeColumn(i);
@@ -398,14 +345,6 @@ public class AdminController {
     }
 
 
-    @GetMapping("/nuevo")
-    public String nuevoProducto(Model model) {
-        model.addAttribute("pagina", "nuevo-producto");
-        model.addAttribute("producto", new ProductoFinal());
-        return "nuevo-producto";
-    }
-
-
     @PostMapping("/guardar")
     @ResponseBody
     public ResponseEntity<?> guardarProducto(
@@ -416,12 +355,6 @@ public class AdminController {
             @RequestParam(required = false) String imagenUrl) {
 
         try {
-            System.out.println(" Recibiendo producto para guardar:");
-            System.out.println("Nombre: " + nombre);
-            System.out.println("Tipo: " + tipo);
-            System.out.println("Precio: " + precio);
-
-            // Validar datos básicos
             if (nombre == null || nombre.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("success", false, "error", "El nombre del producto es requerido"));
             }
@@ -434,13 +367,11 @@ public class AdminController {
                 return ResponseEntity.badRequest().body(Map.of("success", false, "error", "El tipo/categoría es requerido"));
             }
 
-
             ProductoFinal producto = new ProductoFinal();
             producto.setNombre(nombre.trim());
             producto.setDescripcion(descripcion != null ? descripcion.trim() : "");
             producto.setPrecio(precio);
             producto.setTipo(tipo.trim());
-
 
             if (imagenUrl != null && !imagenUrl.trim().isEmpty()) {
                 producto.setImagenUrl(imagenUrl.trim());
@@ -448,15 +379,7 @@ public class AdminController {
                 producto.setImagenUrl("/imagenes/default-product.jpg");
             }
 
-            // Guardar en la base de datos
             ProductoFinal productoCreado = productoFinalService.guardar(producto);
-
-            System.out.println(" NUEVO PRODUCTO GUARDADO EN BD");
-            System.out.println("ID: " + productoCreado.getId());
-            System.out.println("Nombre: " + productoCreado.getNombre());
-            System.out.println("Precio: S/." + productoCreado.getPrecio());
-            System.out.println("Tipo: " + productoCreado.getTipo());
-            System.out.println("Imagen: " + productoCreado.getImagenUrl());
 
             return ResponseEntity.ok(Map.of(
                     "success", true,
@@ -465,7 +388,6 @@ public class AdminController {
             ));
 
         } catch (Exception e) {
-            System.err.println(" Error al guardar producto: " + e.getMessage());
             return ResponseEntity.status(500).body(Map.of("success", false, "error", "Error al guardar el producto: " + e.getMessage()));
         }
     }
@@ -482,9 +404,6 @@ public class AdminController {
             @RequestParam(required = false) String imagenUrl) {
 
         try {
-            System.out.println(" Actualizando producto ID: " + id);
-
-            // Validaciones
             if (nombre == null || nombre.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("success", false, "error", "El nombre del producto es requerido"));
             }
@@ -505,7 +424,6 @@ public class AdminController {
                 producto.setPrecio(precio);
                 producto.setTipo(tipo.trim());
 
-                // Manejar imagen URL
                 if (imagenUrl != null && !imagenUrl.trim().isEmpty()) {
                     producto.setImagenUrl(imagenUrl.trim());
                 } else {
@@ -513,10 +431,6 @@ public class AdminController {
                 }
 
                 ProductoFinal productoActualizado = productoFinalService.guardar(producto);
-
-                System.out.println(" PRODUCTO ACTUALIZADO EN BD");
-                System.out.println("ID: " + productoActualizado.getId());
-                System.out.println("Nombre: " + productoActualizado.getNombre());
 
                 return ResponseEntity.ok(Map.of(
                         "success", true,
@@ -528,7 +442,6 @@ public class AdminController {
             }
 
         } catch (Exception e) {
-            System.err.println(" Error al actualizar producto: " + e.getMessage());
             return ResponseEntity.status(500).body(Map.of("success", false, "error", "Error al actualizar el producto: " + e.getMessage()));
         }
     }
@@ -541,13 +454,9 @@ public class AdminController {
             @RequestParam(required = false) String redirectSection) {
 
         try {
-            System.out.println(" Eliminando producto ID: " + id);
-
             Optional<ProductoFinal> productoOpt = productoFinalService.obtenerPorId(id);
             if (productoOpt.isPresent()) {
                 productoFinalService.eliminar(id);
-                System.out.println(" PRODUCTO ELIMINADO: ID " + id);
-
                 return ResponseEntity.ok(Map.of(
                         "success", true,
                         "message", "Producto eliminado exitosamente!"
@@ -557,10 +466,10 @@ public class AdminController {
             }
 
         } catch (Exception e) {
-            System.err.println("Error al eliminar producto: " + e.getMessage());
             return ResponseEntity.status(500).body(Map.of("success", false, "error", "Error al eliminar el producto: " + e.getMessage()));
         }
     }
+
 
     @GetMapping("/estadisticas")
     @ResponseBody
@@ -571,29 +480,17 @@ public class AdminController {
             List<ProductoFinal> productos = productoFinalService.obtenerTodos();
             List<Usuario> usuarios = usuarioRepository.findAll();
 
-
             estadisticas.put("totalProductos", productos.size());
-            estadisticas.put("precioPromedio", productos.stream()
-                    .mapToDouble(ProductoFinal::getPrecio)
-                    .average().orElse(0.0));
-            estadisticas.put("precioMaximo", productos.stream()
-                    .mapToDouble(ProductoFinal::getPrecio)
-                    .max().orElse(0.0));
-            estadisticas.put("precioMinimo", productos.stream()
-                    .mapToDouble(ProductoFinal::getPrecio)
-                    .min().orElse(0.0));
-
-
+            estadisticas.put("precioPromedio", productos.stream().mapToDouble(ProductoFinal::getPrecio).average().orElse(0.0));
+            estadisticas.put("precioMaximo", productos.stream().mapToDouble(ProductoFinal::getPrecio).max().orElse(0.0));
+            estadisticas.put("precioMinimo", productos.stream().mapToDouble(ProductoFinal::getPrecio).min().orElse(0.0));
             estadisticas.put("totalUsuarios", usuarios.size());
-
 
             Map<String, Long> productosPorCategoria = productos.stream()
                     .collect(Collectors.groupingBy(ProductoFinal::getTipo, Collectors.counting()));
             estadisticas.put("productosPorCategoria", productosPorCategoria);
-
             estadisticas.put("pedidosHoy", 0);
             estadisticas.put("ingresosHoy", 0.0);
-
             estadisticas.put("success", true);
 
         } catch (Exception e) {
@@ -628,8 +525,6 @@ public class AdminController {
     }
 
 
-
-
     @GetMapping("/usuarios")
     @ResponseBody
     public List<Usuario> obtenerTodosUsuarios() {
@@ -637,6 +532,7 @@ public class AdminController {
         System.out.println("👥 Enviando " + usuarios.size() + " usuarios al frontend");
         return usuarios;
     }
+
 
     @PostMapping("/usuarios/guardar")
     @ResponseBody
@@ -652,12 +548,6 @@ public class AdminController {
             @RequestParam String password) {
 
         try {
-            System.out.println(" Recibiendo usuario para guardar:");
-            System.out.println("Nombres: " + nombres);
-            System.out.println("Email: " + email);
-            System.out.println("Rol: " + rol);
-
-            // Validar que el rol sea válido (AGREGAR "delivery")
             List<String> rolesValidos = Arrays.asList("admin", "cajero", "cocinero", "delivery");
             if (!rolesValidos.contains(rol.toLowerCase())) {
                 return ResponseEntity.badRequest().body(Map.of(
@@ -666,7 +556,6 @@ public class AdminController {
                 ));
             }
 
-            // Validar que el email no exista
             if (usuarioRepository.findByUsername(email).isPresent()) {
                 return ResponseEntity.badRequest().body(Map.of(
                         "success", false,
@@ -674,7 +563,6 @@ public class AdminController {
                 ));
             }
 
-            // Validar contraseña
             if (password == null || password.trim().length() < 6) {
                 return ResponseEntity.badRequest().body(Map.of(
                         "success", false,
@@ -682,7 +570,6 @@ public class AdminController {
                 ));
             }
 
-            // Crear nuevo usuario
             Usuario usuario = new Usuario();
             usuario.setNombres(nombres.trim());
             usuario.setApellidos(apellidos.trim());
@@ -691,16 +578,10 @@ public class AdminController {
             usuario.setTelefono(telefono.trim());
             usuario.setFechaNacimiento(LocalDate.parse(fechaNacimiento));
             usuario.setUsername(email.trim());
-            usuario.setRol(rol.toUpperCase()); // Esto convertirá "delivery" a "DELIVERY"
+            usuario.setRol(rol.toUpperCase());
             usuario.setPassword(passwordEncoder.encode(password));
 
-            // Guardar en la base de datos
             Usuario usuarioCreado = usuarioRepository.save(usuario);
-
-            System.out.println(" NUEVO USUARIO GUARDADO EN BD");
-            System.out.println("ID: " + usuarioCreado.getId());
-            System.out.println("Nombre: " + usuarioCreado.getNombres() + " " + usuarioCreado.getApellidos());
-            System.out.println("Rol: " + usuarioCreado.getRol());
 
             return ResponseEntity.ok(Map.of(
                     "success", true,
@@ -709,7 +590,6 @@ public class AdminController {
             ));
 
         } catch (Exception e) {
-            System.err.println(" Error al guardar usuario: " + e.getMessage());
             return ResponseEntity.status(500).body(Map.of(
                     "success", false,
                     "error", "Error al guardar el usuario: " + e.getMessage()
@@ -722,13 +602,9 @@ public class AdminController {
     @ResponseBody
     public ResponseEntity<?> eliminarUsuario(@PathVariable Long id) {
         try {
-            System.out.println(" Eliminando usuario ID: " + id);
-
             Optional<Usuario> usuarioOpt = usuarioRepository.findById(id);
             if (usuarioOpt.isPresent()) {
                 usuarioRepository.deleteById(id);
-                System.out.println(" USUARIO ELIMINADO: ID " + id);
-
                 return ResponseEntity.ok(Map.of(
                         "success", true,
                         "message", "Usuario eliminado exitosamente!"
@@ -741,7 +617,6 @@ public class AdminController {
             }
 
         } catch (Exception e) {
-            System.err.println(" Error al eliminar usuario: " + e.getMessage());
             return ResponseEntity.status(500).body(Map.of(
                     "success", false,
                     "error", "Error al eliminar el usuario: " + e.getMessage()

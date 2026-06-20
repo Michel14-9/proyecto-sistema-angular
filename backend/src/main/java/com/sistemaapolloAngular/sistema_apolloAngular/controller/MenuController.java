@@ -2,17 +2,15 @@ package com.sistemaapolloAngular.sistema_apolloAngular.controller;
 
 import com.sistemaapolloAngular.sistema_apolloAngular.model.ProductoFinal;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.ProductoFinalService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
-@Controller
+@RestController
+@RequestMapping("/api/menu")
 public class MenuController {
 
     private final ProductoFinalService productoFinalService;
@@ -21,9 +19,58 @@ public class MenuController {
         this.productoFinalService = productoFinalService;
     }
 
-    @GetMapping("/api/combos")
-    @ResponseBody
-    public ResponseEntity<List<ProductoFinal>> obtenerCombosJson() {
+
+    @GetMapping("/todos")
+    public ResponseEntity<Map<String, Object>> obtenerTodosLosProductos() {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            List<ProductoFinal> productos = productoFinalService.obtenerTodos();
+
+            response.put("success", true);
+            response.put("data", productos);
+            response.put("total", productos.size());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error al obtener productos: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+
+    @GetMapping("/categoria/{categoria}")
+    public ResponseEntity<Map<String, Object>> obtenerProductosPorCategoria(@PathVariable String categoria) {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            List<ProductoFinal> todos = productoFinalService.obtenerTodos();
+
+            List<ProductoFinal> productos = todos.stream()
+                    .filter(p -> p.getTipo() != null && p.getTipo().equalsIgnoreCase(categoria))
+                    .collect(Collectors.toList());
+
+            response.put("success", true);
+            response.put("categoria", categoria);
+            response.put("data", productos);
+            response.put("total", productos.size());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error al obtener productos por categoría: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+
+    @GetMapping("/combos")
+    public ResponseEntity<Map<String, Object>> obtenerCombos() {
+        Map<String, Object> response = new HashMap<>();
+
         try {
             List<ProductoFinal> todosProductos = productoFinalService.obtenerTodos();
 
@@ -31,83 +78,127 @@ public class MenuController {
                     .filter(p -> "combos".equalsIgnoreCase(p.getTipo()))
                     .collect(Collectors.toList());
 
-            System.out.println(" Endpoint /api/combos llamado - Combos encontrados: " + combos.size());
+            response.put("success", true);
+            response.put("data", combos);
+            response.put("total", combos.size());
 
-            return ResponseEntity.ok(combos);
+            return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            System.err.println(" Error en /api/combos: " + e.getMessage());
-            return ResponseEntity.status(500).body(List.of());
+            response.put("success", false);
+            response.put("message", "Error al obtener combos: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
-    @GetMapping("/menu")
-    public String menuPublico(Model model) {
 
-        List<ProductoFinal> todosProductos = productoFinalService.obtenerTodos();
 
-        System.out.println("=== CARGANDO MENÚ PÚBLICO ===");
-        System.out.println("Total de productos encontrados: " + todosProductos.size());
+    @GetMapping("/completo")
+    public ResponseEntity<Map<String, Object>> obtenerMenuCompleto() {
+        Map<String, Object> response = new HashMap<>();
 
-        // MOSTRAR TODAS LAS CATEGORÍAS QUE EXISTEN EN LA BD
-        Set<String> categoriasUnicas = todosProductos.stream()
-                .map(ProductoFinal::getTipo)
-                .collect(Collectors.toSet());
-        System.out.println(" Categorías en BD: " + categoriasUnicas);
+        try {
+            List<ProductoFinal> todosProductos = productoFinalService.obtenerTodos();
 
-        // MOSTRAR CADA PRODUCTO CON SU CATEGORÍA
-        todosProductos.forEach(producto -> {
-            System.out.println(" Producto: '" + producto.getNombre() + "' - Categoría: '" + producto.getTipo() + "'");
-        });
+            // Organizar por categorías
+            Map<String, List<ProductoFinal>> menuPorCategoria = new LinkedHashMap<>();
 
-        // Filtrar productos por categorías - USAR minúsculas
-        List<ProductoFinal> pollos = todosProductos.stream()
-                .filter(p -> "pollos".equalsIgnoreCase(p.getTipo()))
-                .toList();
+            // Categorías predefinidas (en el orden deseado)
+            String[] categorias = {"pollos", "parrillas", "chicharron", "broaster", "hamburguesas", "criollos", "combos"};
 
-        List<ProductoFinal> parrillas = todosProductos.stream()
-                .filter(p -> "parrillas".equalsIgnoreCase(p.getTipo()))
-                .toList();
+            for (String categoria : categorias) {
+                List<ProductoFinal> productos = todosProductos.stream()
+                        .filter(p -> p.getTipo() != null && p.getTipo().equalsIgnoreCase(categoria))
+                        .collect(Collectors.toList());
 
-        List<ProductoFinal> chicharron = todosProductos.stream()
-                .filter(p -> "chicharron".equalsIgnoreCase(p.getTipo()) || "chicharrón".equalsIgnoreCase(p.getTipo()))
-                .toList();
+                if (!productos.isEmpty()) {
+                    menuPorCategoria.put(categoria, productos);
+                }
+            }
 
-        List<ProductoFinal> broaster = todosProductos.stream()
-                .filter(p -> "broaster".equalsIgnoreCase(p.getTipo()))
-                .toList();
+            // Si hay productos con categorías no listadas, agregarlas al final
+            Set<String> categoriasEncontradas = todosProductos.stream()
+                    .map(ProductoFinal::getTipo)
+                    .filter(Objects::nonNull)
+                    .map(String::toLowerCase)
+                    .collect(Collectors.toSet());
 
-        List<ProductoFinal> hamburguesas = todosProductos.stream()
-                .filter(p -> "hamburguesas".equalsIgnoreCase(p.getTipo()))
-                .toList();
+            for (String categoria : categoriasEncontradas) {
+                if (!menuPorCategoria.containsKey(categoria)) {
+                    List<ProductoFinal> productos = todosProductos.stream()
+                            .filter(p -> p.getTipo() != null && p.getTipo().equalsIgnoreCase(categoria))
+                            .collect(Collectors.toList());
+                    menuPorCategoria.put(categoria, productos);
+                }
+            }
 
-        List<ProductoFinal> criollos = todosProductos.stream()
-                .filter(p -> "criollos".equalsIgnoreCase(p.getTipo()))
-                .toList();
+            // Calcular total de productos
+            int totalProductos = menuPorCategoria.values().stream()
+                    .mapToInt(List::size)
+                    .sum();
 
-        List<ProductoFinal> combos = todosProductos.stream()
-                .filter(p -> "combos".equalsIgnoreCase(p.getTipo()))
-                .toList();
+            response.put("success", true);
+            response.put("menu", menuPorCategoria);
+            response.put("totalProductos", totalProductos);
+            response.put("categorias", menuPorCategoria.keySet());
 
-        // Mostrar en consola cuántos productos hay por categoría
-        System.out.println(" Pollos: " + pollos.size());
-        System.out.println(" Parrillas: " + parrillas.size());
-        System.out.println("Chicharrón: " + chicharron.size());
-        System.out.println("Broaster: " + broaster.size());
-        System.out.println("Hamburguesas: " + hamburguesas.size());
-        System.out.println("🇵🇪 Criollos: " + criollos.size());
-        System.out.println(" Combos: " + combos.size());
-        System.out.println("=============================");
+            return ResponseEntity.ok(response);
 
-        // Agregar las listas al modelo
-        model.addAttribute("pollos", pollos);
-        model.addAttribute("parrillas", parrillas);
-        model.addAttribute("chicharron", chicharron);
-        model.addAttribute("broaster", broaster);
-        model.addAttribute("hamburguesas", hamburguesas);
-        model.addAttribute("criollos", criollos);
-        model.addAttribute("combos", combos);
-        model.addAttribute("pagina", "menu-publico");
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error al obtener menú completo: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
 
-        return "menu";
+
+    @GetMapping("/producto/{id}")
+    public ResponseEntity<Map<String, Object>> obtenerProductoPorId(@PathVariable Long id) {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            Optional<ProductoFinal> productoOpt = productoFinalService.obtenerPorId(id);
+
+            if (productoOpt.isPresent()) {
+                response.put("success", true);
+                response.put("data", productoOpt.get());
+                return ResponseEntity.ok(response);
+            } else {
+                response.put("success", false);
+                response.put("message", "Producto no encontrado con ID: " + id);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error al obtener producto: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+
+    @GetMapping("/categorias")
+    public ResponseEntity<Map<String, Object>> obtenerCategorias() {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            List<ProductoFinal> productos = productoFinalService.obtenerTodos();
+
+            Set<String> categorias = productos.stream()
+                    .map(ProductoFinal::getTipo)
+                    .filter(Objects::nonNull)
+                    .map(String::toLowerCase)
+                    .collect(Collectors.toSet());
+
+            response.put("success", true);
+            response.put("categorias", categorias);
+            response.put("total", categorias.size());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error al obtener categorías: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 }

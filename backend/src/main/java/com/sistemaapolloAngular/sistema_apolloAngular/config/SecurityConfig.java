@@ -14,6 +14,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
@@ -40,6 +41,10 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // Handler para CSRF con soporte para Angular
+        CsrfTokenRequestAttributeHandler csrfTokenRequestHandler = new CsrfTokenRequestAttributeHandler();
+        csrfTokenRequestHandler.setCsrfRequestAttributeName("_csrf");
+
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
@@ -63,16 +68,16 @@ public class SecurityConfig {
                         .contentTypeOptions(contentType -> {})
                 )
 
+                // ── CSRF MEJORADO PARA ANGULAR ──
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .csrfTokenRequestHandler(csrfTokenRequestHandler)
                         .ignoringRequestMatchers(
                                 "/api/auth/**",
                                 "/api/direcciones/**",
                                 "/api/pagos/**",
-                                "/admin-menu/**",              // ← admin puede hacer POST/DELETE
-                                "/cajero/**",
-                                "/cocinero/**",
-                                "/delivery/**"
+                                "/login",
+                                "/error"
                         )
                 )
 
@@ -96,19 +101,19 @@ public class SecurityConfig {
                                 "/error"
                         ).permitAll()
 
-                        // ── ADMIN → solo accede a /admin-menu/** ────────
+                        // ── ADMIN ────────────────────────────────────────
                         .requestMatchers("/admin-menu/**").hasRole("ADMIN")
 
-                        // ── CAJERO → solo accede a /cajero/** ───────────
+                        // ── CAJERO ────────────────────────────────────────
                         .requestMatchers("/cajero/**").hasRole("CAJERO")
 
-                        // ── COCINERO → solo accede a /cocinero/** ───────
+                        // ── COCINERO ──────────────────────────────────────
                         .requestMatchers("/cocinero/**").hasRole("COCINERO")
 
-                        // ── DELIVERY → solo accede a /delivery/** ───────
+                        // ── DELIVERY ──────────────────────────────────────
                         .requestMatchers("/delivery/**").hasRole("DELIVERY")
 
-                        // ── Pedidos comunes → todos los roles internos ──
+                        // ── Pedidos comunes ──────────────────────────────
                         .requestMatchers("/pedidos-comunes/**", "/api/pedidos-comunes/**")
                         .hasAnyRole("ADMIN", "CAJERO", "COCINERO", "DELIVERY")
 
@@ -126,6 +131,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
 
+                // ── FORM LOGIN CON RESPUESTA JSON ──
                 .formLogin(form -> form
                         .loginPage("/login")
                         .loginProcessingUrl("/api/auth/login")
@@ -166,10 +172,11 @@ public class SecurityConfig {
                         .permitAll()
                 )
 
+                // ── LOGOUT CON RESPUESTA JSON ──
                 .logout(logout -> logout
                         .logoutRequestMatcher(new AntPathRequestMatcher("/api/auth/logout", "POST"))
                         .invalidateHttpSession(true)
-                        .deleteCookies("JSESSIONID")
+                        .deleteCookies("JSESSIONID", "XSRF-TOKEN")
 
                         .logoutSuccessHandler((request, response, authentication) -> {
                             response.setStatus(HttpStatus.OK.value());
@@ -185,6 +192,7 @@ public class SecurityConfig {
                         .permitAll()
                 )
 
+                // ── MANEJO DE EXCEPCIONES ──
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setStatus(HttpStatus.UNAUTHORIZED.value());
@@ -213,24 +221,53 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // ── CORS MEJORADO PARA ANGULAR ──
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
+
+        // ORÍGENES PERMITIDOS (Angular y producción)
         configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:4200",
-                "http://localhost:8080",
-                "https://tudominio.com"
+                "http://localhost:4200",        // Angular dev
+                "http://localhost:4201",        // Angular dev alternativo
+                "http://127.0.0.1:4200",        // Localhost IP
+                "http://localhost:8080",        // Backend
+                "https://michel14-9.github.io", // GitHub Pages
+                "https://tu-dominio.com"        // Producción
         ));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+
+        // MÉTODOS PERMITIDOS (incluyendo PATCH y OPTIONS para preflight)
+        configuration.setAllowedMethods(Arrays.asList(
+                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
+        ));
+
+        // HEADERS PERMITIDOS (para Angular y autenticación)
         configuration.setAllowedHeaders(Arrays.asList(
                 "authorization",
                 "content-type",
                 "x-auth-token",
                 "x-requested-with",
-                "x-xsrf-token"
+                "x-xsrf-token",
+                "accept",
+                "origin",
+                "access-control-allow-origin",
+                "withcredentials",
+                "cache-control"
         ));
-        configuration.setExposedHeaders(Arrays.asList("x-auth-token", "xsrf-token"));
+
+        // HEADERS EXPUESTOS (para que Angular pueda leerlos)
+        configuration.setExposedHeaders(Arrays.asList(
+                "x-auth-token",
+                "xsrf-token",
+                "access-control-allow-origin",
+                "access-control-allow-credentials",
+                "set-cookie"
+        ));
+
+        // PERMITIR CREDENCIALES (necesario para cookies y sesiones)
         configuration.setAllowCredentials(true);
+
+        // TIEMPO DE CACHE PARA PREFLIGHT (1 hora)
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

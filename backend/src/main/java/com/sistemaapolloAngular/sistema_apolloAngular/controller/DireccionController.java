@@ -4,12 +4,16 @@ import com.sistemaapolloAngular.sistema_apolloAngular.dto.DireccionDTO;
 import com.sistemaapolloAngular.sistema_apolloAngular.dto.DireccionRequestDTO;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.Direccion;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.DireccionService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -20,170 +24,153 @@ public class DireccionController {
     private DireccionService direccionService;
 
 
-
-
     @GetMapping
     public ResponseEntity<?> obtenerDireccionesUsuario(Authentication authentication) {
         try {
-            System.out.println("=== OBTENIENDO DIRECCIONES DEL USUARIO ===");
             String username = authentication.getName();
-            System.out.println("Usuario: " + username);
-
             List<Direccion> direcciones = direccionService.obtenerDireccionesUsuario(username);
             List<DireccionDTO> direccionesDTO = direcciones.stream()
                     .map(DireccionDTO::new)
                     .collect(Collectors.toList());
 
-            System.out.println(" Direcciones encontradas: " + direccionesDTO.size());
             return ResponseEntity.ok(direccionesDTO);
 
         } catch (Exception e) {
-            System.out.println(" Error obteniendo direcciones: " + e.getMessage());
-            return ResponseEntity.badRequest().body("Error al obtener las direcciones: " + e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("status", "error");
+            errorResponse.put("message", "Error al obtener las direcciones: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
-
-
 
 
     @PostMapping
-    public ResponseEntity<?> guardarDireccion(@RequestBody DireccionRequestDTO direccionRequest,
+    public ResponseEntity<?> guardarDireccion(@Valid @RequestBody DireccionRequestDTO direccionRequest,
                                               Authentication authentication) {
         try {
-            System.out.println(" === INICIANDO GUARDADO DE DIRECCIÓN ===");
-            System.out.println(" Usuario autenticado: " + authentication.getName());
-            System.out.println(" Datos recibidos del frontend:");
-            System.out.println("   - Nombre: " + direccionRequest.getNombre());
-            System.out.println("   - Tipo: " + direccionRequest.getTipo());
-            System.out.println("   - Dirección: " + direccionRequest.getDireccion());
-            System.out.println("   - Referencia: " + direccionRequest.getReferencia());
-            System.out.println("   - Ciudad: " + direccionRequest.getCiudad());
-            System.out.println("   - Teléfono: " + direccionRequest.getTelefono());
-            System.out.println("   - Predeterminada: " + direccionRequest.isPredeterminada());
-            System.out.println("   - Facturación: " + direccionRequest.isFacturacion());
-
             String username = authentication.getName();
 
-
-            if (direccionRequest.getNombre() == null || direccionRequest.getNombre().trim().isEmpty()) {
-                System.out.println(" ERROR: Nombre de dirección vacío");
-                return ResponseEntity.badRequest().body("El nombre de la dirección es obligatorio");
-            }
-
-            if (direccionRequest.getDireccion() == null || direccionRequest.getDireccion().trim().isEmpty()) {
-                System.out.println(" ERROR: Dirección vacía");
-                return ResponseEntity.badRequest().body("La dirección es obligatoria");
-            }
-
-            System.out.println(" Convirtiendo DTO a entidad...");
             Direccion direccion = direccionRequest.toEntity();
-
-            System.out.println(" Llamando al servicio para guardar...");
             Direccion direccionGuardada = direccionService.guardarDireccion(direccion, username);
-
-            System.out.println(" Dirección guardada en BD con ID: " + direccionGuardada.getId());
-
             DireccionDTO direccionDTO = new DireccionDTO(direccionGuardada);
-            System.out.println(" Enviando respuesta con DTO ID: " + direccionDTO.getId());
 
-            return ResponseEntity.ok(direccionDTO);
+            return ResponseEntity.status(HttpStatus.CREATED).body(direccionDTO);
+
+        } catch (IllegalArgumentException e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("status", "error");
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
 
         } catch (Exception e) {
-            System.out.println(" ERROR guardando dirección: " + e.getMessage());
-            e.printStackTrace(); // Esto te dará más detalles del error
-            return ResponseEntity.badRequest().body("Error al guardar la dirección: " + e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("status", "error");
+            errorResponse.put("message", "Error al guardar la dirección: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 
 
-    // ACTUALIZAR DIRECCIÓN
-
     @PutMapping("/{id}")
     public ResponseEntity<?> actualizarDireccion(@PathVariable Long id,
-                                                 @RequestBody DireccionRequestDTO direccionRequest,
+                                                 @Valid @RequestBody DireccionRequestDTO direccionRequest,
                                                  Authentication authentication) {
         try {
-            System.out.println("✏ === ACTUALIZANDO DIRECCIÓN ===");
             String username = authentication.getName();
-            System.out.println(" Usuario: " + username);
-            System.out.println(" ID dirección: " + id);
-            System.out.println(" Datos actualizados: " + direccionRequest);
 
             Direccion direccionActualizada = direccionRequest.toEntity();
             Direccion direccionActualizadaBD = direccionService.actualizarDireccion(id, direccionActualizada, username);
             DireccionDTO direccionDTO = new DireccionDTO(direccionActualizadaBD);
 
-            System.out.println("Dirección actualizada: " + direccionDTO.getId());
             return ResponseEntity.ok(direccionDTO);
 
+        } catch (IllegalArgumentException e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("status", "error");
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+
         } catch (Exception e) {
-            System.out.println(" Error actualizando dirección: " + e.getMessage());
-            return ResponseEntity.badRequest().body("Error al actualizar la dirección: " + e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("status", "error");
+            errorResponse.put("message", "Error al actualizar la dirección: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 
-
-    // ELIMINAR DIRECCIÓN
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> eliminarDireccion(@PathVariable Long id, Authentication authentication) {
         try {
-            System.out.println("🗑 === ELIMINANDO DIRECCIÓN ===");
             String username = authentication.getName();
-            System.out.println(" Usuario: " + username);
-            System.out.println(" ID dirección a eliminar: " + id);
 
             direccionService.eliminarDireccion(id, username);
-            System.out.println(" Dirección eliminada: " + id);
 
-            return ResponseEntity.ok("Dirección eliminada correctamente");
+            Map<String, String> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("message", "Dirección eliminada correctamente");
+            response.put("id", id.toString());
+
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("status", "error");
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
 
         } catch (Exception e) {
-            System.out.println(" Error eliminando dirección: " + e.getMessage());
-            return ResponseEntity.badRequest().body("Error al eliminar la dirección: " + e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("status", "error");
+            errorResponse.put("message", "Error al eliminar la dirección: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
-
-
 
 
     @PutMapping("/{id}/predeterminada")
     public ResponseEntity<?> marcarPredeterminada(@PathVariable Long id, Authentication authentication) {
         try {
-            System.out.println(" === MARCANDO DIRECCIÓN COMO PREDETERMINADA ===");
             String username = authentication.getName();
-            System.out.println(" Usuario: " + username);
-            System.out.println(" ID dirección: " + id);
 
             direccionService.marcarPredeterminada(id, username);
-            System.out.println(" Dirección marcada como predeterminada: " + id);
 
-            return ResponseEntity.ok("Dirección establecida como predeterminada");
+            Map<String, String> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("message", "Dirección establecida como predeterminada");
+            response.put("id", id.toString());
+
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("status", "error");
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
 
         } catch (Exception e) {
-            System.out.println(" Error marcando dirección como predeterminada: " + e.getMessage());
-            return ResponseEntity.badRequest().body("Error al establecer la dirección como predeterminada: " + e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("status", "error");
+            errorResponse.put("message", "Error al establecer la dirección como predeterminada: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
-
-
 
 
     @GetMapping("/predeterminada")
     public ResponseEntity<?> obtenerDireccionPredeterminada(Authentication authentication) {
         try {
-            System.out.println(" === OBTENIENDO DIRECCIÓN PREDETERMINADA ===");
             String username = authentication.getName();
-            System.out.println(" Usuario: " + username);
 
             return direccionService.obtenerDireccionPredeterminada(username)
                     .map(direccion -> ResponseEntity.ok(new DireccionDTO(direccion)))
                     .orElse(ResponseEntity.notFound().build());
 
         } catch (Exception e) {
-            System.out.println(" Error obteniendo dirección predeterminada: " + e.getMessage());
-            return ResponseEntity.badRequest().body("Error al obtener la dirección predeterminada: " + e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("status", "error");
+            errorResponse.put("message", "Error al obtener la dirección predeterminada: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 }
-

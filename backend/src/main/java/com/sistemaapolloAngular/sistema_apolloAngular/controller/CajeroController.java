@@ -19,8 +19,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.FileOutputStream;
@@ -32,7 +30,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Controller
+@RestController
 @RequestMapping("/cajero")
 public class CajeroController {
 
@@ -43,133 +41,75 @@ public class CajeroController {
     private UsuarioRepository usuarioRepository;
 
 
-    @GetMapping("")
-    public String vistaCajero(Authentication authentication, Model model) {
-        try {
-
-            String username = authentication.getName();
-            Optional<Usuario> cajeroOpt = usuarioRepository.findByUsername(username);
-
-            if (cajeroOpt.isPresent()) {
-                Usuario cajero = cajeroOpt.get();
-                model.addAttribute("usuario", cajero);
-            }
-
-            // Obtener pedidos PENDIENTES para el cajero
-            List<Pedido> pedidosPendientes = pedidoRepository.findByEstadoOrderByFechaDesc("PENDIENTE");
-            model.addAttribute("pedidosPendientes", pedidosPendientes);
-
-            // Obtener pedidos PAGADOS de hoy (para métricas)
-            List<Pedido> pedidosPagadosHoy = pedidoRepository.findAll().stream()
-                    .filter(p -> "PAGADO".equals(p.getEstado()) &&
-                            p.getFecha() != null &&
-                            p.getFecha().toLocalDate().equals(java.time.LocalDate.now()))
-                    .collect(Collectors.toList());
-
-            // Calcular métricas
-            double ingresosHoy = pedidosPagadosHoy.stream()
-                    .mapToDouble(Pedido::getTotal)
-                    .sum();
-
-            model.addAttribute("totalPedidosPendientes", pedidosPendientes.size());
-            model.addAttribute("totalPedidosPagadosHoy", pedidosPagadosHoy.size());
-            model.addAttribute("ingresosHoy", ingresosHoy);
-
-            return "cajero";
-
-        } catch (Exception e) {
-            model.addAttribute("error", "Error al cargar la vista del cajero: " + e.getMessage());
-            return "cajero";
-        }
-    }
-
-
     @PostMapping("/marcar-pagado/{pedidoId}")
     @ResponseBody
     public ResponseEntity<?> marcarComoPagado(@PathVariable String pedidoId,
                                               Authentication authentication) {
         try {
-            System.out.println("=== INICIO marcarComoPagado ===");
-            System.out.println(" Usuario: " + (authentication != null ? authentication.getName() : "NULL"));
-
-
-            if (authentication == null) {
-                System.out.println(" ERROR: Authentication es NULL");
-                return ResponseEntity.status(401).body("ERROR: No autenticado");
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(401).body(Map.of(
+                        "status", "ERROR",
+                        "message", "No autenticado"
+                ));
             }
 
-            if (!authentication.isAuthenticated()) {
-                System.out.println(" ERROR: Usuario no autenticado");
-                return ResponseEntity.status(401).body("ERROR: No autenticado");
-            }
-
-            //  Verificar rol CAJERO
             boolean hasCajeroRole = authentication.getAuthorities().stream()
                     .anyMatch(grantedAuthority ->
                             grantedAuthority.getAuthority().equals("ROLE_CAJERO"));
 
-            System.out.println(" Tiene rol CAJERO: " + hasCajeroRole);
-
             if (!hasCajeroRole) {
-                System.out.println(" ERROR: Usuario sin rol CAJERO. Roles: " +
-                        authentication.getAuthorities());
-                return ResponseEntity.status(403).body("ERROR: No tiene permisos de cajero");
+                return ResponseEntity.status(403).body(Map.of(
+                        "status", "ERROR",
+                        "message", "No tiene permisos de cajero"
+                ));
             }
 
-            //  Convertir ID
             Long pedidoIdLong;
             try {
                 pedidoIdLong = Long.parseLong(pedidoId);
-                System.out.println("ID convertido: " + pedidoIdLong);
             } catch (NumberFormatException e) {
-                System.out.println(" ERROR: ID inválido");
-                return ResponseEntity.badRequest().body("ERROR: ID de pedido inválido");
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", "ERROR",
+                        "message", "ID de pedido inválido"
+                ));
             }
 
-            //  Buscar pedido
             Optional<Pedido> pedidoOpt = pedidoRepository.findById(pedidoIdLong);
             if (!pedidoOpt.isPresent()) {
-                System.out.println(" ERROR: Pedido no encontrado");
-                return ResponseEntity.badRequest().body("ERROR: Pedido no encontrado");
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", "ERROR",
+                        "message", "Pedido no encontrado"
+                ));
             }
 
             Pedido pedido = pedidoOpt.get();
-            System.out.println(" Estado actual del pedido: " + pedido.getEstado());
 
-            //  Validar estado
             if (!"PENDIENTE".equals(pedido.getEstado())) {
-                System.out.println(" ERROR: Pedido no está PENDIENTE");
-                return ResponseEntity.badRequest()
-                        .body("ERROR: El pedido no está en estado PENDIENTE. Estado actual: " + pedido.getEstado());
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", "ERROR",
+                        "message", "El pedido no está en estado PENDIENTE. Estado actual: " + pedido.getEstado()
+                ));
             }
-
 
             String username = authentication.getName();
             Optional<Usuario> cajeroOpt = usuarioRepository.findByUsername(username);
-            String nombreCajero = "Cajero"; // Valor por defecto
+            String nombreCajero = "Cajero";
 
             if (cajeroOpt.isPresent()) {
                 Usuario cajero = cajeroOpt.get();
-                // Usar nombre completo o solo nombres si está disponible
                 if (cajero.getNombres() != null && cajero.getApellidos() != null) {
                     nombreCajero = cajero.getNombres() + " " + cajero.getApellidos();
                 } else if (cajero.getNombres() != null) {
                     nombreCajero = cajero.getNombres();
                 } else {
-                    nombreCajero = cajero.getUsername(); // Fallback al username
+                    nombreCajero = cajero.getUsername();
                 }
-                System.out.println("👤 Cajero que atiende: " + nombreCajero);
             }
 
-            //  Actualizar estado
             pedido.setEstado("PAGADO");
             Pedido pedidoGuardado = pedidoRepository.save(pedido);
 
-            //  GENERAR BOLETA AUTOMÁTICAMENTE CON NOMBRE DEL CAJERO
             String boletaPath = generarBoletaPDF(pedidoGuardado, nombreCajero);
-
-            System.out.println(" ÉXITO: Pedido " + pedidoId + " marcado como PAGADO");
-            System.out.println(" Boleta generada: " + boletaPath);
 
             Map<String, Object> response = new HashMap<>();
             response.put("status", "SUCCESS");
@@ -180,24 +120,20 @@ public class CajeroController {
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            System.err.println(" EXCEPCIÓN en marcarComoPagado: " + e.getMessage());
             e.printStackTrace();
-
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("status", "ERROR");
-            errorResponse.put("message", "Error: " + e.getMessage());
-
-            return ResponseEntity.status(500).body(errorResponse);
+            return ResponseEntity.status(500).body(Map.of(
+                    "status", "ERROR",
+                    "message", "Error: " + e.getMessage()
+            ));
         }
     }
 
+
     private String generarBoletaPDF(Pedido pedido, String nombreCajero) {
-        // Usar directorio en raíz del proyecto
         String directoryPath = "boletas/";
         String fileName = "boleta_" + pedido.getNumeroPedido() + ".pdf";
 
         try {
-            // Crear directorio si no existe
             Path directory = Paths.get(directoryPath);
             if (!Files.exists(directory)) {
                 Files.createDirectories(directory);
@@ -205,15 +141,12 @@ public class CajeroController {
 
             String fullPath = directoryPath + fileName;
 
-            // Crear PDF
             PdfWriter writer = new PdfWriter(new FileOutputStream(fullPath));
             PdfDocument pdfDoc = new PdfDocument(writer);
             Document document = new Document(pdfDoc);
 
-            // Configurar página
             document.setMargins(20, 20, 20, 20);
 
-            // Título principal
             Paragraph titulo = new Paragraph("BOLETA DE VENTA")
                     .setTextAlignment(TextAlignment.CENTER)
                     .setBold()
@@ -226,20 +159,16 @@ public class CajeroController {
                     .setFontSize(14);
             document.add(subtitulo);
 
-            document.add(new Paragraph(" ")); // Espacio
-
-            // Línea separadora
+            document.add(new Paragraph(" "));
             document.add(new Paragraph("_________________________________________")
                     .setTextAlignment(TextAlignment.CENTER));
-
-            // Información del pedido
             document.add(new Paragraph(" "));
+
             document.add(new Paragraph("N° BOLETA: " + pedido.getNumeroPedido()).setBold());
             document.add(new Paragraph("FECHA: " +
                     pedido.getFecha().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"))));
             document.add(new Paragraph("CAJERO: " + nombreCajero));
 
-            // Información del cliente
             if (pedido.getUsuario() != null) {
                 String nombreCliente = pedido.getUsuario().getNombres() + " " +
                         pedido.getUsuario().getApellidos();
@@ -252,8 +181,6 @@ public class CajeroController {
             }
 
             document.add(new Paragraph(" "));
-
-            // Tipo de entrega
             document.add(new Paragraph("TIPO DE ENTREGA: " +
                     (pedido.getTipoEntrega() != null ? pedido.getTipoEntrega() : "NO ESPECIFICADO")));
 
@@ -266,20 +193,17 @@ public class CajeroController {
             document.add(new Paragraph("DETALLE DEL PEDIDO:").setBold());
             document.add(new Paragraph("_________________________________________"));
 
-            // Tabla de productos
             float[] columnWidths = {3, 1, 2, 2};
             Table table = new Table(UnitValue.createPercentArray(columnWidths));
             table.setWidth(UnitValue.createPercentValue(100));
             table.setMarginTop(10);
             table.setMarginBottom(10);
 
-            // Encabezados de tabla
             table.addHeaderCell(new Paragraph("PRODUCTO").setBold());
             table.addHeaderCell(new Paragraph("CANT.").setBold());
             table.addHeaderCell(new Paragraph("P. UNIT.").setBold());
             table.addHeaderCell(new Paragraph("SUBTOTAL").setBold());
 
-            // Items del pedido
             if (pedido.getItems() != null && !pedido.getItems().isEmpty()) {
                 for (ItemPedido item : pedido.getItems()) {
                     table.addCell(new Paragraph(item.getNombreProducto() != null ?
@@ -288,22 +212,13 @@ public class CajeroController {
                     table.addCell(new Paragraph("S/ " + String.format("%.2f", item.getPrecio())));
                     table.addCell(new Paragraph("S/ " + String.format("%.2f", item.getSubtotal())));
                 }
-            } else {
-
-                table.addCell(new Paragraph("No hay items en este pedido"));
-                table.addCell(new Paragraph("")); // Celda vacía
-                table.addCell(new Paragraph("")); // Celda vacía
-                table.addCell(new Paragraph("")); // Celda vacía
             }
 
             document.add(table);
             document.add(new Paragraph(" "));
-
-            // Línea separadora
             document.add(new Paragraph("_________________________________________"));
-
-            // Totales
             document.add(new Paragraph(" "));
+
             document.add(new Paragraph("SUBTOTAL: S/ " + String.format("%.2f", pedido.getSubtotal())));
 
             if (pedido.getCostoEnvio() != null && pedido.getCostoEnvio() > 0) {
@@ -320,16 +235,14 @@ public class CajeroController {
 
             document.add(new Paragraph(" "));
 
-
             if (pedido.getMetodoPago() != null) {
                 document.add(new Paragraph("MÉTODO DE PAGO: " + pedido.getMetodoPago()));
             }
 
             document.add(new Paragraph(" "));
             document.add(new Paragraph("_________________________________________"));
-
-            // Pie de página
             document.add(new Paragraph(" "));
+
             document.add(new Paragraph("¡Gracias por su compra!")
                     .setTextAlignment(TextAlignment.CENTER)
                     .setItalic());
@@ -344,11 +257,9 @@ public class CajeroController {
 
             document.close();
 
-            System.out.println(" PDF generado exitosamente: " + fullPath);
-            return fileName; // Solo el nombre del archivo
+            return fileName;
 
         } catch (Exception e) {
-            System.err.println("Error generando boleta PDF: " + e.getMessage());
             e.printStackTrace();
             return "error_generacion";
         }
@@ -358,25 +269,19 @@ public class CajeroController {
     @GetMapping("/boletas/{filename:.+}")
     public ResponseEntity<Resource> servirBoleta(@PathVariable String filename) {
         try {
-            System.out.println(" Solicitando archivo: " + filename);
-
             Path filePath = Paths.get("boletas/" + filename).normalize();
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() && resource.isReadable()) {
-                System.out.println(" Archivo encontrado, sirviendo: " + filename);
-
                 return ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_PDF)
                         .header(HttpHeaders.CONTENT_DISPOSITION,
                                 "inline; filename=\"" + filename + "\"")
                         .body(resource);
             } else {
-                System.out.println(" Archivo no encontrado: " + filePath.toString());
                 return ResponseEntity.notFound().build();
             }
         } catch (Exception e) {
-            System.err.println(" Error sirviendo archivo: " + e.getMessage());
             return ResponseEntity.notFound().build();
         }
     }
@@ -388,18 +293,15 @@ public class CajeroController {
         Map<String, Object> metricas = new HashMap<>();
 
         try {
-            // Pedidos PENDIENTES
             List<Pedido> pedidosPendientes = pedidoRepository.findByEstadoOrderByFechaDesc("PENDIENTE");
 
-            // Pedidos PAGADOS hoy
-            LocalDate hoy = java.time.LocalDate.now();
+            LocalDate hoy = LocalDate.now();
             List<Pedido> pedidosPagadosHoy = pedidoRepository.findAll().stream()
                     .filter(p -> "PAGADO".equals(p.getEstado()) &&
                             p.getFecha() != null &&
                             p.getFecha().toLocalDate().equals(hoy))
                     .collect(Collectors.toList());
 
-            // Calcular ingresos
             double ingresosHoy = pedidosPagadosHoy.stream()
                     .mapToDouble(Pedido::getTotal)
                     .sum();
@@ -417,24 +319,28 @@ public class CajeroController {
         return metricas;
     }
 
-
+    // ✅ MARCAR PEDIDO COMO CANCELADO
     @PostMapping("/marcar-cancelado/{pedidoId}")
     @ResponseBody
     public ResponseEntity<?> marcarComoCancelado(@PathVariable String pedidoId,
                                                  @RequestParam(required = false) String motivo,
                                                  Authentication authentication) {
         try {
-            //   Verificar que el usuario está autenticado
             if (authentication == null || !authentication.isAuthenticated()) {
-                return ResponseEntity.status(401).body("ERROR: Sesión expirada. Por favor, inicie sesión nuevamente.");
+                return ResponseEntity.status(401).body(Map.of(
+                        "status", "ERROR",
+                        "message", "Sesión expirada. Por favor, inicie sesión nuevamente."
+                ));
             }
-
 
             Long pedidoIdLong;
             try {
                 pedidoIdLong = Long.parseLong(pedidoId);
             } catch (NumberFormatException e) {
-                return ResponseEntity.badRequest().body("ERROR: ID de pedido inválido: " + pedidoId);
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", "ERROR",
+                        "message", "ID de pedido inválido: " + pedidoId
+                ));
             }
 
             Optional<Pedido> pedidoOpt = pedidoRepository.findById(pedidoIdLong);
@@ -442,48 +348,46 @@ public class CajeroController {
             if (pedidoOpt.isPresent()) {
                 Pedido pedido = pedidoOpt.get();
 
-                // Validar que el pedido esté en estado PENDIENTE
                 if (!"PENDIENTE".equals(pedido.getEstado())) {
-                    return ResponseEntity.badRequest().body("ERROR: Solo se pueden cancelar pedidos PENDIENTES. Estado actual: " + pedido.getEstado());
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "status", "ERROR",
+                            "message", "Solo se pueden cancelar pedidos PENDIENTES. Estado actual: " + pedido.getEstado()
+                    ));
                 }
 
-                // Cambiar estado a CANCELADO
                 pedido.setEstado("CANCELADO");
                 if (motivo != null && !motivo.trim().isEmpty()) {
                     pedido.setObservaciones("CANCELADO - Motivo: " + motivo);
                 }
                 pedidoRepository.save(pedido);
 
-                System.out.println(" Pedido " + pedidoId + " cancelado por " + authentication.getName());
-
-                Map<String, String> response = new HashMap<>();
-                response.put("status", "SUCCESS");
-                response.put("message", "Pedido cancelado exitosamente");
-
-                return ResponseEntity.ok(response);
+                return ResponseEntity.ok(Map.of(
+                        "status", "SUCCESS",
+                        "message", "Pedido cancelado exitosamente"
+                ));
             } else {
-                return ResponseEntity.badRequest().body("ERROR: Pedido no encontrado con ID: " + pedidoId);
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", "ERROR",
+                        "message", "Pedido no encontrado con ID: " + pedidoId
+                ));
             }
 
         } catch (Exception e) {
             e.printStackTrace();
-
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("status", "ERROR");
-            errorResponse.put("message", "Error: " + e.getMessage());
-
-            return ResponseEntity.status(500).body(errorResponse);
+            return ResponseEntity.status(500).body(Map.of(
+                    "status", "ERROR",
+                    "message", "Error: " + e.getMessage()
+            ));
         }
     }
 
-
+    // ✅ OBTENER PEDIDOS PENDIENTES
     @GetMapping("/pedidos-pendientes")
     @ResponseBody
     public ResponseEntity<?> obtenerPedidosPendientes() {
         try {
             List<Pedido> pedidos = pedidoRepository.findByEstadoOrderByFechaDesc("PENDIENTE");
 
-            // Crear DTOs para evitar problemas de serialización
             List<Map<String, Object>> pedidosDTO = new ArrayList<>();
 
             for (Pedido pedido : pedidos) {
@@ -498,7 +402,6 @@ public class CajeroController {
                 pedidoDTO.put("direccionEntrega", pedido.getDireccionEntrega());
                 pedidoDTO.put("observaciones", pedido.getObservaciones());
 
-                // Información del cliente (manejar proxy Hibernate)
                 if (pedido.getUsuario() != null) {
                     Map<String, String> usuarioDTO = new HashMap<>();
                     usuarioDTO.put("nombres", pedido.getUsuario().getNombres());
@@ -509,7 +412,6 @@ public class CajeroController {
                     pedidoDTO.put("cliente", null);
                 }
 
-                // Información de items del pedido
                 List<Map<String, Object>> itemsDTO = new ArrayList<>();
                 if (pedido.getItems() != null) {
                     for (ItemPedido item : pedido.getItems()) {
@@ -533,31 +435,6 @@ public class CajeroController {
             return ResponseEntity.status(500).body(Map.of(
                     "error", "Error al cargar pedidos: " + e.getMessage()
             ));
-        }
-    }
-
-
-    @GetMapping("/pedido/{pedidoId}")
-    public String gestionarPedido(@PathVariable Long pedidoId, Model model, Authentication authentication) {
-        try {
-            Optional<Pedido> pedidoOpt = pedidoRepository.findById(pedidoId);
-
-            if (pedidoOpt.isPresent()) {
-                Pedido pedido = pedidoOpt.get();
-                model.addAttribute("pedido", pedido);
-
-                // Obtener información del cajero
-                String username = authentication.getName();
-                Optional<Usuario> cajeroOpt = usuarioRepository.findByUsername(username);
-                cajeroOpt.ifPresent(usuario -> model.addAttribute("usuario", usuario));
-
-                return "cajero-pedido"; // Vista específica para gestionar un pedido
-            } else {
-                return "redirect:/cajero?error=Pedido no encontrado";
-            }
-
-        } catch (Exception e) {
-            return "redirect:/cajero?error=" + e.getMessage();
         }
     }
 }

@@ -2,14 +2,16 @@ package com.sistemaapolloAngular.sistema_apolloAngular.controller;
 
 import com.sistemaapolloAngular.sistema_apolloAngular.model.Local;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.LocalService;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-@Controller
+@RestController
+@RequestMapping("/api/locales")
 public class LocalController {
 
     private final LocalService localService;
@@ -18,19 +20,50 @@ public class LocalController {
         this.localService = localService;
     }
 
-    // Muestra la página principal de "nuestros locales" y lista todos
-    @GetMapping("/nuestros-locales")
-    public String mostrarLocales(Model model) {
-        List<Local> locales = localService.obtenerTodosLosLocales();
-        model.addAttribute("locales", locales);
-        return "locales"; // Thymeleaf: nuestros-locales.html
+
+    @GetMapping
+    public ResponseEntity<Map<String, Object>> obtenerTodosLosLocales() {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            List<Local> locales = localService.obtenerTodosLosLocales();
+
+            response.put("success", true);
+            response.put("data", locales);
+            response.put("total", locales.size());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error al obtener los locales: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 
-    // Muestra detalle de un local específico
-    @GetMapping("/nuestros-locales/{id}")
-    public String verLocal(@PathVariable Long id, Model model) {
-        Local local = localService.obtenerLocalPorId(id);
-        model.addAttribute("local", local);
-        return "detalle-local"; // Thymeleaf: detalle-local.html
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> obtenerLocalPorId(@PathVariable Long id) {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            Local local = localService.obtenerLocalPorId(id);
+
+            if (local == null) {
+                response.put("success", false);
+                response.put("message", "Local no encontrado con ID: " + id);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+
+            response.put("success", true);
+            response.put("data", local);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error al obtener el local: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 }

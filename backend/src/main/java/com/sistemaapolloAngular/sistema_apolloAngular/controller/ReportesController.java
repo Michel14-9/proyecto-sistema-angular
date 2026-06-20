@@ -3,7 +3,6 @@ package com.sistemaapolloAngular.sistema_apolloAngular.controller;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.Pedido;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.ItemPedido;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.Usuario;
-import com.sistemaapolloAngular.sistema_apolloAngular.model.ProductoFinal;
 import com.sistemaapolloAngular.sistema_apolloAngular.repository.PedidoRepository;
 import com.sistemaapolloAngular.sistema_apolloAngular.repository.UsuarioRepository;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.PedidoService;
@@ -18,7 +17,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/admin-menu/reportes")
+@RequestMapping("/api/reportes")
 public class ReportesController {
 
     @Autowired
@@ -34,25 +33,22 @@ public class ReportesController {
      * Obtener reporte de ventas por rango de fechas
      */
     @GetMapping("/ventas")
-    public ResponseEntity<?> obtenerReporteVentas(
+    public ResponseEntity<Map<String, Object>> obtenerReporteVentas(
             @RequestParam(required = false) String fechaInicio,
             @RequestParam(required = false) String fechaFin) {
+
+        Map<String, Object> response = new HashMap<>();
 
         try {
             System.out.println("Generando reporte de ventas - Fechas: " + fechaInicio + " a " + fechaFin);
 
-            Map<String, Object> reporte = new HashMap<>();
-
-            // Obtener rango de fechas
             LocalDateTime[] rangoFechas = obtenerRangoFechas(fechaInicio, fechaFin);
             LocalDateTime inicio = rangoFechas[0];
             LocalDateTime fin = rangoFechas[1];
 
-
             List<Pedido> todosPedidos = pedidoRepository.findAllWithItemsAndProducts();
             System.out.println(" Total de pedidos encontrados: " + todosPedidos.size());
 
-            // Filtrar pedidos por fecha
             List<Pedido> pedidosFiltrados = todosPedidos.stream()
                     .filter(p -> p.getFecha() != null &&
                             !p.getFecha().isBefore(inicio) &&
@@ -61,7 +57,6 @@ public class ReportesController {
 
             System.out.println(" Pedidos filtrados: " + pedidosFiltrados.size());
 
-            // Calcular métricas
             double totalVentas = pedidosFiltrados.stream()
                     .filter(p -> "ENTREGADO".equals(p.getEstado()))
                     .mapToDouble(Pedido::getTotal)
@@ -74,48 +69,39 @@ public class ReportesController {
                     .mapToLong(item -> item.getCantidad() != null ? item.getCantidad().longValue() : 0L)
                     .sum();
 
-            // Calcular crecimiento
             double crecimiento = calcularCrecimientoVentas(inicio, fin);
 
-            // Datos para gráfico de ventas por día
             Map<String, Double> ventasPorDia = calcularVentasPorDia(pedidosFiltrados, inicio, fin);
-
-            // Datos para gráfico de categorías
             Map<String, Double> ventasPorCategoria = calcularVentasPorCategoria(pedidosFiltrados);
-
-            // Datos para tabla detallada
             List<Map<String, Object>> tablaDatos = generarTablaVentas(pedidosFiltrados);
 
-            // Preparar respuesta
-            Map<String, Object> metricas = new HashMap<>();
-            metricas.put("totalVentas", totalVentas);
-            metricas.put("totalPedidos", totalPedidos);
-            metricas.put("productosVendidos", productosVendidos);
-            metricas.put("crecimiento", crecimiento);
-
-            Map<String, Object> datosGrafico = new HashMap<>();
-            datosGrafico.put("labels", new ArrayList<>(ventasPorDia.keySet()));
-            datosGrafico.put("datos", new ArrayList<>(ventasPorDia.values()));
-
-            Map<String, Object> datosCategoria = new HashMap<>();
-            datosCategoria.put("labels", new ArrayList<>(ventasPorCategoria.keySet()));
-            datosCategoria.put("datos", new ArrayList<>(ventasPorCategoria.values()));
-
-            reporte.put("metricas", metricas);
-            reporte.put("datosGrafico", datosGrafico);
-            reporte.put("datosCategoria", datosCategoria);
-            reporte.put("tablaDatos", tablaDatos);
-            reporte.put("success", true);
+            response.put("success", true);
+            response.put("metricas", Map.of(
+                    "totalVentas", totalVentas,
+                    "totalPedidos", totalPedidos,
+                    "productosVendidos", productosVendidos,
+                    "crecimiento", Math.round(crecimiento * 100.0) / 100.0
+            ));
+            response.put("datosGrafico", Map.of(
+                    "labels", new ArrayList<>(ventasPorDia.keySet()),
+                    "datos", new ArrayList<>(ventasPorDia.values())
+            ));
+            response.put("datosCategoria", Map.of(
+                    "labels", new ArrayList<>(ventasPorCategoria.keySet()),
+                    "datos", new ArrayList<>(ventasPorCategoria.values())
+            ));
+            response.put("tablaDatos", tablaDatos);
 
             System.out.println(" Reporte de ventas generado exitosamente");
 
-            return ResponseEntity.ok(reporte);
+            return ResponseEntity.ok(response);
 
         } catch (Exception e) {
             System.err.println(" Error en reporte de ventas: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(500)
-                    .body(Map.of("success", false, "error", "Error al generar reporte: " + e.getMessage()));
+            response.put("success", false);
+            response.put("message", "Error al generar reporte: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
         }
     }
 
@@ -123,20 +109,18 @@ public class ReportesController {
      * Obtener reporte de productos más vendidos
      */
     @GetMapping("/productos")
-    public ResponseEntity<?> obtenerReporteProductos(
+    public ResponseEntity<Map<String, Object>> obtenerReporteProductos(
             @RequestParam(required = false) String fechaInicio,
             @RequestParam(required = false) String fechaFin) {
+
+        Map<String, Object> response = new HashMap<>();
 
         try {
             System.out.println(" Generando reporte de productos - Fechas: " + fechaInicio + " a " + fechaFin);
 
-            Map<String, Object> reporte = new HashMap<>();
-
-            // Obtener rango de fechas
             LocalDateTime[] rangoFechas = obtenerRangoFechas(fechaInicio, fechaFin);
             LocalDateTime inicio = rangoFechas[0];
             LocalDateTime fin = rangoFechas[1];
-
 
             List<Pedido> todosPedidos = pedidoRepository.findAllWithItemsAndProducts();
             List<Pedido> pedidosFiltrados = todosPedidos.stream()
@@ -145,36 +129,28 @@ public class ReportesController {
                             !p.getFecha().isAfter(fin))
                     .collect(Collectors.toList());
 
-            // Calcular productos más vendidos
             Map<String, ProductoVendido> productosMap = new HashMap<>();
 
             for (Pedido pedido : pedidosFiltrados) {
                 for (ItemPedido item : pedido.getItems()) {
                     String nombreProducto = item.getNombreProductoSeguro();
-
-                    // OBTENER CATEGORÍA REAL del ProductoFinal
                     String categoria = "General";
                     if (item.getProductoFinal() != null && item.getProductoFinal().getTipo() != null) {
                         categoria = item.getProductoFinal().getTipo();
-                        System.out.println(" Categoría encontrada: " + categoria + " para producto: " + nombreProducto);
                     } else {
                         categoria = inferirCategoriaDeNombre(nombreProducto);
-                        System.out.println("Categoría inferida: " + categoria + " para producto: " + nombreProducto);
                     }
 
                     ProductoVendido producto = productosMap.getOrDefault(nombreProducto,
                             new ProductoVendido(nombreProducto, categoria));
-
                     producto.agregarVenta(item.getCantidad(), item.getSubtotal());
                     productosMap.put(nombreProducto, producto);
                 }
             }
 
-            // Convertir a lista y ordenar por cantidad vendida
             List<ProductoVendido> productosVendidos = new ArrayList<>(productosMap.values());
             productosVendidos.sort((a, b) -> Long.compare(b.getCantidad(), a.getCantidad()));
 
-            // Calcular métricas
             double totalVentas = productosVendidos.stream()
                     .mapToDouble(ProductoVendido::getIngresos)
                     .sum();
@@ -186,48 +162,44 @@ public class ReportesController {
 
             double crecimiento = calcularCrecimientoProductos(inicio, fin);
 
-            // Preparar datos para tabla (limitar a 50 productos)
             List<Map<String, Object>> tablaDatos = new ArrayList<>();
             for (ProductoVendido p : productosVendidos.stream().limit(50).collect(Collectors.toList())) {
                 Map<String, Object> fila = new HashMap<>();
                 fila.put("producto", p.getNombre());
                 fila.put("categoria", p.getCategoria());
                 fila.put("vendidos", p.getCantidad());
-                fila.put("ingresos", p.getIngresos());
+                fila.put("ingresos", Math.round(p.getIngresos() * 100.0) / 100.0);
                 tablaDatos.add(fila);
             }
 
-            // Datos para gráfico (top 8 productos)
-            Map<String, Double> topProductos = new HashMap<>();
+            Map<String, Double> topProductos = new LinkedHashMap<>();
             for (ProductoVendido p : productosVendidos.stream().limit(8).collect(Collectors.toList())) {
-                topProductos.put(p.getNombre(), p.getIngresos());
+                topProductos.put(p.getNombre(), Math.round(p.getIngresos() * 100.0) / 100.0);
             }
 
-            // Preparar respuesta
-            Map<String, Object> metricas = new HashMap<>();
-            metricas.put("totalVentas", totalVentas);
-            metricas.put("totalPedidos", totalPedidos);
-            metricas.put("productosVendidos", totalProductosVendidos);
-            metricas.put("crecimiento", crecimiento);
-
-            Map<String, Object> datosGrafico = new HashMap<>();
-            datosGrafico.put("labels", new ArrayList<>(topProductos.keySet()));
-            datosGrafico.put("datos", new ArrayList<>(topProductos.values()));
-
-            reporte.put("metricas", metricas);
-            reporte.put("datosGrafico", datosGrafico);
-            reporte.put("tablaDatos", tablaDatos);
-            reporte.put("success", true);
+            response.put("success", true);
+            response.put("metricas", Map.of(
+                    "totalVentas", Math.round(totalVentas * 100.0) / 100.0,
+                    "totalPedidos", totalPedidos,
+                    "productosVendidos", totalProductosVendidos,
+                    "crecimiento", Math.round(crecimiento * 100.0) / 100.0
+            ));
+            response.put("datosGrafico", Map.of(
+                    "labels", new ArrayList<>(topProductos.keySet()),
+                    "datos", new ArrayList<>(topProductos.values())
+            ));
+            response.put("tablaDatos", tablaDatos);
 
             System.out.println(" Reporte de productos generado exitosamente");
 
-            return ResponseEntity.ok(reporte);
+            return ResponseEntity.ok(response);
 
         } catch (Exception e) {
             System.err.println("Error en reporte de productos: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(500)
-                    .body(Map.of("success", false, "error", "Error al generar reporte: " + e.getMessage()));
+            response.put("success", false);
+            response.put("message", "Error al generar reporte: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
         }
     }
 
@@ -235,32 +207,28 @@ public class ReportesController {
      * Obtener reporte de actividad de usuarios
      */
     @GetMapping("/usuarios")
-    public ResponseEntity<?> obtenerReporteUsuarios(
+    public ResponseEntity<Map<String, Object>> obtenerReporteUsuarios(
             @RequestParam(required = false) String fechaInicio,
             @RequestParam(required = false) String fechaFin) {
+
+        Map<String, Object> response = new HashMap<>();
 
         try {
             System.out.println("👥 Generando reporte de usuarios - Fechas: " + fechaInicio + " a " + fechaFin);
 
-            Map<String, Object> reporte = new HashMap<>();
-
-            // Obtener rango de fechas
             LocalDateTime[] rangoFechas = obtenerRangoFechas(fechaInicio, fechaFin);
             LocalDateTime inicio = rangoFechas[0];
             LocalDateTime fin = rangoFechas[1];
 
-
             List<Pedido> todosPedidos = pedidoRepository.findAllWithItemsAndProducts();
             List<Usuario> todosUsuarios = usuarioRepository.findAll();
 
-            // Filtrar pedidos por fecha
             List<Pedido> pedidosFiltrados = todosPedidos.stream()
                     .filter(p -> p.getFecha() != null &&
                             !p.getFecha().isBefore(inicio) &&
                             !p.getFecha().isAfter(fin))
                     .collect(Collectors.toList());
 
-            // Calcular actividad por usuario
             Map<Long, ActividadUsuario> actividadMap = new HashMap<>();
 
             for (Pedido pedido : pedidosFiltrados) {
@@ -268,17 +236,14 @@ public class ReportesController {
                     Long usuarioId = pedido.getUsuario().getId();
                     ActividadUsuario actividad = actividadMap.getOrDefault(usuarioId,
                             new ActividadUsuario(pedido.getUsuario()));
-
                     actividad.agregarPedido(pedido.getTotal());
                     actividadMap.put(usuarioId, actividad);
                 }
             }
 
-            // Convertir a lista y ordenar
             List<ActividadUsuario> actividadUsuarios = new ArrayList<>(actividadMap.values());
             actividadUsuarios.sort((a, b) -> Long.compare(b.getTotalPedidos(), a.getTotalPedidos()));
 
-            // Calcular métricas
             long totalUsuariosActivos = actividadUsuarios.size();
             long totalPedidos = pedidosFiltrados.size();
             double totalVentas = pedidosFiltrados.stream()
@@ -286,49 +251,45 @@ public class ReportesController {
                     .mapToDouble(Pedido::getTotal)
                     .sum();
 
-            // Preparar datos para tabla
             List<Map<String, Object>> tablaDatos = new ArrayList<>();
             for (ActividadUsuario a : actividadUsuarios) {
                 Map<String, Object> fila = new HashMap<>();
                 fila.put("usuario", a.getNombreCompleto());
                 fila.put("rol", a.getRol());
                 fila.put("pedidos", a.getTotalPedidos());
-                fila.put("totalGastado", a.getTotalGastado());
+                fila.put("totalGastado", Math.round(a.getTotalGastado() * 100.0) / 100.0);
                 tablaDatos.add(fila);
             }
 
-            // Datos para gráfico (actividad por rol)
             Map<String, Long> actividadPorRol = new HashMap<>();
             for (ActividadUsuario a : actividadUsuarios) {
                 String rol = a.getRol();
                 actividadPorRol.put(rol, actividadPorRol.getOrDefault(rol, 0L) + a.getTotalPedidos());
             }
 
-            // Preparar respuesta
-            Map<String, Object> metricas = new HashMap<>();
-            metricas.put("totalVentas", totalVentas);
-            metricas.put("totalPedidos", totalPedidos);
-            metricas.put("usuariosActivos", totalUsuariosActivos);
-            metricas.put("crecimiento", 0.0);
-
-            Map<String, Object> datosGrafico = new HashMap<>();
-            datosGrafico.put("labels", new ArrayList<>(actividadPorRol.keySet()));
-            datosGrafico.put("datos", new ArrayList<>(actividadPorRol.values()));
-
-            reporte.put("metricas", metricas);
-            reporte.put("datosGrafico", datosGrafico);
-            reporte.put("tablaDatos", tablaDatos);
-            reporte.put("success", true);
+            response.put("success", true);
+            response.put("metricas", Map.of(
+                    "totalVentas", Math.round(totalVentas * 100.0) / 100.0,
+                    "totalPedidos", totalPedidos,
+                    "usuariosActivos", totalUsuariosActivos,
+                    "crecimiento", 0.0
+            ));
+            response.put("datosGrafico", Map.of(
+                    "labels", new ArrayList<>(actividadPorRol.keySet()),
+                    "datos", new ArrayList<>(actividadPorRol.values())
+            ));
+            response.put("tablaDatos", tablaDatos);
 
             System.out.println(" Reporte de usuarios generado exitosamente");
 
-            return ResponseEntity.ok(reporte);
+            return ResponseEntity.ok(response);
 
         } catch (Exception e) {
             System.err.println(" Error en reporte de usuarios: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(500)
-                    .body(Map.of("success", false, "error", "Error al generar reporte: " + e.getMessage()));
+            response.put("success", false);
+            response.put("message", "Error al generar reporte: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
         }
     }
 
@@ -339,11 +300,9 @@ public class ReportesController {
         LocalDateTime fin;
 
         if (fechaInicio != null && fechaFin != null && !fechaInicio.isEmpty() && !fechaFin.isEmpty()) {
-            // Usar fechas proporcionadas
             inicio = LocalDate.parse(fechaInicio).atStartOfDay();
             fin = LocalDate.parse(fechaFin).atTime(23, 59, 59);
         } else {
-            // Por defecto: último mes
             fin = LocalDateTime.now();
             inicio = fin.minusMonths(1);
         }
@@ -354,7 +313,6 @@ public class ReportesController {
 
     private double calcularCrecimientoVentas(LocalDateTime inicio, LocalDateTime fin) {
         try {
-            // Período actual
             List<Pedido> pedidosActual = pedidoRepository.findAll().stream()
                     .filter(p -> p.getFecha() != null &&
                             !p.getFecha().isBefore(inicio) &&
@@ -366,9 +324,8 @@ public class ReportesController {
                     .mapToDouble(Pedido::getTotal)
                     .sum();
 
-            // Período anterior (misma duración)
             long dias = java.time.Duration.between(inicio, fin).toDays();
-            LocalDateTime inicioAnterior = inicio.minusDays(dias);
+            LocalDateTime inicioAnterior = inicio.minusDays(dias + 1);
             LocalDateTime finAnterior = inicio.minusSeconds(1);
 
             List<Pedido> pedidosAnterior = pedidoRepository.findAll().stream()
@@ -384,10 +341,7 @@ public class ReportesController {
 
             if (ventasAnterior == 0) return ventasActual > 0 ? 100.0 : 0.0;
 
-            double crecimiento = ((ventasActual - ventasAnterior) / ventasAnterior) * 100;
-            System.out.println(" Crecimiento calculado: " + crecimiento + "%");
-
-            return crecimiento;
+            return ((ventasActual - ventasAnterior) / ventasAnterior) * 100;
 
         } catch (Exception e) {
             System.err.println(" Error calculando crecimiento: " + e.getMessage());
@@ -396,7 +350,6 @@ public class ReportesController {
     }
 
     private double calcularCrecimientoProductos(LocalDateTime inicio, LocalDateTime fin) {
-        // Por simplicidad, usar mismo cálculo que ventas
         return calcularCrecimientoVentas(inicio, fin);
     }
 
@@ -420,11 +373,10 @@ public class ReportesController {
                     .mapToDouble(Pedido::getTotal)
                     .sum();
 
-            ventasPorDia.put(clave, ventasDia);
+            ventasPorDia.put(clave, Math.round(ventasDia * 100.0) / 100.0);
             fechaActual = fechaActual.plusDays(1);
         }
 
-        System.out.println(" Ventas por día calculadas: " + ventasPorDia.size() + " días");
         return ventasPorDia;
     }
 
@@ -434,35 +386,26 @@ public class ReportesController {
         for (Pedido pedido : pedidos) {
             if ("ENTREGADO".equals(pedido.getEstado())) {
                 for (ItemPedido item : pedido.getItems()) {
-
-                    System.out.println(" Item: " + item.getNombreProductoSeguro());
-                    System.out.println(" ProductoFinal: " + (item.getProductoFinal() != null ? "EXISTE" : "NULL"));
-                    if (item.getProductoFinal() != null) {
-                        System.out.println(" Nombre: " + item.getProductoFinal().getNombre());
-                        System.out.println("Categoría: " + item.getProductoFinal().getTipo());
-                    }
-
                     String categoria = "General";
                     if (item.getProductoFinal() != null && item.getProductoFinal().getTipo() != null) {
                         categoria = item.getProductoFinal().getTipo();
-                        System.out.println(" Usando categoría real: " + categoria);
                     } else {
                         categoria = inferirCategoriaDeNombre(item.getNombreProductoSeguro());
-                        System.out.println(" Usando categoría inferida: " + categoria);
                     }
 
                     double subtotal = item.getSubtotal() != null ? item.getSubtotal() : 0.0;
-                    ventasPorCategoria.put(categoria, ventasPorCategoria.getOrDefault(categoria, 0.0) + subtotal);
+                    ventasPorCategoria.put(categoria,
+                            ventasPorCategoria.getOrDefault(categoria, 0.0) + subtotal);
                 }
             }
         }
 
-        System.out.println(" Ventas por categoría calculadas: " + ventasPorCategoria.size() + " categorías");
-        System.out.println("Categorías encontradas: " + ventasPorCategoria.keySet());
+        // Redondear valores
+        ventasPorCategoria.replaceAll((k, v) -> Math.round(v * 100.0) / 100.0);
+
         return ventasPorCategoria;
     }
 
-    // Método auxiliar para inferir categoría del nombre del producto
     private String inferirCategoriaDeNombre(String nombreProducto) {
         if (nombreProducto == null) return "General";
 
@@ -489,7 +432,11 @@ public class ReportesController {
         List<Map<String, Object>> tabla = new ArrayList<>();
 
         for (Pedido p : pedidos.stream()
-                .sorted((a, b) -> b.getFecha().compareTo(a.getFecha()))
+                .sorted((a, b) -> {
+                    if (a.getFecha() == null) return 1;
+                    if (b.getFecha() == null) return -1;
+                    return b.getFecha().compareTo(a.getFecha());
+                })
                 .limit(100)
                 .collect(Collectors.toList())) {
 
@@ -503,16 +450,16 @@ public class ReportesController {
 
             Map<String, Object> fila = new HashMap<>();
             fila.put("id", p.getId());
-            fila.put("fecha", p.getFecha().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
+            fila.put("fecha", p.getFecha() != null ?
+                    p.getFecha().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) : "");
             fila.put("cliente", cliente);
             fila.put("productos", productos);
-            fila.put("total", p.getTotal());
+            fila.put("total", Math.round(p.getTotal() * 100.0) / 100.0);
             fila.put("estado", p.getEstado());
 
             tabla.add(fila);
         }
 
-        System.out.println(" Tabla de ventas generada: " + tabla.size() + " registros");
         return tabla;
     }
 
@@ -536,7 +483,6 @@ public class ReportesController {
             this.ingresos += subtotal != null ? subtotal : 0.0;
         }
 
-        // Getters
         public String getNombre() { return nombre; }
         public String getCategoria() { return categoria; }
         public long getCantidad() { return cantidad; }
@@ -559,7 +505,6 @@ public class ReportesController {
             this.totalGastado += total != null ? total : 0.0;
         }
 
-        // Getters
         public String getNombreCompleto() {
             return usuario.getNombres() + " " + usuario.getApellidos();
         }

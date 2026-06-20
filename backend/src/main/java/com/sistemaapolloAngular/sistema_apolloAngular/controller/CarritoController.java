@@ -7,16 +7,14 @@ import com.sistemaapolloAngular.sistema_apolloAngular.service.CarritoService;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.ProductoFinalService;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.UsuarioService;
 import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Controller
-@RequestMapping("/carrito")
+@RestController
+@RequestMapping("/api/carrito")
 public class CarritoController {
 
     private final CarritoService carritoService;
@@ -31,77 +29,175 @@ public class CarritoController {
         this.usuarioService = usuarioService;
     }
 
-    //  Mostrar carrito
+
     @GetMapping
-    public String verCarrito(Authentication authentication, Model model) {
-        // Obtener el correo/username del usuario autenticado
-        String correo = authentication.getName();
-        Usuario usuario = usuarioService.buscarPorCorreo(correo)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+    @ResponseBody
+    public Map<String, Object> obtenerCarrito(Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
 
-        Long usuarioId = usuario.getId();
+        try {
+            String correo = authentication.getName();
+            Usuario usuario = usuarioService.buscarPorCorreo(correo)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        List<CarritoItem> carrito = carritoService.obtenerCarrito(usuarioId);
-        double total = carrito.stream()
-                .mapToDouble(item -> item.getPrecioUnitario() * item.getCantidad())
-                .sum();
+            List<CarritoItem> carrito = carritoService.obtenerCarrito(usuario.getId());
 
-        model.addAttribute("carrito", carrito);
-        model.addAttribute("total", total);
-        return "carrito";
+            // Calcular total
+            double total = carrito.stream()
+                    .mapToDouble(item -> item.getPrecioUnitario() * item.getCantidad())
+                    .sum();
+
+            // Calcular cantidad total de items
+            int cantidadItems = carrito.stream()
+                    .mapToInt(CarritoItem::getCantidad)
+                    .sum();
+
+            response.put("success", true);
+            response.put("items", carrito);
+            response.put("total", total);
+            response.put("cantidadItems", cantidadItems);
+            response.put("totalItems", carrito.size());
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error al obtener carrito: " + e.getMessage());
+            response.put("items", List.of());
+            response.put("total", 0.0);
+            response.put("cantidadItems", 0);
+        }
+
+        return response;
     }
 
-    //  Agregar producto al carrito
+
     @PostMapping("/agregar")
-    public String agregarAlCarrito(@RequestParam Long productoId,
-                                   @RequestParam int cantidad,
-                                   Authentication authentication) {
-        String correo = authentication.getName();
-        Usuario usuario = usuarioService.buscarPorCorreo(correo)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+    @ResponseBody
+    public Map<String, Object> agregarAlCarrito(@RequestParam Long productoId,
+                                                @RequestParam int cantidad,
+                                                Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
 
-        ProductoFinal producto = productoFinalService.obtenerPorId(productoId)
-                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+        try {
+            String correo = authentication.getName();
+            Usuario usuario = usuarioService.buscarPorCorreo(correo)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        carritoService.agregarProducto(usuario, producto, cantidad, producto.getPrecio());
+            ProductoFinal producto = productoFinalService.obtenerPorId(productoId)
+                    .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
 
-        return "redirect:/carrito";
+            carritoService.agregarProducto(usuario, producto, cantidad, producto.getPrecio());
+
+            // Obtener carrito actualizado
+            List<CarritoItem> carrito = carritoService.obtenerCarrito(usuario.getId());
+            double total = carrito.stream()
+                    .mapToDouble(item -> item.getPrecioUnitario() * item.getCantidad())
+                    .sum();
+
+            response.put("success", true);
+            response.put("message", "Producto agregado al carrito");
+            response.put("total", total);
+            response.put("productoNombre", producto.getNombre());
+            response.put("cantidadItems", carrito.stream().mapToInt(CarritoItem::getCantidad).sum());
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error al agregar producto: " + e.getMessage());
+        }
+
+        return response;
     }
 
 
-    @PostMapping("/actualizar/{id}")
-    public String actualizarCantidad(@PathVariable Long id,
-                                     @RequestParam int cantidad,
-                                     Authentication authentication) {
-        String correo = authentication.getName();
-        Usuario usuario = usuarioService.buscarPorCorreo(correo)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+    @PutMapping("/actualizar/{id}")
+    @ResponseBody
+    public Map<String, Object> actualizarCantidad(@PathVariable Long id,
+                                                  @RequestParam int cantidad,
+                                                  Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
 
-        carritoService.actualizarCantidad(id, cantidad);
-        return "redirect:/carrito";
+        try {
+            String correo = authentication.getName();
+            Usuario usuario = usuarioService.buscarPorCorreo(correo)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+            carritoService.actualizarCantidad(id, cantidad);
+
+            // Obtener carrito actualizado
+            List<CarritoItem> carrito = carritoService.obtenerCarrito(usuario.getId());
+            double total = carrito.stream()
+                    .mapToDouble(item -> item.getPrecioUnitario() * item.getCantidad())
+                    .sum();
+
+            response.put("success", true);
+            response.put("message", "Cantidad actualizada");
+            response.put("total", total);
+            response.put("cantidadItems", carrito.stream().mapToInt(CarritoItem::getCantidad).sum());
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error al actualizar cantidad: " + e.getMessage());
+        }
+
+        return response;
     }
 
-    //  Eliminar item
-    @GetMapping("/eliminar/{id}")
-    public String eliminarDelCarrito(@PathVariable Long id,
-                                     Authentication authentication) {
-        String correo = authentication.getName();
-        Usuario usuario = usuarioService.buscarPorCorreo(correo)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        carritoService.eliminarProducto(id);
-        return "redirect:/carrito";
+    @DeleteMapping("/eliminar/{id}")
+    @ResponseBody
+    public Map<String, Object> eliminarDelCarrito(@PathVariable Long id,
+                                                  Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            String correo = authentication.getName();
+            Usuario usuario = usuarioService.buscarPorCorreo(correo)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+            carritoService.eliminarProducto(id);
+
+            // Obtener carrito actualizado
+            List<CarritoItem> carrito = carritoService.obtenerCarrito(usuario.getId());
+            double total = carrito.stream()
+                    .mapToDouble(item -> item.getPrecioUnitario() * item.getCantidad())
+                    .sum();
+
+            response.put("success", true);
+            response.put("message", "Producto eliminado del carrito");
+            response.put("total", total);
+            response.put("cantidadItems", carrito.stream().mapToInt(CarritoItem::getCantidad).sum());
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error al eliminar producto: " + e.getMessage());
+        }
+
+        return response;
     }
 
 
-    @PostMapping("/vaciar")
-    public String vaciarCarrito(Authentication authentication) {
-        String correo = authentication.getName();
-        Usuario usuario = usuarioService.buscarPorCorreo(correo)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+    @DeleteMapping("/vaciar")
+    @ResponseBody
+    public Map<String, Object> vaciarCarrito(Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
 
-        carritoService.vaciarCarrito(usuario.getId());
-        return "redirect:/carrito";
+        try {
+            String correo = authentication.getName();
+            Usuario usuario = usuarioService.buscarPorCorreo(correo)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+            carritoService.vaciarCarrito(usuario.getId());
+
+            response.put("success", true);
+            response.put("message", "Carrito vaciado exitosamente");
+            response.put("total", 0.0);
+            response.put("cantidadItems", 0);
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error al vaciar carrito: " + e.getMessage());
+        }
+
+        return response;
     }
 
 
@@ -122,7 +218,7 @@ public class CarritoController {
 
             response.put("success", true);
             response.put("total", total);
-            response.put("cantidadItems", carrito.size());
+            response.put("cantidadItems", carrito.stream().mapToInt(CarritoItem::getCantidad).sum());
 
         } catch (Exception e) {
             response.put("success", false);
@@ -133,43 +229,4 @@ public class CarritoController {
 
         return response;
     }
-
-
-    @PostMapping("/agregar-ajax")
-    @ResponseBody
-    public Map<String, Object> agregarAlCarritoAjax(@RequestParam Long productoId,
-                                                    @RequestParam int cantidad,
-                                                    Authentication authentication) {
-        Map<String, Object> response = new HashMap<>();
-
-        try {
-            String correo = authentication.getName();
-            Usuario usuario = usuarioService.buscarPorCorreo(correo)
-                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-            ProductoFinal producto = productoFinalService.obtenerPorId(productoId)
-                    .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
-
-            carritoService.agregarProducto(usuario, producto, cantidad, producto.getPrecio());
-
-            // Obtener el carrito actualizado para calcular el nuevo total
-            List<CarritoItem> carrito = carritoService.obtenerCarrito(usuario.getId());
-            double total = carrito.stream()
-                    .mapToDouble(item -> item.getPrecioUnitario() * item.getCantidad())
-                    .sum();
-
-            response.put("success", true);
-            response.put("message", "Producto agregado al carrito");
-            response.put("total", total);
-            response.put("cantidadItems", carrito.size());
-            response.put("productoNombre", producto.getNombre());
-
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Error al agregar producto: " + e.getMessage());
-        }
-
-        return response;
-    }
 }
-

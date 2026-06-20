@@ -8,20 +8,15 @@ import com.sistemaapolloAngular.sistema_apolloAngular.service.PedidoService;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.CarritoService;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.UsuarioService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.*;
 
-@Controller
-@RequestMapping("/pedido")
+@RestController
+@RequestMapping("/api/pedidos")
 public class PedidoController {
 
     private final PedidoService pedidoService;
@@ -38,213 +33,212 @@ public class PedidoController {
         this.objectMapper = new ObjectMapper();
     }
 
-    //  CREAR PEDIDO
-    @PostMapping("/crear")
-    public String crearPedido(@RequestParam String datosPedido,
-                              HttpServletRequest request,
-                              Authentication authentication) {
-        try {
-            System.out.println("===  CREAR PEDIDO CON FORMULARIO ===");
 
-            // Verificar autenticación
+    @PostMapping("/crear")
+    public ResponseEntity<Map<String, Object>> crearPedido(@RequestBody Map<String, Object> datos,
+                                                           Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            System.out.println("=== CREAR PEDIDO API REST ===");
+
             if (authentication == null || !authentication.isAuthenticated()) {
-                System.out.println(" Usuario no autenticado - Redirigiendo a login");
-                return "redirect:/login?redirect=/pago";
+                response.put("success", false);
+                response.put("message", "Usuario no autenticado");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
             }
 
             String correo = authentication.getName();
             System.out.println(" Usuario autenticado: " + correo);
 
-            // Convertir JSON string a Map
-            Map<String, Object> datos = objectMapper.readValue(datosPedido, Map.class);
-            System.out.println(" Datos del pedido recibidos: " + datos);
-
             Usuario usuario = usuarioService.buscarPorCorreo(correo)
                     .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-            // Obtener carrito del usuario
             List<CarritoItem> carrito = carritoService.obtenerCarrito(usuario.getId());
             System.out.println("🛒 Items en carrito: " + carrito.size());
 
             if (carrito.isEmpty()) {
-                System.out.println(" Carrito vacío");
-                return "redirect:/carrito?error=carrito_vacio";
+                response.put("success", false);
+                response.put("message", "El carrito está vacío");
+                return ResponseEntity.badRequest().body(response);
             }
 
-            // Crear el pedido
             Pedido pedido = pedidoService.crearPedido(usuario, carrito, datos);
             System.out.println(" Pedido creado - ID: " + pedido.getId());
 
-            // Limpiar carrito después del pedido exitoso
             carritoService.limpiarCarrito(usuario.getId());
             System.out.println(" Carrito limpiado");
 
-            //  REDIRIGIR A LA PÁGINA DE CONFIRMACIÓN
-            return "redirect:/pedido/confirmacion-pedido?id=" + pedido.getId();
+            response.put("success", true);
+            response.put("message", "Pedido creado exitosamente");
+            response.put("pedidoId", pedido.getId());
+            response.put("numeroPedido", pedido.getNumeroPedido());
+            response.put("estado", pedido.getEstado());
+            response.put("total", pedido.getTotal());
+
+            return ResponseEntity.ok(response);
 
         } catch (Exception e) {
             System.err.println(" Error al crear pedido: " + e.getMessage());
             e.printStackTrace();
-            return "redirect:/pago?error=pedido_error";
+
+            response.put("success", false);
+            response.put("message", "Error al crear pedido: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
-    //  PÁGINA DE CONFIRMACIÓN DE PEDIDO
-    @GetMapping("/confirmacion-pedido")
-    public String mostrarConfirmacion(@RequestParam(required = false) Long id,
-                                      Authentication authentication,
-                                      Model model) {
-        try {
-            System.out.println("===  CARGANDO PÁGINA DE CONFIRMACIÓN ===");
 
-            if (authentication == null || !authentication.isAuthenticated()) {
-                return "redirect:/login?redirect=/confirmacion-pedido";
-            }
-
-            String correo = authentication.getName();
-            Usuario usuario = usuarioService.buscarPorCorreo(correo)
-                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-            if (id != null) {
-                Optional<Pedido> pedidoOpt = pedidoService.obtenerPedidoPorId(id);
-
-                if (pedidoOpt.isPresent() && pedidoOpt.get().getUsuario().getId().equals(usuario.getId())) {
-                    Pedido pedido = pedidoOpt.get();
-
-                    //  AGREGAR DATOS DEL PEDIDO AL MODELO
-                    model.addAttribute("pedido", pedido);
-                    model.addAttribute("usuario", usuario);
-
-                    //  AGREGAR DATOS ESPECÍFICOS PARA FÁCIL ACCESO
-                    model.addAttribute("numeroPedido", pedido.getNumeroPedido());
-                    model.addAttribute("fechaPedido", pedido.getFechaPedido());
-                    model.addAttribute("total", pedido.getTotal());
-                    model.addAttribute("estado", pedido.getEstado());
-                    model.addAttribute("metodoPago", pedido.getMetodoPago());
-                    model.addAttribute("tipoEntrega", pedido.getTipoEntrega());
-                    model.addAttribute("direccionEntrega", pedido.getDireccionEntrega());
-
-                    System.out.println(" Pedido encontrado: " + pedido.getId());
-                    System.out.println(" Datos del pedido cargados en el modelo");
-
-                    return "confirmacion-pedido";
-                } else {
-                    System.out.println(" Pedido no encontrado o no pertenece al usuario: " + id);
-                    model.addAttribute("error", "Pedido no encontrado");
-                }
-            } else {
-                System.out.println(" No se proporcionó ID de pedido");
-                model.addAttribute("error", "No se especificó un pedido");
-            }
-
-            // Si no hay ID o no pertenece al usuario, mostrar página sin pedido específico
-            System.out.println(" Mostrando página de confirmación sin pedido específico");
-            model.addAttribute("usuario", usuario);
-            return "confirmacion-pedido";
-
-        } catch (Exception e) {
-            System.err.println(" Error en confirmación: " + e.getMessage());
-            model.addAttribute("error", "Error al cargar la confirmación");
-            return "confirmacion-pedido";
-        }
-    }
-
-    //  OBTENER PEDIDO POR ID
-    @GetMapping("/api/{pedidoId}")
-    @ResponseBody
+    @GetMapping("/{pedidoId}")
     public ResponseEntity<?> obtenerPedido(@PathVariable Long pedidoId, Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
+
         try {
+            if (authentication == null || !authentication.isAuthenticated()) {
+                response.put("success", false);
+                response.put("message", "Usuario no autenticado");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+
             String correo = authentication.getName();
             Usuario usuario = usuarioService.buscarPorCorreo(correo)
                     .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-            Optional<Pedido> pedido = pedidoService.obtenerPedidoPorId(pedidoId);
+            Optional<Pedido> pedidoOpt = pedidoService.obtenerPedidoPorId(pedidoId);
 
-            if (pedido.isPresent() && pedido.get().getUsuario().getId().equals(usuario.getId())) {
-                return ResponseEntity.ok(pedido.get());
+            if (pedidoOpt.isPresent() && pedidoOpt.get().getUsuario().getId().equals(usuario.getId())) {
+                Pedido pedido = pedidoOpt.get();
+
+                // Crear respuesta con datos del pedido
+                Map<String, Object> pedidoData = new HashMap<>();
+                pedidoData.put("id", pedido.getId());
+                pedidoData.put("numeroPedido", pedido.getNumeroPedido());
+                pedidoData.put("fechaPedido", pedido.getFechaPedido());
+                pedidoData.put("total", pedido.getTotal());
+                pedidoData.put("estado", pedido.getEstado());
+                pedidoData.put("metodoPago", pedido.getMetodoPago());
+                pedidoData.put("tipoEntrega", pedido.getTipoEntrega());
+                pedidoData.put("direccionEntrega", pedido.getDireccionEntrega());
+                pedidoData.put("subtotal", pedido.getSubtotal());
+                pedidoData.put("costoEnvio", pedido.getCostoEnvio());
+                pedidoData.put("descuento", pedido.getDescuento());
+                pedidoData.put("observaciones", pedido.getObservaciones());
+
+                // Items del pedido
+                List<Map<String, Object>> itemsList = new ArrayList<>();
+                if (pedido.getItems() != null) {
+                    for (ItemPedido item : pedido.getItems()) {
+                        Map<String, Object> itemMap = new HashMap<>();
+                        itemMap.put("id", item.getId());
+                        itemMap.put("cantidad", item.getCantidad());
+                        itemMap.put("precio", item.getPrecio());
+                        itemMap.put("subtotal", item.getSubtotal());
+                        itemMap.put("nombreProducto", item.getNombreProducto());
+                        itemsList.add(itemMap);
+                    }
+                }
+                pedidoData.put("items", itemsList);
+
+                // Información del usuario
+                Map<String, Object> usuarioData = new HashMap<>();
+                usuarioData.put("nombres", pedido.getUsuario().getNombres());
+                usuarioData.put("apellidos", pedido.getUsuario().getApellidos());
+                usuarioData.put("telefono", pedido.getUsuario().getTelefono());
+                usuarioData.put("email", pedido.getUsuario().getUsername());
+                pedidoData.put("usuario", usuarioData);
+
+                return ResponseEntity.ok(pedidoData);
             } else {
-                return ResponseEntity.status(404).body("Pedido no encontrado");
+                response.put("success", false);
+                response.put("message", "Pedido no encontrado");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
             }
 
         } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body("Error al cargar el pedido: " + e.getMessage());
+            response.put("success", false);
+            response.put("message", "Error al cargar el pedido: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
-    //  OBTENER TODOS LOS PEDIDOS (API)
-    @GetMapping("/api/pedidos")
-    @ResponseBody
+
+    @GetMapping("/todos")
     public ResponseEntity<?> obtenerTodosLosPedidos() {
+        Map<String, Object> response = new HashMap<>();
+
         try {
             List<Pedido> pedidos = pedidoService.obtenerTodosLosPedidos();
 
             if (pedidos.isEmpty()) {
-                return ResponseEntity.ok().body(List.of());
+                response.put("success", true);
+                response.put("data", List.of());
+                response.put("total", 0);
+                return ResponseEntity.ok(response);
             }
 
-            return ResponseEntity.ok(pedidos);
+            List<Map<String, Object>> pedidosData = new ArrayList<>();
+            for (Pedido pedido : pedidos) {
+                Map<String, Object> pedidoMap = new HashMap<>();
+                pedidoMap.put("id", pedido.getId());
+                pedidoMap.put("numeroPedido", pedido.getNumeroPedido());
+                pedidoMap.put("fechaPedido", pedido.getFechaPedido());
+                pedidoMap.put("total", pedido.getTotal());
+                pedidoMap.put("estado", pedido.getEstado());
+                pedidoMap.put("metodoPago", pedido.getMetodoPago());
+                pedidoMap.put("tipoEntrega", pedido.getTipoEntrega());
+
+                if (pedido.getUsuario() != null) {
+                    Map<String, String> usuarioMap = new HashMap<>();
+                    usuarioMap.put("nombres", pedido.getUsuario().getNombres());
+                    usuarioMap.put("apellidos", pedido.getUsuario().getApellidos());
+                    pedidoMap.put("usuario", usuarioMap);
+                }
+
+                pedidosData.add(pedidoMap);
+            }
+
+            response.put("success", true);
+            response.put("data", pedidosData);
+            response.put("total", pedidosData.size());
+
+            return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body("Error al cargar los pedidos: " + e.getMessage());
+            response.put("success", false);
+            response.put("message", "Error al cargar los pedidos: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
-    //  BUSCAR PEDIDO
-    @PostMapping("/buscar")
-    public String buscarPedido(@RequestParam String canalPedido,
-                               @RequestParam String numeroPedido,
-                               Model model) {
-        System.out.println(" Buscando pedido - Número: " + numeroPedido);
-
-
-
-        Optional<Pedido> pedido = pedidoService.buscarPorNumeroPedido(numeroPedido);
-
-        if (pedido.isPresent()) {
-            model.addAttribute("pedido", pedido.get());
-            System.out.println(" Pedido encontrado: " + pedido.get().getId());
-        } else {
-            model.addAttribute("error", "No se encontró ningún pedido con el número: " + numeroPedido);
-            System.out.println(" Pedido no encontrado");
-        }
-
-        return "sigue-tu-pedido";
-    }
-
-    //  OBTENER PEDIDOS DEL USUARIO ACTUAL
     @GetMapping("/mis-pedidos")
-    @ResponseBody
     public ResponseEntity<?> obtenerMisPedidos(Authentication authentication) {
-        try {
-            System.out.println("=== SOLICITANDO PEDIDOS DEL USUARIO ===");
+        Map<String, Object> response = new HashMap<>();
 
+        try {
             if (authentication == null || !authentication.isAuthenticated()) {
-                return ResponseEntity.status(401).body("Usuario no autenticado");
+                response.put("success", false);
+                response.put("message", "Usuario no autenticado");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
             }
 
             String correo = authentication.getName();
             Optional<Usuario> usuarioOpt = usuarioService.buscarPorCorreo(correo);
 
             if (usuarioOpt.isEmpty()) {
-                return ResponseEntity.status(404).body("Usuario no encontrado");
+                response.put("success", false);
+                response.put("message", "Usuario no encontrado");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
             }
 
             Usuario usuario = usuarioOpt.get();
-
-            // Obtener pedidos con items inicializados
             List<Pedido> pedidos = pedidoService.obtenerPedidosPorUsuarioConItems(usuario.getId());
 
-            System.out.println(" Pedidos encontrados: " + pedidos.size());
-
-            // Crear respuesta simplificada manualmente
             List<Map<String, Object>> pedidosResponse = new ArrayList<>();
 
             for (Pedido pedido : pedidos) {
                 Map<String, Object> pedidoMap = new HashMap<>();
                 pedidoMap.put("id", pedido.getId());
-                pedidoMap.put("codigo", pedido.getNumeroPedido());
+                pedidoMap.put("numeroPedido", pedido.getNumeroPedido());
                 pedidoMap.put("estado", pedido.getEstado());
                 pedidoMap.put("fechaPedido", pedido.getFechaPedido());
                 pedidoMap.put("total", pedido.getTotal());
@@ -252,39 +246,91 @@ public class PedidoController {
                 pedidoMap.put("tipoEntrega", pedido.getTipoEntrega());
                 pedidoMap.put("direccionEntrega", pedido.getDireccionEntrega());
 
-                // Items del pedido
                 List<Map<String, Object>> itemsList = new ArrayList<>();
-                for (ItemPedido item : pedido.getItems()) {
-                    Map<String, Object> itemMap = new HashMap<>();
-                    itemMap.put("cantidad", item.getCantidad());
-                    itemMap.put("precio", item.getPrecio());
-                    itemMap.put("subtotal", item.getSubtotal());
-
-                    // Información del producto
-                    Map<String, Object> productoMap = new HashMap<>();
-                    if (item.getProductoFinal() != null) {
-                        productoMap.put("id", item.getProductoFinal().getId());
-                        productoMap.put("nombre", item.getProductoFinal().getNombre());
-                        productoMap.put("precio", item.getProductoFinal().getPrecio());
-                    } else {
-                        productoMap.put("nombre", "Producto no disponible");
-                        productoMap.put("precio", 0.0);
+                if (pedido.getItems() != null) {
+                    for (ItemPedido item : pedido.getItems()) {
+                        Map<String, Object> itemMap = new HashMap<>();
+                        itemMap.put("cantidad", item.getCantidad());
+                        itemMap.put("precio", item.getPrecio());
+                        itemMap.put("subtotal", item.getSubtotal());
+                        itemMap.put("nombreProducto", item.getNombreProducto());
+                        itemsList.add(itemMap);
                     }
-                    itemMap.put("producto", productoMap);
-
-                    itemsList.add(itemMap);
                 }
                 pedidoMap.put("items", itemsList);
 
                 pedidosResponse.add(pedidoMap);
             }
 
-            return ResponseEntity.ok(pedidosResponse);
+            response.put("success", true);
+            response.put("data", pedidosResponse);
+            response.put("total", pedidosResponse.size());
+
+            return ResponseEntity.ok(response);
 
         } catch (Exception e) {
             System.err.println(" ERROR en obtenerMisPedidos: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(500).body("Error interno del servidor");
+
+            response.put("success", false);
+            response.put("message", "Error interno del servidor: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+
+    @GetMapping("/buscar/{numeroPedido}")
+    public ResponseEntity<?> buscarPedido(@PathVariable String numeroPedido) {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            Optional<Pedido> pedidoOpt = pedidoService.buscarPorNumeroPedido(numeroPedido);
+
+            if (pedidoOpt.isPresent()) {
+                Pedido pedido = pedidoOpt.get();
+
+                Map<String, Object> pedidoData = new HashMap<>();
+                pedidoData.put("id", pedido.getId());
+                pedidoData.put("numeroPedido", pedido.getNumeroPedido());
+                pedidoData.put("estado", pedido.getEstado());
+                pedidoData.put("fechaPedido", pedido.getFechaPedido());
+                pedidoData.put("total", pedido.getTotal());
+                pedidoData.put("tipoEntrega", pedido.getTipoEntrega());
+                pedidoData.put("direccionEntrega", pedido.getDireccionEntrega());
+
+                if (pedido.getUsuario() != null) {
+                    Map<String, String> usuarioMap = new HashMap<>();
+                    usuarioMap.put("nombres", pedido.getUsuario().getNombres());
+                    usuarioMap.put("apellidos", pedido.getUsuario().getApellidos());
+                    pedidoData.put("usuario", usuarioMap);
+                }
+
+                List<Map<String, Object>> itemsList = new ArrayList<>();
+                if (pedido.getItems() != null) {
+                    for (ItemPedido item : pedido.getItems()) {
+                        Map<String, Object> itemMap = new HashMap<>();
+                        itemMap.put("nombreProducto", item.getNombreProducto());
+                        itemMap.put("cantidad", item.getCantidad());
+                        itemMap.put("precio", item.getPrecio());
+                        itemMap.put("subtotal", item.getSubtotal());
+                        itemsList.add(itemMap);
+                    }
+                }
+                pedidoData.put("items", itemsList);
+
+                response.put("success", true);
+                response.put("data", pedidoData);
+                return ResponseEntity.ok(response);
+            } else {
+                response.put("success", false);
+                response.put("message", "No se encontró ningún pedido con el número: " + numeroPedido);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error al buscar pedido: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 }
