@@ -1,0 +1,83 @@
+﻿
+.env
+*.env
+.env.local
+.env.*.local
+
+
+.idea/
+*.iml
+*.iws
+*.ipr
+.idea_modules/
+out/
+.settings/
+.classpath
+.project
+.factorypath
+
+# ========================================
+# VS Code
+# ========================================
+.vscode/
+*.code-workspace
+
+# ========================================
+# MAVEN
+# ========================================
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# ========================================
+# LOGS
+# ========================================
+logs/
+*.log
+*.log.gz
+
+# ========================================
+# OS GENERATED
+# ========================================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+*.tmp
+
+# ========================================
+# SPRING BOOT
+# ========================================
+*.pid
+*.pid.lock
+spring-boot-devtools.properties
+
+# ========================================
+# DATABASE
+# ========================================
+*.db
+*.h2.db
+*.lock
+*.log
+*.data
+*.script
+
+# ========================================
+# NODE (frontend Angular)
+# ========================================
+node_modules/
+dist/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+.angular/
