@@ -11,6 +11,7 @@ import { FooterComponent } from './core/components/footer/footer.component';
   imports: [RouterOutlet, HeaderComponent, FooterComponent],
   templateUrl: './app.html',
   styleUrls: ['./app.css']
+
 })
 export class AppComponent {
   title = 'frontend';

@@ -1,7 +1,5 @@
 <!-- src/app/modules/home/home.html -->
 
-
-
 <!-- Hero Section -->
 <section class="hero-section">
   <div class="container">
@@ -70,7 +68,8 @@
           <div class="category-content">
             <h4 class="category-title">Pollo a la Brasa</h4>
             <p class="category-description">Nuestro auténtico pollo a la brasa con especias secretas, dorado y jugoso</p>
-            <a routerLink="/menu#pollos" class="btn btn-outline-primary">Ver Más</a>
+            <!-- ✅ CAMBIAR routerLink a fragment -->
+            <a [routerLink]="['/menu']" fragment="pollos" class="btn btn-outline-primary">Ver Más</a>
           </div>
         </div>
       </div>
@@ -82,7 +81,8 @@
           <div class="category-content">
             <h4 class="category-title">Parrillas</h4>
             <p class="category-description">Deliciosas parrillas a la leña con el mejor sabor y calidad</p>
-            <a routerLink="/menu#parrillas" class="btn btn-outline-primary">Ver Más</a>
+            <!-- ✅ CAMBIAR routerLink a fragment -->
+            <a [routerLink]="['/menu']" fragment="parrillas" class="btn btn-outline-primary">Ver Más</a>
           </div>
         </div>
       </div>
@@ -94,7 +94,8 @@
           <div class="category-content">
             <h4 class="category-title">Chicharrón</h4>
             <p class="category-description">Chicharrón crocante y jugoso, perfecto para compartir en familia</p>
-            <a routerLink="/menu#chicharron" class="btn btn-outline-primary">Ver Más</a>
+            <!-- ✅ CAMBIAR routerLink a fragment -->
+            <a [routerLink]="['/menu']" fragment="chicharron" class="btn btn-outline-primary">Ver Más</a>
           </div>
         </div>
       </div>
@@ -106,7 +107,8 @@
           <div class="category-content">
             <h4 class="category-title">Broster</h4>
             <p class="category-description">Pollo broaster crujiente y dorado, ideal para los amantes de lo crocante</p>
-            <a routerLink="/menu#broaster" class="btn btn-outline-primary">Ver Más</a>
+            <!-- ✅ CAMBIAR routerLink a fragment -->
+            <a [routerLink]="['/menu']" fragment="broaster" class="btn btn-outline-primary">Ver Más</a>
           </div>
         </div>
       </div>
@@ -118,7 +120,8 @@
           <div class="category-content">
             <h4 class="category-title">Hamburguesas</h4>
             <p class="category-description">Hamburguesas gourmet con ingredientes frescos y sabores únicos</p>
-            <a routerLink="/menu#hamburguesas" class="btn btn-outline-primary">Ver Más</a>
+            <!-- ✅ CAMBIAR routerLink a fragment -->
+            <a [routerLink]="['/menu']" fragment="hamburguesas" class="btn btn-outline-primary">Ver Más</a>
           </div>
         </div>
       </div>
@@ -130,7 +133,8 @@
           <div class="category-content">
             <h4 class="category-title">Platos Criollos</h4>
             <p class="category-description">Auténticos platos de la cocina peruana, llenos de sabor y tradición</p>
-            <a routerLink="/menu#criollos" class="btn btn-outline-primary">Ver Más</a>
+            <!-- ✅ CAMBIAR routerLink a fragment -->
+            <a [routerLink]="['/menu']" fragment="criollos" class="btn btn-outline-primary">Ver Más</a>
           </div>
         </div>
       </div>
@@ -207,5 +211,3 @@
     </div>
   </div>
 </section>
-
-

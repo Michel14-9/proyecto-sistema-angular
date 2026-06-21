@@ -1,1 +1,184 @@
-<p>mis-favoritos works!</p>
+<!-- src/app/modules/cliente/mis-favoritos/mis-favoritos.html -->
+
+
+<main class="container my-5 main-container">
+  <div class="row">
+    <!-- Menú Lateral -->
+    <div class="col-md-3 mb-4">
+      <div class="card sidebar-menu">
+        <div class="card-header bg-luren text-white">
+          <h5 class="mb-0"><i class="fas fa-user-circle me-2"></i>Mi Cuenta</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush">
+            <a routerLink="/cuenta" class="list-group-item list-group-item-action">
+              <i class="fas fa-user me-2"></i>Mi Perfil
+            </a>
+            <a routerLink="/datos" class="list-group-item list-group-item-action">
+              <i class="fas fa-address-card me-2"></i>Mis Datos
+            </a>
+            <a routerLink="/direcciones" class="list-group-item list-group-item-action">
+              <i class="fas fa-map-marker-alt me-2"></i>Mis Direcciones
+            </a>
+            <a routerLink="/pedidos" class="list-group-item list-group-item-action">
+              <i class="fas fa-receipt me-2"></i>Mis Pedidos
+            </a>
+            <a routerLink="/favoritos" class="list-group-item list-group-item-action active">
+              <i class="fas fa-heart me-2"></i>Mis Favoritos
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenido Principal -->
+    <div class="col-md-9">
+      <!-- Header de la página -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h1 class="h2 page-title mb-1">Mis Favoritos</h1>
+          <p class="text-muted-custom">Gestiona tus productos favoritos</p>
+        </div>
+        <a routerLink="/cuenta" class="btn btn-outline-luren">
+          <i class="fas fa-arrow-left me-2"></i>Volver al Perfil
+        </a>
+      </div>
+
+      <!-- Estado de Sesión (solo para no autenticados) -->
+      <div *ngIf="!isAuthenticated" class="alert alert-warning-custom">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        Debes <a routerLink="/login" class="alert-link">iniciar sesión</a> para gestionar tus favoritos.
+      </div>
+
+      <!-- Contenido para usuarios autenticados -->
+      <div *ngIf="isAuthenticated">
+        <!-- Loading -->
+        <div *ngIf="isLoading" class="text-center py-5">
+          <div class="spinner-border text-warning" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <p class="mt-2 text-muted">Cargando tus favoritos...</p>
+        </div>
+
+        <!-- Error -->
+        <div *ngIf="errorMessage" class="alert alert-danger text-center">
+          <i class="fas fa-exclamation-circle me-2"></i>
+          {{ errorMessage }}
+        </div>
+
+        <!-- Header de Favoritos -->
+        <div *ngIf="!isLoading && !errorMessage" class="d-flex justify-content-between align-items-center mb-4">
+          <h4 class="mb-0">
+            <i class="fas fa-heart me-2 text-danger"></i>
+            Productos Favoritos
+            <span class="badge bg-luren ms-2" id="contadorFavoritos">{{ favoritos.length }}</span>
+          </h4>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-luren" (click)="limpiarFavoritos()">
+              <i class="fas fa-trash me-2"></i>Limpiar Todo
+            </button>
+            <a routerLink="/menu" class="btn btn-luren">
+              <i class="fas fa-plus me-2"></i>Seguir Agregando
+            </a>
+          </div>
+        </div>
+
+        <!-- Lista de Favoritos -->
+        <div *ngIf="!isLoading && !errorMessage && favoritos.length > 0" class="row" id="favoritosLista">
+          <div *ngFor="let favorito of favoritos; let i = index" class="col-md-6 col-lg-4 mb-4">
+            <div class="card producto-favorito h-100">
+              <div class="position-relative">
+                <img [src]="favorito.producto.imagen || 'assets/archivos/placeholder.jpg'"
+                     class="card-img-top producto-imagen imagen-favorito"
+                     [alt]="favorito.producto.nombre">
+                <div *ngIf="!favorito.producto.disponible" class="badge bg-danger position-absolute top-0 start-0 m-2">
+                  No Disponible
+                </div>
+                <button class="btn btn-danger btn-sm position-absolute top-0 end-0 m-2 btn-eliminar-favorito"
+                        (click)="confirmarEliminar(i)"
+                        title="Eliminar de favoritos">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+              <div class="card-body d-flex flex-column">
+                <h5 class="card-title">{{ favorito.producto.nombre }}</h5>
+                <p class="card-text text-muted small flex-grow-1">
+                  {{ favorito.producto.descripcion || 'Sin descripción' }}
+                </p>
+                <div class="d-flex justify-content-between align-items-center mt-auto">
+                  <span class="h5 text-success mb-0">{{ formatearPrecio(favorito.producto.precio) }}</span>
+                  <small class="text-muted">{{ formatearFecha(favorito.fechaAgregado) }}</small>
+                </div>
+                <div class="mt-2">
+                  <button class="btn btn-luren btn-sm w-100 btn-agregar-carrito"
+                          [class.disabled]="!favorito.producto.disponible"
+                          [disabled]="!favorito.producto.disponible"
+                          (click)="agregarAlCarrito(favorito.producto.id, $event)">
+                    <i class="fas fa-cart-plus me-2"></i>
+                    {{ favorito.producto.disponible ? 'Agregar al Carrito' : 'No Disponible' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estado Vacío -->
+        <div *ngIf="!isLoading && !errorMessage && favoritos.length === 0"
+             class="card card-custom text-center estado-vacio">
+          <div class="card-body py-5">
+            <i class="fas fa-heart fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">No tienes productos favoritos</h4>
+            <p class="text-muted mb-4">Agrega productos a tus favoritos para verlos aquí</p>
+            <a routerLink="/menu" class="btn btn-luren">
+              <i class="fas fa-utensils me-2"></i>Explorar Menú
+            </a>
+          </div>
+        </div>
+
+        <!-- Información de Ayuda -->
+        <div class="card card-custom mt-4 info-section">
+          <div class="card-header card-header-custom">
+            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>¿Cómo usar Mis Favoritos?</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <h6><i class="fas fa-heart me-2 text-danger"></i>Agregar Favoritos</h6>
+                <p class="small text-muted-custom mb-3">Haz clic en el ícono de corazón en cualquier producto del menú para agregarlo a tus favoritos.</p>
+              </div>
+              <div class="col-md-6">
+                <h6><i class="fas fa-shopping-cart me-2 text-success"></i>Agregar al Carrito</h6>
+                <p class="small text-muted-custom mb-3">Desde aquí puedes agregar productos directamente al carrito para realizar tu pedido.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Modal para Confirmar Eliminación -->
+<div class="modal" [class.show]="mostrarModal" style="display: block;" *ngIf="mostrarModal">
+  <div class="modal-dialog">
+    <div class="modal-content modal-content-custom">
+      <div class="modal-header modal-header-custom">
+        <h5 class="modal-title">Confirmar Eliminación</h5>
+        <button type="button" class="btn-close" (click)="mostrarModal = false"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Estás seguro de que quieres eliminar <strong>"{{ favoritoAEliminar?.producto?.nombre }}"</strong> de tus favoritos?</p>
+      </div>
+      <div class="modal-footer modal-footer-custom">
+        <button type="button" class="btn btn-outline-secondary-custom" (click)="mostrarModal = false">Cancelar</button>
+        <button type="button" class="btn btn-danger" (click)="eliminarFavoritoConfirmado()">
+          <i class="fas fa-trash me-2"></i>Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade show" *ngIf="mostrarModal"></div>
+
+

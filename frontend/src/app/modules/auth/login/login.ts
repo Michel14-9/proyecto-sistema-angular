@@ -4,7 +4,7 @@ import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
-import { HttpClient } from '@angular/common/http'; // ✅ Agregar
+import { HttpClient } from '@angular/common/http'; //
 import { AuthService } from '../../../core/services/auth.service';
 import { CarritoService } from '../../../core/services/carrito.service';
 
@@ -33,7 +33,7 @@ export class LoginComponent implements OnInit {
     private carritoService: CarritoService,
     private router: Router,
     private route: ActivatedRoute,
-    private http: HttpClient // ✅ Agregar
+    private http: HttpClient
   ) {}
 
   ngOnInit(): void {

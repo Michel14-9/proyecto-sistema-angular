@@ -1,10 +1,9 @@
 // src/app/modules/publico/menu/menu.component.ts
-
-import { Component, OnInit, AfterViewInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
 import { CarritoService } from '../../../core/services/carrito.service';
 
@@ -13,30 +12,36 @@ import { CarritoService } from '../../../core/services/carrito.service';
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './menu.component.html',
-  styleUrls: ['./menu.component.css']
+  styleUrls: ['./menu.component.css'],
+  encapsulation: ViewEncapsulation.None
 })
 export class MenuComponent implements OnInit, AfterViewInit {
-
-  // Datos del menú
+  private apiUrl = 'http://localhost:8080';
   menuData: any = {};
   categorias: string[] = ['pollos', 'parrillas', 'chicharron', 'broaster', 'hamburguesas', 'criollos', 'combos'];
-
-  // Estado
   isLoading: boolean = true;
   errorMessage: string = '';
-
-  // Carrito
   totalCarrito: number = 0;
-
-  // Favoritos
   favoritos: Set<number> = new Set();
 
   constructor(
     private http: HttpClient,
     private authService: AuthService,
     private carritoService: CarritoService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
+
+  private getCsrfToken(): string | null {
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'XSRF-TOKEN') {
+        return decodeURIComponent(value);
+      }
+    }
+    return null;
+  }
 
   ngOnInit(): void {
     this.cargarMenu();
@@ -45,28 +50,95 @@ export class MenuComponent implements OnInit, AfterViewInit {
     this.carritoService.getTotal().subscribe(total => {
       this.totalCarrito = total;
     });
+
+    this.route.fragment.subscribe(fragment => {
+      if (fragment) {
+        console.log('🔗 Fragmento recibido:', fragment);
+        setTimeout(() => {
+          this.scrollToCategory(fragment);
+        }, 500);
+      }
+    });
   }
 
   ngAfterViewInit(): void {
-    // Inicializar animaciones después de que la vista esté lista
-    this.configurarAnimaciones();
+    setTimeout(() => {
+      this.configurarAnimaciones();
+
+      const fragment = this.route.snapshot.fragment;
+      if (fragment) {
+        console.log('🔗 Fragmento inicial:', fragment);
+        setTimeout(() => {
+          this.scrollToCategory(fragment);
+        }, 800);
+      }
+    }, 500);
   }
 
   cargarMenu(): void {
     this.isLoading = true;
-    this.http.get('/api/menu/completo').subscribe({
+    this.errorMessage = '';
+
+    console.log('🔄 Cargando menú...');
+
+    this.http.get(`${this.apiUrl}/api/menu/completo`).subscribe({
       next: (response: any) => {
-        if (response.success) {
-          this.menuData = response.menu;
-          console.log('✅ Menú cargado:', this.menuData);
-        } else {
-          this.errorMessage = response.message || 'Error al cargar el menú';
+        console.log('📦 Respuesta del servidor:', response);
+
+        if (response && response.success === true) {
+          if (response.menu) {
+            this.menuData = response.menu;
+          } else if (response.data) {
+            this.menuData = response.data;
+          } else {
+            this.menuData = response;
+          }
+          console.log('✅ Menú cargado correctamente');
+          this.isLoading = false;
+
+          setTimeout(() => {
+            const fragment = this.route.snapshot.fragment;
+            if (fragment) {
+              console.log('🔗 Fragmento después de cargar menú:', fragment);
+              this.scrollToCategory(fragment);
+            }
+          }, 300);
+
+          return;
         }
+
+        if (response && typeof response === 'object' && !response.success) {
+          const categorias = Object.keys(response);
+          if (categorias.length > 0 && categorias.some(c => Array.isArray(response[c]))) {
+            this.menuData = response;
+            console.log('✅ Menú cargado (directo)');
+            this.isLoading = false;
+            return;
+          }
+        }
+
+        this.errorMessage = response?.message || 'Error al cargar el menú';
+        console.warn('⚠️ Respuesta inesperada:', response);
         this.isLoading = false;
       },
       error: (error) => {
         console.error('❌ Error al cargar menú:', error);
-        this.errorMessage = 'Error al cargar el menú. Intenta nuevamente.';
+
+        if (error.error && typeof error.error === 'object') {
+          if (error.error.menu) {
+            this.menuData = error.error.menu;
+            this.isLoading = false;
+            return;
+          }
+          if (error.error.data) {
+            this.menuData = error.error.data;
+            this.isLoading = false;
+            return;
+          }
+          this.errorMessage = error.error.message || 'Error al cargar el menú. Intenta nuevamente.';
+        } else {
+          this.errorMessage = 'Error al cargar el menú. Intenta nuevamente.';
+        }
         this.isLoading = false;
       }
     });
@@ -75,67 +147,223 @@ export class MenuComponent implements OnInit, AfterViewInit {
   cargarFavoritos(): void {
     if (!this.authService.isAuthenticated()) return;
 
-    this.http.get('/api/favoritos/listar').subscribe({
+    this.http.get(`${this.apiUrl}/api/favoritos/listar`, {
+      withCredentials: true
+    }).subscribe({
       next: (response: any) => {
         if (response.success && response.favoritos) {
           response.favoritos.forEach((fav: any) => {
-            this.favoritos.add(fav.id);
+            if (fav.producto && fav.producto.id) {
+              this.favoritos.add(fav.producto.id);
+            }
           });
+          console.log('❤️ Favoritos cargados:', this.favoritos);
         }
       },
       error: (error) => console.error('Error cargando favoritos:', error)
     });
   }
 
-  toggleFavorito(productId: number): void {
+  // ✅ ANIMACIÓN: Corazón flotante
+  private mostrarCorazonFlotante(event: Event): void {
+    const rect = (event.target as HTMLElement).getBoundingClientRect();
+    const corazon = document.createElement('div');
+    corazon.className = 'corazon-flotante';
+    corazon.innerHTML = '❤️';
+    corazon.style.left = rect.left + rect.width / 2 - 20 + 'px';
+    corazon.style.top = rect.top + 'px';
+    document.body.appendChild(corazon);
+    setTimeout(() => corazon.remove(), 1300);
+  }
+
+  // ✅ ANIMACIÓN: Carrito flotante
+  private mostrarCarritoFlotante(event: Event): void {
+    const rect = (event.target as HTMLElement).getBoundingClientRect();
+    const carrito = document.createElement('div');
+    carrito.className = 'carrito-flotante';
+    carrito.innerHTML = '🛒';
+    carrito.style.left = rect.left + rect.width / 2 - 20 + 'px';
+    carrito.style.top = rect.top + 'px';
+    document.body.appendChild(carrito);
+    setTimeout(() => carrito.remove(), 1300);
+  }
+
+  toggleFavorito(productId: number | undefined, event: Event): void {
+    event.stopPropagation();
+
+    if (!productId) {
+      console.error('❌ Error: productId es undefined');
+      this.mostrarNotificacion('Error: Producto no válido', 'error');
+      return;
+    }
+
     if (!this.authService.isAuthenticated()) {
       this.mostrarNotificacion('Debes iniciar sesión para agregar favoritos', 'warning');
       return;
     }
 
-    this.http.post('/api/favoritos/toggle', { productoId: productId }).subscribe({
+    console.log('🔄 Toggle favorito - Producto ID:', productId);
+
+    // ✅ Animación del botón favorito
+    const boton = event.target as HTMLElement;
+    boton.classList.add('animando');
+
+    const csrfToken = this.getCsrfToken();
+    let headers = new HttpHeaders();
+    if (csrfToken) {
+      headers = headers.set('X-XSRF-TOKEN', csrfToken);
+    }
+    headers = headers.set('Content-Type', 'application/x-www-form-urlencoded');
+
+    const body = new URLSearchParams();
+    body.set('productoId', productId.toString());
+
+    this.http.post(`${this.apiUrl}/api/favoritos/toggle`,
+      body.toString(),
+      {
+        headers: headers,
+        withCredentials: true
+      }
+    ).subscribe({
       next: (response: any) => {
         if (response.success) {
           if (response.agregado) {
             this.favoritos.add(productId);
-            this.mostrarNotificacion('Agregado a favoritos', 'success');
+            this.mostrarCorazonFlotante(event);
+            this.mostrarNotificacion('❤️ Agregado a favoritos', 'success');
           } else {
             this.favoritos.delete(productId);
-            this.mostrarNotificacion('Eliminado de favoritos', 'info');
+            this.mostrarNotificacion('💔 Eliminado de favoritos', 'info');
           }
+          boton.classList.remove('animando');
         }
       },
       error: (error) => {
         console.error('Error toggle favorito:', error);
-        this.mostrarNotificacion('Error al actualizar favoritos', 'error');
+        boton.classList.remove('animando');
+        if (error.status === 403) {
+          this.mostrarNotificacion('Error de seguridad. Recarga la página.', 'error');
+        } else if (error.status === 400) {
+          this.mostrarNotificacion('Error: Producto no válido', 'error');
+        } else {
+          this.mostrarNotificacion('Error al actualizar favoritos', 'error');
+        }
       }
     });
   }
 
-  esFavorito(productId: number): boolean {
+  esFavorito(productId: number | undefined): boolean {
+    if (!productId) return false;
     return this.favoritos.has(productId);
   }
 
-  agregarAlCarrito(productoId: number): void {
-    this.carritoService.agregarProducto(productoId, 1).subscribe({
+  agregarAlCarrito(productoId: number | undefined, event: Event): void {
+    event.stopPropagation();
+
+    if (!productoId) {
+      console.error('❌ Error: productoId es undefined');
+      this.mostrarNotificacion('Error: Producto no válido', 'error');
+      return;
+    }
+
+    console.log('🛒 Agregando al carrito - Producto ID:', productoId);
+
+    // ✅ Animación del botón agregar
+    const boton = event.target as HTMLElement;
+    const textoOriginal = boton.innerHTML;
+    boton.classList.add('animando');
+
+    const csrfToken = this.getCsrfToken();
+    let headers = new HttpHeaders();
+    if (csrfToken) {
+      headers = headers.set('X-XSRF-TOKEN', csrfToken);
+    }
+    headers = headers.set('Content-Type', 'application/x-www-form-urlencoded');
+
+    const body = new URLSearchParams();
+    body.set('productoId', productoId.toString());
+    body.set('cantidad', '1');
+
+    this.http.post(`${this.apiUrl}/api/carrito/agregar`,
+      body.toString(),
+      {
+        headers: headers,
+        withCredentials: true
+      }
+    ).subscribe({
       next: (response: any) => {
         if (response.success) {
-          this.mostrarNotificacion(`${response.message} - ${response.productoNombre}`, 'success');
+          this.mostrarCarritoFlotante(event);
+          boton.classList.remove('animando');
+          boton.classList.add('agregado');
+          boton.innerHTML = '<i class="fas fa-check me-1"></i> ¡Agregado!';
+
+          this.mostrarNotificacion(`✅ ${response.message || 'Producto agregado'}`, 'success');
           this.carritoService.refrescarTotal();
+          this.carritoService.getTotal().subscribe(total => {
+            this.totalCarrito = total;
+          });
+
+          setTimeout(() => {
+            boton.classList.remove('agregado');
+            boton.innerHTML = textoOriginal;
+          }, 2000);
         }
       },
       error: (error) => {
         console.error('Error agregar al carrito:', error);
-        this.mostrarNotificacion('Error al agregar al carrito', 'error');
+        boton.classList.remove('animando');
+        boton.innerHTML = textoOriginal;
+        if (error.status === 400) {
+          this.mostrarNotificacion('Error: Producto no disponible o datos incorrectos', 'error');
+        } else if (error.status === 403) {
+          this.mostrarNotificacion('Error de seguridad. Recarga la página.', 'error');
+        } else {
+          this.mostrarNotificacion('❌ Error al agregar al carrito', 'error');
+        }
       }
     });
   }
 
   mostrarNotificacion(mensaje: string, tipo: string = 'info'): void {
-    // Implementar notificación - puedes usar un servicio de notificaciones
-    console.log(`[${tipo}] ${mensaje}`);
-    // Por ahora usamos alert
-    alert(mensaje);
+    const notificacion = document.createElement('div');
+    notificacion.className = `notificacion-flotante notificacion-${tipo}`;
+
+    const iconos: { [key: string]: string } = {
+      success: '✅',
+      error: '❌',
+      warning: '⚠️',
+      info: 'ℹ️'
+    };
+    const icono = iconos[tipo] || '';
+
+    notificacion.innerHTML = `
+      <div class="notificacion-contenido">
+        <span><span class="notificacion-icono">${icono}</span>${mensaje}</span>
+        <button class="notificacion-cerrar">&times;</button>
+      </div>
+    `;
+
+    document.body.appendChild(notificacion);
+
+    setTimeout(() => {
+      notificacion.classList.add('notificacion-visible');
+    }, 10);
+
+    const btnCerrar = notificacion.querySelector('.notificacion-cerrar');
+    btnCerrar?.addEventListener('click', () => {
+      notificacion.classList.remove('notificacion-visible');
+      notificacion.classList.add('notificacion-salida');
+      setTimeout(() => notificacion.remove(), 400);
+    });
+
+    setTimeout(() => {
+      if (notificacion.parentNode) {
+        notificacion.classList.remove('notificacion-visible');
+        notificacion.classList.add('notificacion-salida');
+        setTimeout(() => notificacion.remove(), 400);
+      }
+    }, 4000);
   }
 
   configurarAnimaciones(): void {
@@ -148,19 +376,27 @@ export class MenuComponent implements OnInit, AfterViewInit {
     }, { threshold: 0.1 });
 
     document.querySelectorAll('.product-card, .category-title').forEach(el => {
+      el.classList.add('animacion-oculta');
       observer.observe(el);
     });
   }
 
   scrollToCategory(categoria: string): void {
+    console.log('📜 Scrolleando a:', categoria);
     const element = document.getElementById(categoria);
     if (element) {
+      console.log('✅ Elemento encontrado:', categoria);
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      console.warn('⚠️ Elemento no encontrado:', categoria);
+      setTimeout(() => {
+        const retryElement = document.getElementById(categoria);
+        if (retryElement) {
+          console.log('✅ Elemento encontrado en reintento:', categoria);
+          retryElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 500);
     }
-  }
-
-  getCategorias(): string[] {
-    return Object.keys(this.menuData);
   }
 
   getProductos(categoria: string): any[] {

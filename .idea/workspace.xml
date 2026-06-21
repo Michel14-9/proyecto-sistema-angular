@@ -5,11 +5,52 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4e10dce1-a503-4051-8fa1-2dbc492f7fbc" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/config/MercadoPagoConfiguracion.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/model/Pago.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/repository/PagoRepository.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/service/MercadoPagoService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/checkout/checkout.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/checkout/checkout.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/checkout/checkout.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/pago-exitoso/pago-exitoso.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/pago-exitoso/pago-exitoso.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/pago-exitoso/pago-exitoso.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/pago-fallido/pago-fallido.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/pago-fallido/pago-fallido.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/pago-fallido/pago-fallido.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/config/SecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/FavoritoController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/FavoritoController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/PagoController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/PagoController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/PedidoController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/PedidoController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/model/Pedido.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/model/Pedido.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/repository/FavoritoRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/repository/FavoritoRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/repository/PedidoRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/repository/PedidoRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/service/FavoritoService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/service/FavoritoService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/service/PedidoService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/service/PedidoService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/app.component.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/app.component.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/app.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/app.config.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/app/app.routes.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/app.routes.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/menu/menu.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/menu/menu.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/menu/menu.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/core/components/footer/footer.component.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/core/components/footer/footer.component.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/core/interceptors/error-interceptor.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/core/interceptors/error-interceptor.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/core/services/carrito.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/core/services/carrito.service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/auth/login/login.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/auth/login/login.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cliente/carrito/carrito.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/carrito/carrito.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cliente/carrito/carrito.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/carrito/carrito.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cliente/carrito/carrito.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/carrito/carrito.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cliente/mis-favoritos/mis-favoritos.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/mis-favoritos/mis-favoritos.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cliente/mis-favoritos/mis-favoritos.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/mis-favoritos/mis-favoritos.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cliente/mis-favoritos/mis-favoritos.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/mis-favoritos/mis-favoritos.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/index/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/publico/index/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/locales/locales.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/publico/locales/locales.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/locales/locales.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/publico/locales/locales.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/locales/locales.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/publico/locales/locales.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/menu/menu.component.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/publico/menu/menu.component.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/menu/menu.component.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/publico/menu/menu.component.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/menu/menu.component.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/publico/menu/menu.component.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/index.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -66,7 +107,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "backend",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "C:/Users/Michel/Documents/GitHub/proyecto-sistema-angular",
     "project.structure.last.edited": "Modules",

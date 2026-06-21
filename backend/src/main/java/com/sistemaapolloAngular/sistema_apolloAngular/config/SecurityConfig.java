@@ -53,12 +53,12 @@ public class SecurityConfig {
                         .contentSecurityPolicy(csp -> csp
                                 .policyDirectives(
                                         "default-src 'self'; " +
-                                                "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.google.com https://www.gstatic.com; " +
+                                                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://www.google.com https://www.gstatic.com https://sdk.mercadopago.com https://sandbox.mercadopago.com.pe; " +
                                                 "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " +
                                                 "img-src 'self' data: blob: https:; " +
                                                 "font-src 'self' https:; " +
                                                 "connect-src 'self' https:; " +
-                                                "frame-src 'self' https:; " +
+                                                "frame-src 'self' https://sandbox.mercadopago.com.pe; " +
                                                 "object-src 'none';"
                                 )
                         )
@@ -77,10 +77,12 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/api/direcciones/**",
                                 "/api/pagos/**",
-                                "/api/carrito/**",      // ✅ AGREGADO
-                                "/api/menu/**",         // ✅ AGREGADO
-                                "/api/pedidos/**",      // ✅ AGREGADO
-                                "/api/productos/**",    // ✅ AGREGADO
+                                "/api/carrito/**",
+                                "/api/menu/**",
+                                "/api/pedidos/**",
+                                "/api/productos/**",
+                                "/api/locales/**",
+                                "/api/pago/**",
                                 "/login",
                                 "/error"
                         )
@@ -102,6 +104,8 @@ public class SecurityConfig {
                                 "/api/combos",
                                 "/api/pagos/**",
                                 "/api/menu/**",
+                                "/api/locales/**",
+                                "/api/pago/**",
                                 "/login",
                                 "/error"
                         ).permitAll()

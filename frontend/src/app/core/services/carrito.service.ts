@@ -1,7 +1,7 @@
 // src/app/core/services/carrito.service.ts
 
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, BehaviorSubject, of, catchError, tap } from 'rxjs';
 
 @Injectable({
@@ -36,49 +36,95 @@ export class CarritoService {
       console.warn('⚠️ Usuario no autenticado');
       return of({ success: false, message: 'Usuario no autenticado' });
     }
-    return this.http.post(`${this.apiUrl}/agregar`, { productoId, cantidad }, { withCredentials: true })
-      .pipe(
-        tap(() => {
-          setTimeout(() => this.actualizarTotal(), 300);
-        })
-      );
+
+    const csrfToken = this.getCsrfToken();
+    let headers = new HttpHeaders();
+    if (csrfToken) {
+      headers = headers.set('X-XSRF-TOKEN', csrfToken);
+    }
+    headers = headers.set('Content-Type', 'application/x-www-form-urlencoded');
+
+    // ✅ Enviar como x-www-form-urlencoded (coincide con @RequestParam)
+    const body = new URLSearchParams();
+    body.set('productoId', productoId.toString());
+    body.set('cantidad', cantidad.toString());
+
+    return this.http.post(`${this.apiUrl}/agregar`,
+      body.toString(),
+      { headers, withCredentials: true }
+    ).pipe(
+      tap(() => {
+        setTimeout(() => this.actualizarTotal(), 300);
+      })
+    );
   }
 
+  // ✅ CORREGIDO: Enviar como x-www-form-urlencoded (coincide con @RequestParam)
   actualizarCantidad(itemId: number, cantidad: number): Observable<any> {
     if (!localStorage.getItem('token')) {
       return of({ success: false, message: 'Usuario no autenticado' });
     }
-    return this.http.put(`${this.apiUrl}/actualizar/${itemId}`, { cantidad }, { withCredentials: true })
-      .pipe(
-        tap(() => {
-          setTimeout(() => this.actualizarTotal(), 300);
-        })
-      );
+
+    const csrfToken = this.getCsrfToken();
+    let headers = new HttpHeaders();
+    if (csrfToken) {
+      headers = headers.set('X-XSRF-TOKEN', csrfToken);
+    }
+    headers = headers.set('Content-Type', 'application/x-www-form-urlencoded');
+
+    // ✅ Enviar como x-www-form-urlencoded
+    const body = new URLSearchParams();
+    body.set('cantidad', cantidad.toString());
+
+    return this.http.put(`${this.apiUrl}/actualizar/${itemId}`,
+      body.toString(),
+      { headers, withCredentials: true }
+    ).pipe(
+      tap(() => {
+        setTimeout(() => this.actualizarTotal(), 300);
+      })
+    );
   }
 
   eliminarProducto(itemId: number): Observable<any> {
     if (!localStorage.getItem('token')) {
       return of({ success: false, message: 'Usuario no autenticado' });
     }
-    return this.http.delete(`${this.apiUrl}/eliminar/${itemId}`, { withCredentials: true })
-      .pipe(
-        tap(() => {
-          setTimeout(() => this.actualizarTotal(), 300);
-        })
-      );
+
+    const csrfToken = this.getCsrfToken();
+    let headers = new HttpHeaders();
+    if (csrfToken) {
+      headers = headers.set('X-XSRF-TOKEN', csrfToken);
+    }
+
+    return this.http.delete(`${this.apiUrl}/eliminar/${itemId}`,
+      { headers, withCredentials: true }
+    ).pipe(
+      tap(() => {
+        setTimeout(() => this.actualizarTotal(), 300);
+      })
+    );
   }
 
   vaciarCarrito(): Observable<any> {
     if (!localStorage.getItem('token')) {
       return of({ success: false, message: 'Usuario no autenticado' });
     }
-    return this.http.delete(`${this.apiUrl}/vaciar`, { withCredentials: true })
-      .pipe(
-        tap(() => {
-          this.totalSubject.next(0);
-          this.cantidadSubject.next(0);
-        })
-      );
+
+    const csrfToken = this.getCsrfToken();
+    let headers = new HttpHeaders();
+    if (csrfToken) {
+      headers = headers.set('X-XSRF-TOKEN', csrfToken);
+    }
+
+    return this.http.delete(`${this.apiUrl}/vaciar`,
+      { headers, withCredentials: true }
+    ).pipe(
+      tap(() => {
+        this.totalSubject.next(0);
+        this.cantidadSubject.next(0);
+      })
+    );
   }
 
   getTotal(): Observable<number> {
@@ -118,7 +164,6 @@ export class CarritoService {
         catchError((err) => {
           if (err.status === 401 || err.status === 403) {
             console.log('🔄 Usuario no autenticado, carrito vacío');
-            // ✅ SOLO limpiar carrito, NO el token (el interceptor lo hará)
             this.totalSubject.next(0);
             this.cantidadSubject.next(0);
           } else {
@@ -146,5 +191,16 @@ export class CarritoService {
   refrescarTotal(): void {
     this.actualizando = false;
     this.actualizarTotal();
+  }
+
+  private getCsrfToken(): string | null {
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'XSRF-TOKEN') {
+        return decodeURIComponent(value);
+      }
+    }
+    return null;
   }
 }

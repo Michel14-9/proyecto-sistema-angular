@@ -1,14 +1,21 @@
 package com.sistemaapolloAngular.sistema_apolloAngular.controller;
 
+import com.mercadopago.resources.payment.Payment;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.CarritoItem;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.Usuario;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.Direccion;
+import com.sistemaapolloAngular.sistema_apolloAngular.model.Pedido;
+import com.sistemaapolloAngular.sistema_apolloAngular.model.Pago;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.CarritoService;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.UsuarioService;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.DireccionService;
+import com.sistemaapolloAngular.sistema_apolloAngular.service.MercadoPagoService;
+import com.sistemaapolloAngular.sistema_apolloAngular.service.PedidoService;
+import com.sistemaapolloAngular.sistema_apolloAngular.repository.PagoRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional; // ✅ AGREGAR
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -20,15 +27,23 @@ public class PagoController {
     private final CarritoService carritoService;
     private final UsuarioService usuarioService;
     private final DireccionService direccionService;
+    private final MercadoPagoService mercadoPagoService;
+    private final PedidoService pedidoService;
+    private final PagoRepository pagoRepository;
 
     public PagoController(CarritoService carritoService,
                           UsuarioService usuarioService,
-                          DireccionService direccionService) {
+                          DireccionService direccionService,
+                          MercadoPagoService mercadoPagoService,
+                          PedidoService pedidoService,
+                          PagoRepository pagoRepository) {
         this.carritoService = carritoService;
         this.usuarioService = usuarioService;
         this.direccionService = direccionService;
+        this.mercadoPagoService = mercadoPagoService;
+        this.pedidoService = pedidoService;
+        this.pagoRepository = pagoRepository;
     }
-
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> obtenerDatosPago(Authentication authentication) {
@@ -91,13 +106,12 @@ public class PagoController {
             usuarioData.put("email", usuario.getUsername());
             usuarioData.put("telefono", usuario.getTelefono());
 
-            // Datos del carrito - CORREGIDO
+            // Datos del carrito
             List<Map<String, Object>> carritoData = new ArrayList<>();
             for (CarritoItem item : carrito) {
                 Map<String, Object> itemData = new HashMap<>();
                 itemData.put("id", item.getId());
 
-                // Obtener nombre del producto desde el objeto Producto
                 String nombreProducto = "Producto";
                 if (item.getProducto() != null) {
                     nombreProducto = item.getProducto().getNombre();
@@ -169,6 +183,141 @@ public class PagoController {
         }
     }
 
+    // En PagoController.java, modifica el método crearPreferencia
+
+    @PostMapping("/crear-preferencia")
+    @Transactional
+    public ResponseEntity<?> crearPreferencia(@RequestBody Map<String, Long> request, Authentication auth) {
+        try {
+            System.out.println("📝 Creando preferencia - Inicio");
+
+            if (auth == null || !auth.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "Usuario no autenticado"));
+            }
+
+            Long pedidoId = request.get("pedidoId");
+            System.out.println("📝 pedidoId: " + pedidoId);
+
+            if (pedidoId == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "pedidoId es requerido"));
+            }
+
+            Optional<Pedido> pedidoOpt = pedidoService.obtenerPedidoConItems(pedidoId);
+
+            if (pedidoOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "Pedido no encontrado"));
+            }
+
+            Pedido pedido = pedidoOpt.get();
+
+            Map<String, Object> preference = mercadoPagoService.crearPreferencia(pedido);
+
+            String preferenceId = (String) preference.get("id");
+            System.out.println("✅ Preferencia creada: " + preferenceId);
+
+            pedido.setPreferenceId(preferenceId);
+            pedidoService.actualizarPedido(pedido);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("preferenceId", preferenceId);
+            response.put("publicKey", mercadoPagoService.getPublicKey());
+
+            // ✅ AGREGAR: initPoint para redirección
+            String initPoint = (String) preference.get("sandbox_init_point");
+            if (initPoint == null || initPoint.isEmpty()) {
+                initPoint = (String) preference.get("init_point");
+            }
+            response.put("initPoint", initPoint);
+
+            System.out.println("🔗 InitPoint: " + initPoint);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.err.println("❌ Error creando preferencia: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error al crear la preferencia: " + e.getMessage()));
+        }
+    }
+
+    // ✅ NUEVO: Webhook para recibir notificaciones de MercadoPago
+    @PostMapping("/webhook")
+    public ResponseEntity<?> webhook(@RequestBody Map<String, Object> payload) {
+        try {
+            System.out.println("📥 Webhook recibido: " + payload);
+
+            String type = (String) payload.get("type");
+
+            // El ID del pago viene en data.id
+            Map<String, Object> data = (Map<String, Object>) payload.get("data");
+            String paymentId = data != null ? (String) data.get("id") : null;
+
+            if ("payment".equals(type) && paymentId != null) {
+                // ✅ Ahora obtenerPago existe y devuelve Payment
+                Payment payment = mercadoPagoService.obtenerPago(paymentId);
+
+                String externalReference = payment.getExternalReference();
+                if (externalReference == null) {
+                    System.err.println("❌ External reference no encontrada");
+                    return ResponseEntity.ok(Map.of("status", "ignored"));
+                }
+
+                Long pedidoId = Long.parseLong(externalReference);
+                Optional<Pedido> pedidoOpt = pedidoService.obtenerPedidoPorId(pedidoId);
+
+                if (pedidoOpt.isEmpty()) {
+                    System.err.println("❌ Pedido no encontrado: " + pedidoId);
+                    return ResponseEntity.ok(Map.of("status", "pedido_no_encontrado"));
+                }
+
+                Pedido pedido = pedidoOpt.get();
+
+                // Crear registro de pago
+                Pago pago = new Pago();
+                pago.setPedido(pedido);
+                pago.setPaymentId(payment.getId().toString());
+                pago.setStatus(payment.getStatus());
+                pago.setMetodoPago(payment.getPaymentMethodId());
+                pago.setMonto(payment.getTransactionAmount().doubleValue());
+                pago.setFechaPago(java.time.LocalDateTime.now());
+                pago.setResponseJson(payment.toString());
+                pagoRepository.save(pago);
+
+                // Actualizar estado del pedido
+                if ("approved".equals(payment.getStatus())) {
+                    pedido.setEstado("PAGADO");
+                    System.out.println("✅ Pedido " + pedidoId + " pagado exitosamente");
+                } else if ("rejected".equals(payment.getStatus())) {
+                    pedido.setEstado("RECHAZADO");
+                    System.out.println("❌ Pedido " + pedidoId + " rechazado");
+                } else {
+                    pedido.setEstado("PENDIENTE");
+                    System.out.println("⏳ Pedido " + pedidoId + " pendiente");
+                }
+
+                pedido.setPaymentId(payment.getId().toString());
+                pedidoService.actualizarPedido(pedido);
+
+                System.out.println("✅ Webhook procesado correctamente");
+            }
+
+            return ResponseEntity.ok(Map.of("status", "success"));
+
+        } catch (Exception e) {
+            System.err.println("❌ Error en webhook: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+    // ✅ NUEVO: Obtener clave pública de MercadoPago
+    @GetMapping("/public-key")
+    public ResponseEntity<?> getPublicKey() {
+        return ResponseEntity.ok(Map.of("publicKey", mercadoPagoService.getPublicKey()));
+    }
 
     @PostMapping("/calcular")
     public ResponseEntity<Map<String, Object>> calcularTotales(@RequestBody(required = false) Map<String, Object> datos) {
@@ -207,7 +356,6 @@ public class PagoController {
         }
     }
 
-
     @GetMapping("/verificar")
     public ResponseEntity<Map<String, Object>> verificarCarrito(Authentication authentication) {
         Map<String, Object> response = new HashMap<>();
@@ -240,7 +388,6 @@ public class PagoController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
-
 
     @GetMapping("/direcciones")
     public ResponseEntity<Map<String, Object>> obtenerDireccionesPago(Authentication authentication) {

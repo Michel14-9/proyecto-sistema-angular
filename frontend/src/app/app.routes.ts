@@ -7,8 +7,15 @@ export const routes: Routes = [
   { path: 'registrate', loadComponent: () => import('./modules/auth/registrate/registrate').then(m => m.RegistrateComponent) },
   { path: 'admin-menu', loadComponent: () => import('./modules/admin/admin-menu/admin-menu').then(m => m.AdminMenuComponent) },
   { path: 'cocinero', loadComponent: () => import('./modules/cocinero/cocinero/cocinero').then(m => m.CocineroComponent) },
-  // ✅ CORREGIDO: usar menu.component en lugar de menu
   { path: 'menu', loadComponent: () => import('./modules/publico/menu/menu.component').then(m => m.MenuComponent) },
   { path: 'nuestros-locales', loadComponent: () => import('./modules/publico/locales/locales').then(m => m.LocalesComponent) },
+  { path: 'favoritos', loadComponent: () => import('./modules/cliente/mis-favoritos/mis-favoritos').then(m => m.MisFavoritosComponent) },
+  { path: 'carrito', loadComponent: () => import('./modules/cliente/carrito/carrito').then(m => m.CarritoComponent) },
+  { path: 'checkout', loadComponent: () => import('./modules/cliente/checkout/checkout').then(m => m.CheckoutComponent) },
+
+  // ✅ Rutas de pago
+  { path: 'pago-exitoso', loadComponent: () => import('./modules/cliente/pago-exitoso/pago-exitoso').then(m => m.PagoExitosoComponent) },
+  { path: 'pago-fallido', loadComponent: () => import('./modules/cliente/pago-fallido/pago-fallido').then(m => m.PagoFallidoComponent) },
+
   { path: '**', redirectTo: '' }
 ];
