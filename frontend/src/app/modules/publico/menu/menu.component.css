@@ -1,0 +1,206 @@
+/* src/app/modules/publico/menu/menu.component.css */
+
+/* ======== PALETA DE COLORES ======== */
+:root {
+  --verde: #81c784;
+  --naranja: #ffb74d;
+  --amarillo: #fff9c4;
+  --rojo: #e53935;
+  --gris: #6c757d;
+  --blanco: #fafafa;
+}
+
+/* ======= CATEGORÍAS ======= */
+.categories-nav {
+  background: white;
+  padding: 15px 0;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(10px);
+}
+
+.categories-nav .btn-group {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+}
+
+.categories-nav .btn {
+  border-radius: 20px !important;
+  padding: 8px 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.categories-nav .btn:hover {
+  background-color: var(--naranja);
+  color: white;
+  transform: translateY(-2px);
+}
+
+.categories-nav .btn.active {
+  background-color: var(--naranja);
+  color: white;
+}
+
+/* ======= TÍTULO DE CATEGORÍA ======= */
+.category-title {
+  color: var(--rojo);
+  font-weight: 700;
+  font-size: 1.8rem;
+  margin: 2rem 0 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 3px solid var(--naranja);
+  position: relative;
+}
+
+.category-title::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  width: 80px;
+  height: 3px;
+  background: var(--rojo);
+}
+
+/* ======= TARJETA DE PRODUCTO ======= */
+.product-card {
+  border: none;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.product-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+}
+
+.product-image {
+  height: 220px;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.product-card:hover .product-image {
+  transform: scale(1.05);
+}
+
+.product-title {
+  font-weight: 700;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.product-description {
+  color: var(--gris);
+  font-size: 0.9rem;
+  min-height: 40px;
+}
+
+.price-current {
+  font-size: 1.3rem;
+  color: var(--verde) !important;
+}
+
+/* ======= BOTÓN FAVORITOS ======= */
+.favorite-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 1.2rem;
+  color: #ccc;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  z-index: 10;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.favorite-btn:hover {
+  transform: scale(1.15);
+  color: var(--rojo);
+}
+
+.favorite-btn.favorito-activo {
+  color: var(--rojo);
+  background: white;
+}
+
+.favorite-btn.favorito-activo i {
+  color: var(--rojo);
+}
+
+/* ======= BOTÓN AGREGAR ======= */
+.agregar-carrito-btn {
+  background: linear-gradient(135deg, var(--naranja), #f57c00);
+  border: none;
+  border-radius: 25px;
+  padding: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.agregar-carrito-btn:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 15px rgba(255,183,77,0.4);
+}
+
+.agregar-carrito-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ======= ANIMACIONES ======= */
+.animacion-oculta {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.6s ease;
+}
+
+.animacion-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ======= RESPONSIVE ======= */
+@media (max-width: 768px) {
+  .categories-nav {
+    position: relative;
+    padding: 10px 0;
+  }
+
+  .categories-nav .btn {
+    font-size: 0.75rem;
+    padding: 5px 12px;
+  }
+
+  .category-title {
+    font-size: 1.4rem;
+  }
+
+  .product-image {
+    height: 180px;
+  }
+}
+
+@media (max-width: 480px) {
+  .product-image {
+    height: 150px;
+  }
+}

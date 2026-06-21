@@ -7,7 +7,8 @@ export const routes: Routes = [
   { path: 'registrate', loadComponent: () => import('./modules/auth/registrate/registrate').then(m => m.RegistrateComponent) },
   { path: 'admin-menu', loadComponent: () => import('./modules/admin/admin-menu/admin-menu').then(m => m.AdminMenuComponent) },
   { path: 'cocinero', loadComponent: () => import('./modules/cocinero/cocinero/cocinero').then(m => m.CocineroComponent) },
-  { path: 'menu', loadComponent: () => import('./modules/publico/menu/menu').then(m => m.MenuComponent) },
+  // ✅ CORREGIDO: usar menu.component en lugar de menu
+  { path: 'menu', loadComponent: () => import('./modules/publico/menu/menu.component').then(m => m.MenuComponent) },
   { path: 'nuestros-locales', loadComponent: () => import('./modules/publico/locales/locales').then(m => m.LocalesComponent) },
   { path: '**', redirectTo: '' }
 ];
