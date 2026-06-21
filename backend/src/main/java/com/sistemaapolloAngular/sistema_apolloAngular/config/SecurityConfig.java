@@ -1,6 +1,7 @@
 package com.sistemaapolloAngular.sistema_apolloAngular.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -68,7 +69,7 @@ public class SecurityConfig {
                         .contentTypeOptions(contentType -> {})
                 )
 
-                // ── CSRF MEJORADO PARA ANGULAR ──
+                // ── CSRF DESHABILITADO PARA ENDPOINTS DE API ──
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(csrfTokenRequestHandler)
@@ -76,6 +77,10 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/api/direcciones/**",
                                 "/api/pagos/**",
+                                "/api/carrito/**",      // ✅ AGREGADO
+                                "/api/menu/**",         // ✅ AGREGADO
+                                "/api/pedidos/**",      // ✅ AGREGADO
+                                "/api/productos/**",    // ✅ AGREGADO
                                 "/login",
                                 "/error"
                         )
@@ -139,6 +144,18 @@ public class SecurityConfig {
                         .passwordParameter("password")
 
                         .successHandler((request, response, authentication) -> {
+                            // ✅ Crear sesión explícitamente
+                            HttpSession session = request.getSession(true);
+
+                            // ✅ FORZAR LA COOKIE DE SESIÓN MANUALMENTE
+                            response.setHeader("Set-Cookie",
+                                    "JSESSIONID=" + session.getId() +
+                                            "; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400");
+
+                            // ✅ LOG PARA VERIFICAR
+                            System.out.println("🔑 Sesión creada: " + session.getId());
+                            System.out.println("🍪 Cookie enviada: JSESSIONID=" + session.getId());
+
                             response.setStatus(HttpStatus.OK.value());
                             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                             response.setCharacterEncoding("UTF-8");
@@ -154,18 +171,6 @@ public class SecurityConfig {
                             body.put("usuario", authentication.getName());
                             body.put("rol", rol);
                             body.put("mensaje", "Login exitoso");
-
-                            new ObjectMapper().writeValue(response.getWriter(), body);
-                        })
-
-                        .failureHandler((request, response, exception) -> {
-                            response.setStatus(HttpStatus.UNAUTHORIZED.value());
-                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                            response.setCharacterEncoding("UTF-8");
-
-                            Map<String, Object> body = new HashMap<>();
-                            body.put("status", "error");
-                            body.put("mensaje", "Usuario o contraseña incorrectos");
 
                             new ObjectMapper().writeValue(response.getWriter(), body);
                         })
@@ -226,22 +231,19 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // ORÍGENES PERMITIDOS (Angular y producción)
         configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:4200",        // Angular dev
-                "http://localhost:4201",        // Angular dev alternativo
-                "http://127.0.0.1:4200",        // Localhost IP
-                "http://localhost:8080",        // Backend
-                "https://michel14-9.github.io", // GitHub Pages
-                "https://tu-dominio.com"        // Producción
+                "http://localhost:4200",
+                "http://localhost:4201",
+                "http://127.0.0.1:4200",
+                "http://localhost:8080",
+                "https://michel14-9.github.io",
+                "https://tu-dominio.com"
         ));
 
-        // MÉTODOS PERMITIDOS (incluyendo PATCH y OPTIONS para preflight)
         configuration.setAllowedMethods(Arrays.asList(
                 "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
         ));
 
-        // HEADERS PERMITIDOS (para Angular y autenticación)
         configuration.setAllowedHeaders(Arrays.asList(
                 "authorization",
                 "content-type",
@@ -255,7 +257,6 @@ public class SecurityConfig {
                 "cache-control"
         ));
 
-        // HEADERS EXPUESTOS (para que Angular pueda leerlos)
         configuration.setExposedHeaders(Arrays.asList(
                 "x-auth-token",
                 "xsrf-token",
@@ -264,10 +265,7 @@ public class SecurityConfig {
                 "set-cookie"
         ));
 
-        // PERMITIR CREDENCIALES (necesario para cookies y sesiones)
         configuration.setAllowCredentials(true);
-
-        // TIEMPO DE CACHE PARA PREFLIGHT (1 hora)
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

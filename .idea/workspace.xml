@@ -5,8 +5,31 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4e10dce1-a503-4051-8fa1-2dbc492f7fbc" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/dto/CarritoItemDTO.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/assets/archivos/mastercard.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/config/CookieConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/config/CookieConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/config/SecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/CarritoController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/CarritoController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/app.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/app.config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/app.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/app.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/app.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/app.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/app.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/core/interceptors/auth-interceptor.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/core/interceptors/auth-interceptor.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/core/interceptors/error-interceptor.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/core/interceptors/error-interceptor.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/core/services/auth.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/core/services/carrito.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/core/services/combo.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/auth/login/login.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/auth/login/login.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/auth/login/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/auth/login/login.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/auth/login/login.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/auth/login/login.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/auth/registrate/registrate.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/auth/registrate/registrate.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/auth/registrate/registrate.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/auth/registrate/registrate.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/index/index.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/publico/index/index.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/index/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/publico/index/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/index/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/publico/index/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/main.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/main.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -23,7 +46,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="main" />
+        <entry key="$PROJECT_DIR$" value="frontend" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -56,23 +79,24 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Application.SistemaApolloAngularApplication.executor&quot;: &quot;Run&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;backend&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/Michel/Documents/GitHub/proyecto-sistema-angular&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.0&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Application.SistemaApolloAngularApplication.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "backend",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Users/Michel/Documents/GitHub/proyecto-sistema-angular",
+    "project.structure.last.edited": "Modules",
+    "project.structure.proportion": "0.0",
+    "project.structure.side.proportion": "0.0"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Michel\Documents\GitHub\proyecto-sistema-angular\frontend\src\assets\archivos" />
       <recent name="C:\Users\Michel\Documents\GitHub\proyecto-sistema-angular" />
       <recent name="C:\Users\Michel\Documents\GitHub\proyecto-sistema-angular\backend" />
     </key>

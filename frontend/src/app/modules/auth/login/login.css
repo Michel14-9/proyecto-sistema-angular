@@ -10,152 +10,19 @@
   --blanco: #fafafa;
 }
 
-/* ======= ESTILO GENERAL ======= */
+/* ======= ESTILO GENERAL DEL LOGIN ======= */
 :host {
   display: block;
   font-family: 'Poppins', sans-serif;
   background: linear-gradient(135deg, var(--amarillo) 0%, var(--blanco) 100%);
   color: var(--gris);
   min-height: 100vh;
+  padding: 20px 0;
 }
 
-/* ======= HEADER ======= */
-header .navbar {
-  background-color: var(--amarillo);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
-  padding: 0.8rem 1.5rem;
-  border-bottom: 3px solid var(--naranja);
-}
-
-.nav-logo {
-  width: 3rem;
-  border-radius: 50%;
-  transition: transform 0.3s ease;
-}
-
-.nav-logo:hover {
-  transform: scale(1.1);
-}
-
-.nav-link {
-  color: #333 !important;
-  font-weight: 500;
-  transition: color 0.3s ease, transform 0.3s ease;
-}
-
-.nav-link:hover {
-  color: var(--rojo) !important;
-  transform: translateY(-2px);
-}
-
-header .navbar-toggler {
-  border-color: var(--naranja);
-}
-
-.nav-icon-item {
-  font-weight: bold;
-  font-size: 14px;
-  gap: 0.2rem;
-}
-
-.nav-icon {
-  font-size: 1.5rem;
-}
-
-.whatsapp-icon {
-  font-size: 1.8rem;
-}
-
-.phone-icon {
-  font-size: 1.5rem;
-}
-
-.user-icon {
-  font-size: 1.5rem;
-}
-
-.nav-text {
-  line-height: 1.2;
-}
-
-.search-icon {
-  font-size: 1rem;
-}
-
-.carrito-btn {
-  border-radius: 20px;
-  text-decoration: none;
-}
-
-.text-orange {
-  color: var(--naranja) !important;
-}
-
-.logout-form {
-  display: inline;
-}
-
-.logout-btn {
-  padding: 0;
-  text-decoration: none;
-  border: none;
-  color: var(--gris) !important;
-  font-size: 0.875rem;
-}
-
-.logout-btn:hover {
-  color: var(--rojo) !important;
-  text-decoration: underline;
-}
-
-/* ======= BOTONES ======= */
-.btn {
-  border-radius: 25px;
-  padding: 0.6rem 1.3rem;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.btn-verde {
-  background-color: var(--verde);
-  color: white;
-}
-
-.btn-verde:hover {
-  background-color: #66BB6A;
-  box-shadow: 0 4px 10px rgba(129, 199, 132, 0.4);
-}
-
-.btn-naranja {
-  background-color: var(--naranja);
-  color: white;
-}
-
-.btn-naranja:hover {
-  background-color: #FFA726;
-  box-shadow: 0 4px 10px rgba(255, 183, 77, 0.4);
-}
-
-.btn-rojo {
-  background-color: var(--rojo);
-  color: white;
-}
-
-.btn-rojo:hover {
-  background-color: #EF5350;
-  box-shadow: 0 4px 10px rgba(229, 115, 115, 0.4);
-}
-
-.btn-amarillo {
-  background-color: var(--amarillo);
-  color: #333;
-}
-
-.btn-amarillo:hover {
-  background-color: #FFECB3;
-  box-shadow: 0 4px 10px rgba(255, 248, 225, 0.3);
+/* ✅ Agregar fondo al contenedor principal */
+.container.my-5 {
+  background: transparent;
 }
 
 /* ======= PÁGINA DE LOGIN ======= */
@@ -163,7 +30,7 @@ header .navbar-toggler {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 80vh;
+  min-height: 70vh;
 }
 
 .auth-container {
@@ -174,6 +41,7 @@ header .navbar-toggler {
   max-width: 420px;
   width: 100%;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid rgba(255, 183, 77, 0.2);
 }
 
 .auth-container:hover {
@@ -186,25 +54,46 @@ header .navbar-toggler {
   font-weight: 700;
   text-align: center;
   margin-bottom: 20px;
+  font-size: 1.8rem;
 }
 
 .auth-header p {
   color: var(--gris);
   margin-bottom: 20px;
   text-align: center;
+  font-size: 0.95rem;
 }
 
+/* ======= LOGO DEL LOGIN ======= */
+.auth-logo {
+  width: 80px;
+  height: 80px;
+  background: var(--amarillo);
+  border-radius: 50%;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: url('/assets/archivos/logo.png');
+  background-size: cover;
+  background-position: center;
+  border: 3px solid var(--naranja);
+}
+
+/* ======= FORMULARIO ======= */
 .form-label {
   font-weight: 500;
   color: var(--gris);
+  font-size: 0.9rem;
 }
 
 .form-control {
   border-radius: 10px;
   border: 1px solid #ddd;
-  padding: 10px;
+  padding: 12px 15px;
   transition: all 0.3s ease;
   width: 100%;
+  font-size: 0.95rem;
 }
 
 .form-control:focus {
@@ -214,61 +103,74 @@ header .navbar-toggler {
 }
 
 .btn-auth {
-  background-color: var(--naranja);
+  background: linear-gradient(135deg, var(--naranja), #f57c00);
   color: white;
   font-weight: 600;
-  padding: 12px;
+  padding: 14px;
   border: none;
   border-radius: 10px;
   width: 100%;
   transition: all 0.3s ease;
+  font-size: 1rem;
+  letter-spacing: 0.5px;
 }
 
 .btn-auth:hover:not(:disabled) {
-  background-color: var(--verde);
+  background: linear-gradient(135deg, var(--verde), #4caf50);
   transform: scale(1.03);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 15px rgba(129, 199, 132, 0.4);
 }
 
 .btn-auth:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
 }
 
 .btn-primary {
-  background-color: var(--verde);
+  background: linear-gradient(135deg, var(--verde), #4caf50);
   border: none;
   color: #fff;
   font-weight: 600;
   border-radius: 10px;
-  padding: 12px;
+  padding: 14px;
   transition: all 0.3s ease;
+  width: 100%;
+  font-size: 1rem;
+  letter-spacing: 0.5px;
 }
 
 .btn-primary:hover {
-  background-color: var(--naranja);
+  background: linear-gradient(135deg, var(--naranja), #f57c00);
   transform: scale(1.03);
+  box-shadow: 0 4px 15px rgba(255, 183, 77, 0.4);
 }
 
+/* ======= ALERTAS ======= */
 .alert {
   border-radius: 10px;
-  padding: 10px 15px;
-  font-size: 0.95rem;
+  padding: 12px 15px;
+  font-size: 0.9rem;
   margin-bottom: 20px;
 }
 
 .alert-success {
-  background-color: var(--verde);
+  background: linear-gradient(135deg, var(--verde), #4caf50);
   color: #fff;
   border: none;
 }
 
 .alert-danger {
-  background-color: var(--rojo);
+  background: linear-gradient(135deg, var(--rojo), #c62828);
   color: #fff;
   border: none;
 }
 
+.alert i {
+  margin-right: 8px;
+}
+
+/* ======= BENEFICIOS ======= */
 .benefits-list {
   margin-bottom: 20px;
   color: var(--gris);
@@ -277,19 +179,23 @@ header .navbar-toggler {
 }
 
 .benefits-list li {
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   position: relative;
-  padding-left: 20px;
+  padding-left: 25px;
+  font-size: 0.9rem;
+  line-height: 1.5;
 }
 
 .benefits-list li::before {
   content: "✓";
   position: absolute;
   left: 0;
-  color: var(--naranja);
+  color: var(--verde);
   font-weight: bold;
+  font-size: 1rem;
 }
 
+/* ======= BORDES DE CONTENEDORES ======= */
 .login-section .auth-container {
   border-top: 5px solid var(--naranja);
 }
@@ -298,6 +204,12 @@ header .navbar-toggler {
   border-top: 5px solid var(--verde);
 }
 
+/* ======= TEXT MUTED ======= */
+.text-muted {
+  color: var(--gris) !important;
+}
+
+/* ======= UTILIDADES ======= */
 .text-center {
   text-align: center;
 }
@@ -306,92 +218,17 @@ header .navbar-toggler {
   margin-top: 1rem;
 }
 
-/* ======= FOOTER ======= */
-footer {
-  background-color: var(--amarillo);
-  color: #333;
-  border-top: 4px solid var(--naranja);
-  padding-top: 2rem;
-  padding-bottom: 1.5rem;
-  margin-top: auto;
-}
-
-footer h5 {
-  color: var(--verde);
-  font-weight: 700;
+.mb-3 {
   margin-bottom: 1rem;
 }
 
-footer a {
-  color: #333;
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-
-footer a:hover {
-  color: var(--rojo);
-}
-
-.footer-logo {
-  height: 70px;
-}
-
-.footer-payment-img {
-  width: 50px;
-  border-radius: 10px;
-}
-
-.footer-libro-img {
-  width: 120px;
-}
-
-.social-btn {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-footer .btn-outline-secondary {
-  border-color: var(--verde);
-  color: var(--verde);
-  transition: all 0.3s ease;
-}
-
-footer .btn-outline-secondary:hover {
-  background-color: var(--verde);
-  color: white;
-}
-
-footer hr {
-  border-color: rgba(0, 0, 0, 0.1);
-}
-
-footer small {
-  color: var(--gris);
-  font-size: 0.9rem;
-}
-
 /* ======= EFECTOS SUAVES ======= */
-img, .btn, .nav-link {
+img, .btn {
   transition: all 0.3s ease;
 }
 
 /* ======= RESPONSIVO ======= */
 @media (max-width: 768px) {
-  header .navbar-nav {
-    text-align: center;
-  }
-
-  footer .row {
-    text-align: center;
-  }
-
-  footer .d-flex {
-    justify-content: center;
-  }
-
   .auth-container {
     margin: 20px;
     padding: 30px 25px;
@@ -402,12 +239,22 @@ img, .btn, .nav-link {
   }
 
   .auth-column {
-    min-height: 70vh;
+    min-height: 60vh;
+  }
+
+  .auth-logo {
+    width: 60px;
+    height: 60px;
   }
 }
 
 @media (max-width: 992px) {
   .auth-container {
-    margin: 30px auto;
+    margin: 20px auto;
+  }
+
+  .auth-column {
+    min-height: auto;
+    padding: 10px 0;
   }
 }

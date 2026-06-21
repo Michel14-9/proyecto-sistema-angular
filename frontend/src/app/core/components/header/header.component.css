@@ -1,0 +1,129 @@
+/* src/app/core/components/header/header.component.css */
+
+/* ======== PALETA DE COLORES ======== */
+:root {
+  --verde: #81c784;
+  --naranja: #ffb74d;
+  --amarillo: #fff9c4;
+  --rojo: #e53935;
+  --gris: #6c757d;
+  --blanco: #fafafa;
+}
+
+/* ======= HEADER ======= */
+header .navbar {
+  background-color: var(--amarillo);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+  padding: 0.8rem 1.5rem;
+  border-bottom: 3px solid var(--naranja);
+}
+
+.nav-logo {
+  width: 3rem;
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+}
+
+.nav-logo:hover {
+  transform: scale(1.1);
+}
+
+.nav-link {
+  color: #333 !important;
+  font-weight: 500;
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.nav-link:hover {
+  color: var(--rojo) !important;
+  transform: translateY(-2px);
+}
+
+header .navbar-toggler {
+  border-color: var(--naranja);
+}
+
+.nav-icon-item {
+  font-weight: bold;
+  font-size: 14px;
+  gap: 0.2rem;
+}
+
+.nav-icon {
+  font-size: 1.5rem;
+}
+
+.whatsapp-icon {
+  font-size: 1.8rem;
+}
+
+.phone-icon {
+  font-size: 1.5rem;
+}
+
+.user-icon {
+  font-size: 1.5rem;
+}
+
+.nav-text {
+  line-height: 1.2;
+}
+
+.search-icon {
+  font-size: 1rem;
+}
+
+.carrito-btn {
+  border-radius: 20px;
+  text-decoration: none;
+  background-color: #28a745;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.carrito-btn:hover {
+  background-color: #218838;
+  transform: scale(1.05);
+  color: white;
+}
+
+.text-orange {
+  color: var(--naranja) !important;
+}
+
+/* ======= LINKS RÁPIDOS ======= */
+.bg-light {
+  background-color: #f8f9fa !important;
+}
+
+.border-bottom {
+  border-bottom: 1px solid #dee2e6 !important;
+}
+
+.small {
+  font-size: 0.875rem !important;
+}
+
+/* ======= RESPONSIVO ======= */
+@media (max-width: 768px) {
+  header .navbar-nav {
+    text-align: center;
+  }
+
+  .nav-icon-item {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 992px) {
+  .navbar-nav.ms-auto {
+    margin-top: 0.5rem;
+  }
+
+  .carrito-btn {
+    margin-top: 0.5rem;
+    display: inline-block;
+  }
+}
