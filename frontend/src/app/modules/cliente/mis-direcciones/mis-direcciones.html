@@ -1,1 +1,248 @@
-<p>mis-direcciones works!</p>
+<!-- src/app/modules/cliente/mis-direcciones/mis-direcciones.html -->
+<main class="container my-5 main-container">
+  <div class="row">
+    <!-- Menú Lateral -->
+    <div class="col-md-3 mb-4">
+      <div class="card sidebar-menu">
+        <div class="card-header bg-luren text-white">
+          <h5 class="mb-0"><i class="fas fa-user-circle me-2"></i>Mi Cuenta</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush">
+            <a routerLink="/mis-cuentas" class="list-group-item list-group-item-action">
+              <i class="fas fa-user me-2"></i>Mi Perfil
+            </a>
+            <a routerLink="/mis-datos" class="list-group-item list-group-item-action">
+              <i class="fas fa-address-card me-2"></i>Mis Datos
+            </a>
+            <a routerLink="/mis-direcciones" class="list-group-item list-group-item-action active">
+              <i class="fas fa-map-marker-alt me-2"></i>Mis Direcciones
+            </a>
+            <a routerLink="/mis-pedidos" class="list-group-item list-group-item-action">
+              <i class="fas fa-receipt me-2"></i>Mis Pedidos
+            </a>
+            <a routerLink="/favoritos" class="list-group-item list-group-item-action">
+              <i class="fas fa-heart me-2"></i>Mis Favoritos
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenido Principal -->
+    <div class="col-md-9">
+      <!-- Header de la página -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h1 class="h2 page-title mb-1">Mis Direcciones</h1>
+          <p class="text-muted-custom">Gestiona tus direcciones de envío y facturación</p>
+        </div>
+        <a routerLink="/cuenta" class="btn btn-outline-luren">
+          <i class="fas fa-arrow-left me-2"></i>Volver al Perfil
+        </a>
+      </div>
+
+      <!-- Estado de Sesión (solo para no autenticados) -->
+      <div *ngIf="!isAuthenticated" class="alert alert-warning-custom">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        Debes <a routerLink="/login" class="alert-link">iniciar sesión</a> para gestionar tus direcciones.
+      </div>
+
+      <!-- Contenido para usuarios autenticados -->
+      <div *ngIf="isAuthenticated">
+        <!-- Loading -->
+        <div *ngIf="isLoading" class="text-center py-5">
+          <div class="spinner-border text-warning" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <p class="mt-2 text-muted">Cargando tus direcciones...</p>
+        </div>
+
+        <!-- Error -->
+        <div *ngIf="errorMessage" class="alert alert-danger text-center">
+          <i class="fas fa-exclamation-circle me-2"></i>
+          {{ errorMessage }}
+        </div>
+
+        <!-- Botón Agregar Dirección -->
+        <div *ngIf="!isLoading && !errorMessage" class="d-flex justify-content-between align-items-center mb-4">
+          <h4 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Direcciones Guardadas</h4>
+          <button class="btn btn-luren btn-pulse" (click)="abrirModalNuevaDireccion()">
+            <i class="fas fa-plus me-2"></i>Agregar Dirección
+          </button>
+        </div>
+
+        <!-- Lista de Direcciones -->
+        <div *ngIf="!isLoading && !errorMessage && direcciones.length > 0" class="row" id="direccionesLista">
+          <div *ngFor="let direccion of direcciones; let i = index" class="col-md-6 mb-3">
+            <div class="card h-100" [class.border-primary]="direccion.predeterminada">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <h5 class="card-title mb-0">{{ direccion.nombre || 'Sin nombre' }}</h5>
+                  <div>
+                    <span *ngIf="direccion.predeterminada" class="badge bg-primary">Principal</span>
+                    <span *ngIf="direccion.facturacion" class="badge bg-success ms-1">Facturación</span>
+                  </div>
+                </div>
+                <div class="direccion-info">
+                  <p class="mb-1"><strong>Tipo:</strong> {{ direccion.tipo || 'No especificado' }}</p>
+                  <p class="mb-1"><strong>Dirección:</strong> {{ direccion.direccion || 'No especificada' }}</p>
+                  <p *ngIf="direccion.referencia" class="mb-1"><strong>Referencia:</strong> {{ direccion.referencia }}</p>
+                  <p class="mb-1"><strong>Ciudad:</strong> {{ direccion.ciudad || 'No especificada' }}</p>
+                  <p class="mb-3"><strong>Teléfono:</strong> {{ direccion.telefono || 'No especificado' }}</p>
+                </div>
+                <div class="btn-group w-100">
+                  <button *ngIf="!direccion.predeterminada" class="btn btn-outline-primary btn-sm" (click)="marcarPredeterminada(i)">
+                    <i class="fas fa-star"></i> Principal
+                  </button>
+                  <button class="btn btn-outline-warning btn-sm" (click)="editarDireccion(i)">
+                    <i class="fas fa-edit"></i> Editar
+                  </button>
+                  <button class="btn btn-outline-danger btn-sm" (click)="eliminarDireccion(i)">
+                    <i class="fas fa-trash"></i> Eliminar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estado Vacío -->
+        <div *ngIf="!isLoading && !errorMessage && direcciones.length === 0"
+             class="card card-custom text-center estado-vacio">
+          <div class="card-body py-5">
+            <i class="fas fa-map-marker-alt fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">No tienes direcciones guardadas</h4>
+            <p class="text-muted mb-4">Agrega una dirección para recibir tus pedidos a domicilio</p>
+            <button class="btn btn-luren btn-pulse" (click)="abrirModalNuevaDireccion()">
+              <i class="fas fa-plus me-2"></i>Agregar Primera Dirección
+            </button>
+          </div>
+        </div>
+
+        <!-- Información de Ayuda -->
+        <div class="card card-custom mt-4 info-section">
+          <div class="card-header card-header-custom">
+            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Información Importante</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <h6><i class="fas fa-truck me-2 text-success"></i>Dirección de Envío</h6>
+                <p class="small text-muted-custom mb-3">Esta es la dirección donde recibirás tus pedidos a domicilio.</p>
+              </div>
+              <div class="col-md-6">
+                <h6><i class="fas fa-file-invoice me-2 text-primary"></i>Dirección de Facturación</h6>
+                <p class="small text-muted-custom mb-3">Esta dirección aparecerá en tus facturas y comprobantes.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Modal para Agregar/Editar Dirección -->
+<div class="modal" [class.show]="mostrarModal" style="display: block;" *ngIf="mostrarModal">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content modal-content-custom">
+      <div class="modal-header modal-header-custom">
+        <h5 class="modal-title">{{ modalTitulo }}</h5>
+        <button type="button" class="btn-close" (click)="cerrarModal()"></button>
+      </div>
+      <div class="modal-body">
+        <form #direccionForm="ngForm">
+          <div class="row">
+            <!-- Nombre de la Dirección -->
+            <div class="col-md-6 mb-3">
+              <label for="nombre" class="form-label form-label-custom">Nombre de la dirección *</label>
+              <input type="text" class="form-control form-control-custom" id="nombre"
+                     [(ngModel)]="direccionFormData.nombre" name="nombre"
+                     placeholder="Ej: Casa, Oficina, Departamento" required>
+            </div>
+
+            <!-- Tipo de Dirección -->
+            <div class="col-md-6 mb-3">
+              <label for="tipo" class="form-label form-label-custom">Tipo de dirección *</label>
+              <select class="form-select form-select-custom" id="tipo"
+                      [(ngModel)]="direccionFormData.tipo" name="tipo" required>
+                <option value="" selected disabled>Selecciona un tipo</option>
+                <option value="casa">Casa</option>
+                <option value="oficina">Oficina</option>
+                <option value="departamento">Departamento</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+
+            <!-- Dirección Completa -->
+            <div class="col-12 mb-3">
+              <label for="direccion" class="form-label form-label-custom">Dirección completa *</label>
+              <input type="text" class="form-control form-control-custom" id="direccion"
+                     [(ngModel)]="direccionFormData.direccion" name="direccion"
+                     placeholder="Calle, número, urbanización, etc." required>
+            </div>
+
+            <!-- Referencia -->
+            <div class="col-12 mb-3">
+              <label for="referencia" class="form-label form-label-custom">Referencia</label>
+              <input type="text" class="form-control form-control-custom" id="referencia"
+                     [(ngModel)]="direccionFormData.referencia" name="referencia"
+                     placeholder="Ej: Frente al parque, al lado de...">
+            </div>
+
+            <!-- Ciudad -->
+            <div class="col-md-6 mb-3">
+              <label for="ciudad" class="form-label form-label-custom">Ciudad *</label>
+              <select class="form-select form-select-custom" id="ciudad"
+                      [(ngModel)]="direccionFormData.ciudad" name="ciudad" required>
+                <option value="Ica">Ica</option>
+              </select>
+            </div>
+
+            <!-- Teléfono de Contacto -->
+            <div class="col-md-6 mb-3">
+              <label for="telefono" class="form-label form-label-custom">Teléfono de contacto</label>
+              <input type="tel" class="form-control form-control-custom readonly-field" id="telefono"
+                     [(ngModel)]="direccionFormData.telefono" name="telefono"
+                     placeholder="Se usará tu teléfono registrado" maxlength="9">
+              <div class="form-text">
+                <i class="fas fa-info-circle me-1"></i>
+                Teléfono registrado: <span class="fw-bold">{{ telefonoUsuario || 'No registrado' }}</span>
+              </div>
+            </div>
+
+            <!-- Opciones -->
+            <div class="col-12 mb-3">
+              <div class="form-check">
+                <input class="form-check-input form-check-input-custom" type="checkbox" id="predeterminada"
+                       [(ngModel)]="direccionFormData.predeterminada" name="predeterminada">
+                <label class="form-check-label" for="predeterminada">
+                  Establecer como dirección predeterminada
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input form-check-input-custom" type="checkbox" id="facturacion"
+                       [(ngModel)]="direccionFormData.facturacion" name="facturacion">
+                <label class="form-check-label" for="facturacion">
+                  Usar también como dirección de facturación
+                </label>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer modal-footer-custom">
+        <button type="button" class="btn btn-outline-secondary-custom" (click)="cerrarModal()">Cancelar</button>
+        <button type="button" class="btn btn-luren" (click)="guardarDireccion()" [disabled]="guardando">
+          <i class="fas fa-save me-2"></i>
+          <span *ngIf="!guardando">Guardar Dirección</span>
+          <span *ngIf="guardando">
+            <span class="spinner-border spinner-border-sm me-2"></span>Guardando...
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade show" *ngIf="mostrarModal"></div>

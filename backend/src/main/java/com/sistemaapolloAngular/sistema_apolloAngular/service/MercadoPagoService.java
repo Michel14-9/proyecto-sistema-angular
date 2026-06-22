@@ -116,10 +116,17 @@ public class MercadoPagoService {
         try {
             System.out.println("🔍 Buscando pago con ID: " + paymentId);
 
+            // ✅ Limpiar el paymentId (solo números)
+            String cleanPaymentId = paymentId.replaceAll("[^0-9]", "");
+            System.out.println("🔍 PaymentId limpio: " + cleanPaymentId);
+
             MercadoPagoConfig.setAccessToken(accessToken);
 
-            Long id = Long.parseLong(paymentId);
-            return paymentClient.get(id);
+            Long id = Long.parseLong(cleanPaymentId);
+            Payment payment = paymentClient.get(id);
+            System.out.println("✅ Pago encontrado: " + payment.getId() + " - Status: " + payment.getStatus());
+            return payment;
+
         } catch (NumberFormatException e) {
             System.err.println("❌ Error al convertir paymentId: " + paymentId);
             throw new RuntimeException("ID de pago inválido: " + paymentId, e);
