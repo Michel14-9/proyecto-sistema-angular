@@ -1,10 +1,11 @@
 // src/app/modules/publico/index/index.ts
+
 import { Component, OnInit, AfterViewInit, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { AuthService } from '../../../core/services/auth';
-import { CarritoService } from '../../../core/services/carrito';
-import { ComboService } from '../../../core/services/combo';
+import { AuthService } from '../../../core/services/auth.service'; // ← CORREGIDO
+import { CarritoService } from '../../../core/services/carrito.service'; // ← CORREGIDO
+import { ComboService } from '../../../core/services/combo.service'; // ← CORREGIDO
 
 declare var bootstrap: any;
 
@@ -14,7 +15,7 @@ declare var bootstrap: any;
   imports: [CommonModule, RouterModule],
   templateUrl: './index.html',
   styleUrls: ['./index.css'],
-  encapsulation: ViewEncapsulation.None  //
+  encapsulation: ViewEncapsulation.None
 })
 export class IndexComponent implements OnInit, AfterViewInit {
   isAuthenticated: boolean = false;
@@ -32,13 +33,16 @@ export class IndexComponent implements OnInit, AfterViewInit {
     this.isAuthenticated = this.authService.isAuthenticated();
     this.username = this.authService.getUsername();
 
+    // ✅ CORREGIDO: Extraer 'data' de la respuesta
     this.comboService.getCombos().subscribe({
-      next: (data: any) => {
-        this.combos = data;
-        console.log('Combos cargados:', this.combos);
+      next: (response: any) => {
+        // La respuesta viene como { success: true, data: [...], total: ... }
+        this.combos = response?.data || response || [];
+        console.log('✅ Combos cargados:', this.combos);
       },
       error: (err: any) => {
-        console.error('Error cargando combos:', err);
+        console.error('❌ Error cargando combos:', err);
+        this.combos = [];
       }
     });
 
@@ -46,6 +50,9 @@ export class IndexComponent implements OnInit, AfterViewInit {
     this.carritoService.getTotal().subscribe({
       next: (total: number) => {
         this.totalCarrito = total;
+      },
+      error: () => {
+        this.totalCarrito = 0;
       }
     });
   }
@@ -83,10 +90,7 @@ export class IndexComponent implements OnInit, AfterViewInit {
   }
 
   logout(): void {
-    this.authService.logout().subscribe({
-      next: () => {
-        window.location.href = '/login';
-      }
-    });
+    this.authService.logout();
+    window.location.href = '/login';
   }
 }

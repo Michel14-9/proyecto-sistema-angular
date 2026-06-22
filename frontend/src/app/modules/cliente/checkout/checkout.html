@@ -1,0 +1,285 @@
+<!-- src/app/modules/cliente/checkout/checkout.html -->
+<main class="checkout-page py-5">
+  <div class="container">
+    <!-- Loading -->
+    <div *ngIf="isLoading" class="text-center py-5">
+      <div class="spinner-border text-warning" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+      <p class="mt-2">Preparando tu pedido...</p>
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show">
+      <i class="fas fa-exclamation-circle me-2"></i>
+      {{ errorMessage }}
+      <button type="button" class="btn-close" (click)="errorMessage = ''"></button>
+    </div>
+
+    <!-- ✅ PAGO EN PROCESO -->
+    <div *ngIf="pagoIniciado && !pagoExitoso" class="card shadow-sm mb-4 border-warning">
+      <div class="card-header bg-warning bg-opacity-10">
+        <h5 class="mb-0">
+          <i class="fas fa-clock me-2 text-warning"></i>
+          Pago en proceso
+        </h5>
+      </div>
+      <div class="card-body text-center py-4">
+        <div class="spinner-border text-warning mb-3" style="width: 3rem; height: 3rem;" role="status">
+          <span class="visually-hidden">Procesando pago...</span>
+        </div>
+        <h5>Esperando confirmación de pago</h5>
+        <p class="text-muted">
+          <i class="fas fa-external-link-alt me-2"></i>
+          Se ha abierto una ventana de MercadoPago para completar el pago.
+          <br>
+          Una vez finalizado, serás redirigido automáticamente.
+        </p>
+        <div class="mt-3">
+          <button
+            class="btn btn-success"
+            (click)="verificarPago()"
+            [disabled]="verificandoPago">
+            <span *ngIf="!verificandoPago">
+              <i class="fas fa-sync me-2"></i> Verificar Ahora
+            </span>
+            <span *ngIf="verificandoPago">
+              <span class="spinner-border spinner-border-sm me-2"></span> Verificando...
+            </span>
+          </button>
+        </div>
+        <div class="mt-3 text-muted small">
+          <i class="fas fa-lock me-1"></i>
+          Pedido #{{ pedidoId }}
+        </div>
+      </div>
+    </div>
+
+    <!-- ✅ PAGO EXITOSO -->
+    <div *ngIf="pagoExitoso" class="card shadow-sm mb-4 border-success">
+      <div class="card-header bg-success text-white">
+        <h5 class="mb-0">
+          <i class="fas fa-check-circle me-2"></i>
+          ¡Pago Exitoso!
+        </h5>
+      </div>
+      <div class="card-body text-center py-4">
+        <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+        <h4 class="mt-3">¡Tu pago ha sido confirmado!</h4>
+        <p class="text-muted">Pedido #{{ pedidoId }} - Redirigiendo...</p>
+        <div class="spinner-border text-success mt-2" role="status">
+          <span class="visually-hidden">Redirigiendo...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenido principal (oculto cuando el pago está en proceso) -->
+    <div *ngIf="!pagoIniciado && !pagoExitoso" class="row">
+      <div class="col-lg-8">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h2 class="checkout-title">
+            <i class="fas fa-credit-card me-2 text-orange"></i>Checkout
+          </h2>
+          <button class="btn btn-outline-secondary" (click)="volverAlCarrito()">
+            <i class="fas fa-arrow-left me-2"></i>Volver al Carrito
+          </button>
+        </div>
+
+        <!-- Progreso -->
+        <div class="progreso-checkout mb-5">
+          <div class="d-flex justify-content-between align-items-center position-relative">
+            <div class="text-center">
+              <div class="progreso-paso completado">
+                <i class="fas fa-shopping-cart"></i>
+              </div>
+              <span class="d-block mt-2 small fw-bold">Carrito</span>
+            </div>
+            <div class="progreso-linea completado"></div>
+            <div class="text-center">
+              <div class="progreso-paso activo">
+                <i class="fas fa-credit-card"></i>
+              </div>
+              <span class="d-block mt-2 small fw-bold">Pago</span>
+            </div>
+            <div class="progreso-linea"></div>
+            <div class="text-center">
+              <div class="progreso-paso">
+                <i class="fas fa-check"></i>
+              </div>
+              <span class="d-block mt-2 small fw-bold">Confirmación</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dirección de entrega -->
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-light">
+            <h5 class="mb-0">
+              <i class="fas fa-map-marker-alt me-2 text-orange"></i>
+              Dirección de Entrega
+            </h5>
+          </div>
+          <div class="card-body">
+            <!-- Direcciones guardadas -->
+            <div *ngIf="direcciones.length > 0" class="mb-3">
+              <label class="form-label fw-bold">Selecciona una dirección guardada:</label>
+              <div class="d-flex flex-wrap gap-2">
+                <button *ngFor="let dir of direcciones"
+                        class="btn btn-outline-secondary btn-sm"
+                        [class.btn-primary]="direccionSeleccionada?.id === dir.id"
+                        (click)="seleccionarDireccion(dir)">
+                  <i class="fas fa-home me-1"></i>
+                  {{ dir.nombre || 'Dirección ' + dir.id }}
+                </button>
+                <button class="btn btn-outline-success btn-sm" (click)="usarNuevaDireccion()">
+                  <i class="fas fa-plus me-1"></i>Nueva
+                </button>
+              </div>
+            </div>
+
+            <!-- Formulario de dirección -->
+            <div *ngIf="mostrarFormularioDireccion">
+              <div class="row">
+                <div class="col-md-8 mb-3">
+                  <label class="form-label">Dirección *</label>
+                  <input type="text" class="form-control" [(ngModel)]="direccion"
+                         placeholder="Calle, número, urbanización">
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">Ciudad *</label>
+                  <input type="text" class="form-control" [(ngModel)]="ciudad"
+                         placeholder="Ica">
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Referencia</label>
+                <input type="text" class="form-control" [(ngModel)]="referencia"
+                       placeholder="Cerca de..., color de casa, etc.">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Teléfono de contacto *</label>
+                <input type="tel" class="form-control" [(ngModel)]="telefono"
+                       placeholder="987654321">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Instrucciones adicionales</label>
+                <textarea class="form-control" [(ngModel)]="instrucciones" rows="2"
+                          placeholder="Puerta trasera, tocar el timbre, etc."></textarea>
+              </div>
+            </div>
+
+            <!-- Resumen de dirección seleccionada -->
+            <div *ngIf="!mostrarFormularioDireccion && direccionSeleccionada" class="alert alert-success">
+              <i class="fas fa-check-circle me-2"></i>
+              <strong>{{ direccionSeleccionada.nombre || 'Dirección' }}:</strong>
+              {{ direccionSeleccionada.direccion }}
+              <span *ngIf="direccionSeleccionada.referencia"> - Ref: {{ direccionSeleccionada.referencia }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Método de pago -->
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-light">
+            <h5 class="mb-0">
+              <i class="fas fa-credit-card me-2 text-orange"></i>
+              Método de Pago
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="metodos-pago">
+              <div class="metodo-pago-item active" (click)="metodoPago = 'MERCADOPAGO'">
+                <div class="d-flex align-items-center">
+                  <div class="metodo-radio">
+                    <div class="radio-circle" [class.active]="metodoPago === 'MERCADOPAGO'"></div>
+                  </div>
+                  <div class="metodo-info ms-3">
+                    <h6 class="mb-0 fw-bold">MercadoPago</h6>
+                    <small class="text-muted">Tarjeta de crédito/débito, Yape, Plin</small>
+                  </div>
+                  <div class="metodo-iconos ms-auto">
+                    <i class="fab fa-cc-visa fa-2x text-muted me-1" title="Visa"></i>
+                    <i class="fab fa-cc-mastercard fa-2x text-muted me-1" title="Mastercard"></i>
+                    <i class="fas fa-mobile-alt fa-2x text-muted me-1" title="Yape"></i>
+                    <i class="fas fa-mobile-alt fa-2x text-muted" title="Plin"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Columna derecha - Resumen -->
+      <div class="col-lg-4">
+        <div class="card shadow-sm resumen-sticky">
+          <div class="card-header bg-orange text-white">
+            <h5 class="mb-0"><i class="fas fa-receipt me-2"></i>Resumen del Pedido</h5>
+          </div>
+          <div class="card-body">
+            <!-- Items -->
+            <div class="items-resumen mb-3">
+              <div *ngFor="let item of carritoItems" class="item-resumen d-flex justify-content-between mb-2 pb-2 border-bottom">
+                <div>
+                  <span class="fw-bold">{{ item.nombre }}</span>
+                  <span class="text-muted small d-block">x{{ item.cantidad }}</span>
+                </div>
+                <span class="fw-bold">S/ {{ (item.precioUnitario || item.precio || 0) * item.cantidad | number:'1.2-2' }}</span>
+              </div>
+            </div>
+
+            <!-- Totales -->
+            <div class="totales-resumen">
+              <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Subtotal</span>
+                <span>S/ {{ subtotal | number:'1.2-2' }}</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Envío</span>
+                <span class="text-success">{{ getCostoEnvioTexto() }}</span>
+              </div>
+              <div *ngIf="descuento > 0" class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Descuento</span>
+                <span class="text-success">-S/ {{ descuento | number:'1.2-2' }}</span>
+              </div>
+              <hr>
+              <div class="d-flex justify-content-between mb-3">
+                <span class="fw-bold fs-5">Total</span>
+                <span class="fw-bold fs-5 text-orange">S/ {{ getTotalFinal() | number:'1.2-2' }}</span>
+              </div>
+            </div>
+
+            <!-- Botón Pagar -->
+            <button class="btn btn-pagar w-100 py-3"
+                    [disabled]="procesandoPago || !direccion"
+                    (click)="realizarPago()">
+              <span *ngIf="!procesandoPago">
+                <i class="fas fa-credit-card me-2"></i>Pagar con MercadoPago
+              </span>
+              <span *ngIf="procesandoPago">
+                <span class="spinner-border spinner-border-sm me-2"></span>Procesando...
+              </span>
+            </button>
+
+            <!-- Información adicional -->
+            <div class="info-adicional mt-4">
+              <div class="d-flex align-items-center text-muted small mb-2">
+                <i class="fas fa-shield-alt me-2 text-success"></i>
+                <span>Compra 100% segura</span>
+              </div>
+              <div class="d-flex align-items-center text-muted small mb-2">
+                <i class="fas fa-clock me-2 text-warning"></i>
+                <span>Entrega en 30-45 min</span>
+              </div>
+              <div class="d-flex align-items-center text-muted small">
+                <i class="fas fa-undo me-2 text-info"></i>
+                <span>Devolución garantizada</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

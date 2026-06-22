@@ -11,6 +11,7 @@ import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Map;
@@ -27,35 +28,39 @@ public class PedidoService {
         this.pedidoRepository = pedidoRepository;
     }
 
+    @Transactional
+    public Pedido actualizarPedido(Pedido pedido) {
+        pedido.setFechaActualizacion(LocalDateTime.now());
+        return pedidoRepository.save(pedido);
+    }
 
     @Transactional(readOnly = true)
     public List<Pedido> obtenerPedidosPorUsuarioConItems(Long usuarioId) {
         try {
-            System.out.println(" Buscando pedidos para usuario ID: " + usuarioId);
-
+            System.out.println("🔍 Buscando pedidos para usuario ID: " + usuarioId);
 
             String jpql = "SELECT DISTINCT p FROM Pedido p " +
                     "LEFT JOIN FETCH p.items i " +
-                    "LEFT JOIN FETCH i.producto pf " +
+                    "LEFT JOIN FETCH i.producto " +
                     "WHERE p.usuario.id = :usuarioId " +
-                    "ORDER BY p.fecha DESC"; //
+                    "ORDER BY p.fecha DESC";
 
-            System.out.println(" Ejecutando JPQL: " + jpql);
+            System.out.println("📝 Ejecutando JPQL: " + jpql);
 
             List<Pedido> pedidos = entityManager.createQuery(jpql, Pedido.class)
                     .setParameter("usuarioId", usuarioId)
                     .getResultList();
 
-            System.out.println("Pedidos cargados con items: " + pedidos.size());
+            System.out.println("✅ Pedidos cargados con items: " + pedidos.size());
 
-            // Debug detallado
             for (Pedido pedido : pedidos) {
-                System.out.println(" Pedido ID: " + pedido.getId() +
+                System.out.println("📦 Pedido ID: " + pedido.getId() +
                         ", Estado: " + pedido.getEstado() +
                         ", Fecha: " + pedido.getFecha() +
                         ", Items: " + pedido.getItems().size());
 
                 for (ItemPedido item : pedido.getItems()) {
+                    // ✅ USAR getProductoFinal()
                     String nombreProducto = item.getProductoFinal() != null ?
                             item.getProductoFinal().getNombre() : item.getNombreProducto();
                     System.out.println("   🛒 Item: " + nombreProducto + " x" + item.getCantidad());
@@ -65,36 +70,32 @@ public class PedidoService {
             return pedidos;
 
         } catch (Exception e) {
-            System.err.println(" ERROR en obtenerPedidosPorUsuarioConItems: " + e.getMessage());
+            System.err.println("❌ ERROR en obtenerPedidosPorUsuarioConItems: " + e.getMessage());
             e.printStackTrace();
             throw new RuntimeException("Error al cargar pedidos: " + e.getMessage(), e);
         }
     }
-
 
     @Transactional(readOnly = true)
     public List<Pedido> obtenerPedidosPorUsuarioEager(Long usuarioId) {
         try {
             List<Pedido> pedidos = pedidoRepository.findByUsuarioIdOrderByFechaDesc(usuarioId);
 
-            // Forzar la inicialización de las relaciones lazy
             for (Pedido pedido : pedidos) {
-                // Inicializar items
-                pedido.getItems().size(); // Esto fuerza la carga
-
-                // Inicializar producto en cada item
+                pedido.getItems().size();
                 for (ItemPedido item : pedido.getItems()) {
+                    // ✅ USAR getProductoFinal()
                     if (item.getProductoFinal() != null) {
-                        item.getProductoFinal().getNombre(); // Fuerza la carga
+                        item.getProductoFinal().getNombre();
                     }
                 }
             }
 
-            System.out.println(" Pedidos inicializados: " + pedidos.size());
+            System.out.println("✅ Pedidos inicializados: " + pedidos.size());
             return pedidos;
 
         } catch (Exception e) {
-            System.err.println(" Error en obtenerPedidosPorUsuarioEager: " + e.getMessage());
+            System.err.println("❌ Error en obtenerPedidosPorUsuarioEager: " + e.getMessage());
             e.printStackTrace();
             throw e;
         }
@@ -108,11 +109,9 @@ public class PedidoService {
         return pedidoRepository.findAllWithItemsAndProducts();
     }
 
-    // CREAR NUEVO PEDIDO
     @Transactional
     public Pedido crearPedido(Usuario usuario, List<CarritoItem> carrito, Map<String, Object> datosPedido) {
         try {
-            // Crear nuevo pedido
             Pedido pedido = new Pedido();
             pedido.setUsuario(usuario);
             pedido.setEstado("PENDIENTE");
@@ -128,9 +127,8 @@ public class PedidoService {
                 itemPedido.setCantidad(carritoItem.getCantidad());
                 itemPedido.setPrecio(carritoItem.getPrecioUnitario());
                 itemPedido.setSubtotal(carritoItem.getPrecioUnitario() * carritoItem.getCantidad());
-
-                itemPedido.setProductoFinal(carritoItem.getProducto()); // Guarda la relación real
-
+                // ✅ USAR setProductoFinal()
+                itemPedido.setProductoFinal(carritoItem.getProducto());
                 pedido.agregarItem(itemPedido);
             }
 
@@ -154,7 +152,12 @@ public class PedidoService {
         return pedidoRepository.findById(pedidoId);
     }
 
-    // OBTENER PEDIDOS POR USUARIO (versión original)
+
+    // ✅ NUEVO MÉTODO: Obtener pedido con items usando JOIN FETCH
+    @Transactional(readOnly = true)
+    public Optional<Pedido> obtenerPedidoConItems(Long pedidoId) {
+        return pedidoRepository.findByIdWithItems(pedidoId);
+    }
     public List<Pedido> obtenerPedidosPorUsuario(Long usuarioId) {
         return pedidoRepository.findByUsuarioIdOrderByFechaDesc(usuarioId);
     }
@@ -165,6 +168,7 @@ public class PedidoService {
         if (pedidoOpt.isPresent()) {
             Pedido pedido = pedidoOpt.get();
             pedido.setEstado(nuevoEstado);
+            pedido.setFechaActualizacion(LocalDateTime.now());
             return pedidoRepository.save(pedido);
         } else {
             throw new RuntimeException("Pedido no encontrado");

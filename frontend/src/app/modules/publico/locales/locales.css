@@ -1,0 +1,224 @@
+/* src/app/modules/publico/locales/locales.css */
+
+/* ======== COLORES ======== */
+:root {
+  --naranja: #ffb74d;
+  --naranja-oscuro: #f57c00;
+  --amarillo: #fff9c4;
+  --rojo: #e53935;
+  --gris: #6c757d;
+}
+
+/* ======= PÁGINA DE LOCALES ======= */
+.locales-page {
+  background-color: #fafafa;
+  min-height: 80vh;
+}
+
+.text-luren {
+  color: var(--naranja-oscuro);
+}
+
+.text-orange {
+  color: var(--naranja) !important;
+}
+
+/* ======= BOTONES DE LOCAL ======= */
+.locales-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.btn-local {
+  background-color: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 0.75rem 1.5rem;
+  transition: all 0.3s ease;
+  flex: 1 1 auto;
+  min-width: 200px;
+  max-width: 300px;
+  text-align: left;
+}
+
+.btn-local:hover {
+  border-color: var(--naranja);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 183, 77, 0.3);
+}
+
+.btn-local.active {
+  border-color: var(--naranja-oscuro);
+  background-color: var(--amarillo);
+  box-shadow: 0 4px 12px rgba(245, 124, 0, 0.25);
+}
+
+.btn-local i {
+  color: var(--naranja-oscuro);
+  font-size: 1.2rem;
+}
+
+/* ======= MAPA ======= */
+.mapa-placeholder {
+  background-color: #f8f9fa;
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mapa-iframe {
+  border: none;
+  display: block;
+}
+
+/* ======= INFORMACIÓN DEL LOCAL ======= */
+.local-nombre {
+  color: var(--naranja-oscuro);
+  font-weight: 700;
+}
+
+.local-direccion {
+  font-size: 1rem;
+}
+
+.local-referencia {
+  font-size: 0.9rem;
+  color: var(--gris);
+}
+
+/* ======= SERVICIOS ======= */
+.servicios-local .badge {
+  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+}
+
+/* ======= BOTONES DE ACCIÓN ======= */
+.botones-local .btn {
+  border-radius: 25px;
+  padding: 0.5rem 1.25rem;
+  transition: all 0.3s ease;
+}
+
+.botones-local .btn:hover {
+  transform: scale(1.05);
+}
+
+.btn-outline-primary {
+  border-color: var(--naranja-oscuro);
+  color: var(--naranja-oscuro);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--naranja-oscuro);
+  border-color: var(--naranja-oscuro);
+  color: white;
+}
+
+/* ======= HORARIO ======= */
+.info-horario {
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.horario-item {
+  padding: 0.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.horario-item:last-child {
+  border-bottom: none;
+}
+
+.estado-local .badge {
+  font-size: 1rem;
+  padding: 0.5rem 1.5rem;
+}
+
+/* ======= INFO DETALLE ======= */
+.info-detalle {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.info-detalle:last-child {
+  border-bottom: none;
+}
+
+.info-detalle strong {
+  font-size: 0.85rem;
+  color: var(--gris);
+}
+
+/* ======= SERVICIOS LISTA ======= */
+.servicios-list .d-flex {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.servicios-list .d-flex:last-child {
+  border-bottom: none;
+}
+
+.servicios-list i {
+  color: #28a745;
+}
+
+/* ======= ACCORDION ======= */
+.accordion-button:not(.collapsed) {
+  background-color: var(--amarillo);
+  color: var(--naranja-oscuro);
+}
+
+.accordion-button:focus {
+  border-color: var(--naranja);
+  box-shadow: 0 0 0 0.25rem rgba(255, 183, 77, 0.25);
+}
+
+/* ======= RESPONSIVE ======= */
+@media (max-width: 768px) {
+  .btn-local {
+    min-width: 100%;
+    max-width: 100%;
+  }
+
+  .botones-local .btn {
+    display: block;
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  .botones-local .btn:last-child {
+    margin-bottom: 0;
+  }
+
+  .info-horario {
+    margin-top: 1rem;
+  }
+
+  .mapa-placeholder {
+    min-height: 250px;
+  }
+
+  .mapa-iframe {
+    height: 250px !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .locales-page {
+    padding: 1rem 0;
+  }
+
+  .locales-grid {
+    gap: 0.5rem;
+  }
+
+  .btn-local {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+}

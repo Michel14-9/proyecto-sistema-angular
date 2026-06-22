@@ -30,7 +30,6 @@ public class FavoritoController {
         this.productoFinalService = productoFinalService;
     }
 
-
     @PostMapping("/toggle")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> toggleFavorito(@RequestParam Long productoId,
@@ -77,7 +76,7 @@ public class FavoritoController {
         }
     }
 
-
+    // ✅ CORREGIDO: Devuelve el formato completo que espera Angular
     @GetMapping("/listar")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> listarFavoritos(Authentication authentication) {
@@ -95,23 +94,40 @@ public class FavoritoController {
 
             List<Favorito> favoritos = favoritoService.obtenerFavoritosPorUsuario(usuario.getId());
 
-            List<Map<String, Object>> favoritosFormateados = favoritos.stream()
+            // ✅ Formato completo con producto anidado
+            List<Map<String, Object>> favoritosResponse = favoritos.stream()
                     .map(favorito -> {
-                        Map<String, Object> favMap = new HashMap<>();
-                        favMap.put("id", favorito.getProducto().getId());
-                        favMap.put("nombre", favorito.getProducto().getNombre());
-                        favMap.put("precio", favorito.getProducto().getPrecio());
-                        favMap.put("imagen", favorito.getProducto().getImagenUrl());
-                        return favMap;
+                        Map<String, Object> favoritoMap = new HashMap<>();
+                        favoritoMap.put("id", favorito.getId());
+                        favoritoMap.put("fechaAgregado", favorito.getFechaAgregado());
+                        favoritoMap.put("esActivo", favorito.isActivo());
+
+                        if (favorito.getProducto() != null) {
+                            ProductoFinal producto = favorito.getProducto();
+                            Map<String, Object> productoMap = new HashMap<>();
+                            productoMap.put("id", producto.getId());
+                            productoMap.put("nombre", producto.getNombre());
+                            productoMap.put("precio", producto.getPrecio());
+                            productoMap.put("descripcion", producto.getDescripcion());
+                            productoMap.put("imagen", producto.getImagenUrl());
+                            productoMap.put("disponible", true);
+                            productoMap.put("categoria", producto.getTipo());
+                            productoMap.put("tiempoPreparacion", 25);
+                            favoritoMap.put("producto", productoMap);
+                        }
+                        return favoritoMap;
                     })
                     .collect(Collectors.toList());
 
             return ResponseEntity.ok(Map.of(
                     "success", true,
-                    "favoritos", favoritosFormateados
+                    "favoritos", favoritosResponse,
+                    "total", favoritosResponse.size()
             ));
 
         } catch (Exception e) {
+            System.err.println("❌ Error en listarFavoritos: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.ok(Map.of(
                     "success", false,
                     "favoritos", Collections.emptyList(),
@@ -119,7 +135,6 @@ public class FavoritoController {
             ));
         }
     }
-
 
     @GetMapping
     @ResponseBody
@@ -176,7 +191,6 @@ public class FavoritoController {
         }
     }
 
-
     @GetMapping("/verificar/{productoId}")
     @ResponseBody
     public ResponseEntity<?> verificarFavorito(@PathVariable Long productoId,
@@ -208,7 +222,6 @@ public class FavoritoController {
             ));
         }
     }
-
 
     @PostMapping("/agregar")
     @ResponseBody
@@ -253,7 +266,6 @@ public class FavoritoController {
         }
     }
 
-
     @DeleteMapping("/eliminar/{favoritoId}")
     @ResponseBody
     public ResponseEntity<?> eliminarFavorito(@PathVariable Long favoritoId,
@@ -296,7 +308,6 @@ public class FavoritoController {
         }
     }
 
-
     @DeleteMapping("/limpiar")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> limpiarFavoritos(Authentication authentication) {
@@ -328,7 +339,6 @@ public class FavoritoController {
         }
     }
 
-
     @GetMapping("/count")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> contarFavoritos(Authentication authentication) {
@@ -359,7 +369,6 @@ public class FavoritoController {
             ));
         }
     }
-
 
     @GetMapping("/auth/check")
     @ResponseBody

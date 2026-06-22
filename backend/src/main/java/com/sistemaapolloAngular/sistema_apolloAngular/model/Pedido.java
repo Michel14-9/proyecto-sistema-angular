@@ -17,10 +17,8 @@ public class Pedido {
     private String estado;
     private LocalDateTime fecha;
 
-
     private Double total;
     private String observaciones;
-
 
     private Double subtotal;
     private Double costoEnvio;
@@ -33,55 +31,55 @@ public class Pedido {
 
     private String numeroPedido;
 
+    // ✅ NUEVOS CAMPOS PARA MERCADOPAGO
+    @Column(name = "preference_id")
+    private String preferenceId;  // ID de la preferencia en MercadoPago
+
+    @Column(name = "payment_id")
+    private String paymentId;     // ID del pago en MercadoPago
+
+    @Column(name = "fecha_actualizacion")
+    private LocalDateTime fechaActualizacion;  // Última actualización del pedido
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id")
     private Usuario usuario;
 
-
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ItemPedido> items = new ArrayList<>();
 
-    //  CONSTRUCTOR
+    // CONSTRUCTOR
     public Pedido() {
         this.fecha = LocalDateTime.now();
+        this.fechaActualizacion = LocalDateTime.now();
         this.estado = "PENDIENTE";
         this.items = new ArrayList<>();
     }
-
 
     public String getCodigo() {
         return (canal != null && numero != null) ? canal + "-" + numero : "N/A";
     }
 
-
     public LocalDateTime getFechaPedido() {
         return fecha;
     }
-
 
     public void agregarItem(ItemPedido item) {
         item.setPedido(this);
         this.items.add(item);
     }
 
-
     public void calcularTotales() {
         this.subtotal = items.stream()
                 .mapToDouble(ItemPedido::getSubtotal)
                 .sum();
 
-        // Calcular envío (5 soles si es delivery y subtotal < 50)
         this.costoEnvio = "DELIVERY".equals(tipoEntrega) && subtotal < 50 ? 5.0 : 0.0;
-
-        // Calcular descuento (10 soles si subtotal >= 80)
         this.descuento = subtotal >= 80 ? 10.0 : 0.0;
-
-        // Calcular total final
         this.total = subtotal + costoEnvio - descuento;
     }
 
-    // Getters y Setters
+    // ===== Getters y Setters =====
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -111,7 +109,6 @@ public class Pedido {
     public List<ItemPedido> getItems() { return items; }
     public void setItems(List<ItemPedido> items) { this.items = items; }
 
-    //  GETTERS Y SETTERS
     public Double getSubtotal() {
         if (subtotal == null && !items.isEmpty()) {
             return items.stream().mapToDouble(ItemPedido::getSubtotal).sum();
@@ -148,5 +145,14 @@ public class Pedido {
 
     public Usuario getUsuario() { return usuario; }
     public void setUsuario(Usuario usuario) { this.usuario = usuario; }
-}
 
+    // ✅ GETTERS Y SETTERS PARA MERCADOPAGO
+    public String getPreferenceId() { return preferenceId; }
+    public void setPreferenceId(String preferenceId) { this.preferenceId = preferenceId; }
+
+    public String getPaymentId() { return paymentId; }
+    public void setPaymentId(String paymentId) { this.paymentId = paymentId; }
+
+    public LocalDateTime getFechaActualizacion() { return fechaActualizacion; }
+    public void setFechaActualizacion(LocalDateTime fechaActualizacion) { this.fechaActualizacion = fechaActualizacion; }
+}

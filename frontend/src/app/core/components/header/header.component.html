@@ -1,0 +1,93 @@
+<!-- src/app/core/components/header/header.component.html -->
+
+<!-- HEADER -->
+<header>
+  <nav class="navbar navbar-expand-lg navbar-light">
+    <div class="container-fluid">
+
+      <!-- Logo -->
+      <a class="navbar-brand" routerLink="/">
+        <img src="assets/archivos/logo.png" alt="Logo" class="nav-logo">
+      </a>
+
+      <!-- Botón móvil -->
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarLuren"
+              aria-controls="navbarLuren" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <!-- Links -->
+      <div class="collapse navbar-collapse" id="navbarLuren">
+        <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-3 justify-content-center align-items-center">
+          <li class="nav-item">
+            <a class="nav-link" routerLink="/menu">Menú</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" routerLink="/nuestros-locales">Local</a>
+          </li>
+          <li class="nav-item d-flex align-items-center">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          </li>
+          <!-- Enlaces móviles -->
+          <li class="nav-item d-lg-none">
+            <a routerLink="/favoritos" class="nav-link">
+              <i class="fa-solid fa-star"></i> Mis favoritos
+            </a>
+          </li>
+          <li class="nav-item d-lg-none">
+            <a routerLink="/carrito" class="nav-link">Carrito</a>
+          </li>
+          <li class="nav-item d-lg-none">
+            <a routerLink="/sigue-tu-pedido" class="nav-link">Sigue tu pedido</a>
+          </li>
+        </ul>
+
+        <!-- Lado derecho (escritorio) -->
+        <ul class="navbar-nav ms-auto gap-3 align-items-center">
+          <li class="nav-item d-flex align-items-center nav-icon-item">
+            <i class="fa-brands fa-whatsapp nav-icon whatsapp-icon"></i>
+            <div class="nav-text">Pide por <br><span class="text-orange">WHATSAPP</span></div>
+          </li>
+          <li class="nav-item d-flex align-items-center nav-icon-item">
+            <i class="fa-solid fa-phone nav-icon phone-icon"></i>
+            <div class="nav-text">Llámanos <br><span class="text-orange">123-456-7890</span></div>
+          </li>
+          <li class="nav-item d-flex align-items-center nav-icon-item">
+            <i class="fa-solid fa-user nav-icon user-icon"></i>
+            <div class="nav-text">
+              <!-- Usuario NO logueado -->
+              <div *ngIf="!isAuthenticated">
+                Hola, <br>
+                <a routerLink="/login" class="text-orange text-decoration-none">Iniciar sesión</a>
+              </div>
+              <!-- Usuario SÍ logueado -->
+              <div *ngIf="isAuthenticated">
+                <span>Hola, {{ username }}</span><br>
+                <a (click)="logout()" class="text-orange text-decoration-none" style="cursor:pointer">
+                  Cerrar sesión
+                </a>
+              </div>
+            </div>
+          </li>
+          <li class="nav-item">
+            <a routerLink="/carrito" class="btn btn-success carrito-btn">
+              <i class="fa-solid fa-cart-shopping"></i> S/. {{ totalCarrito | number:'1.2-2' }}
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Links rápidos escritorio -->
+  <div class="bg-light py-2 px-3 border-bottom d-none d-lg-block">
+    <div class="container-fluid d-flex justify-content-end gap-4 small">
+      <a routerLink="/favoritos" class="text-decoration-none text-reset">
+        <i class="fa-solid fa-star"></i> Mis favoritos
+      </a>
+      <a routerLink="/sigue-tu-pedido" class="text-decoration-none text-reset">
+        <i class="fa-solid fa-truck"></i> Sigue tu pedido
+      </a>
+    </div>
+  </div>
+</header>

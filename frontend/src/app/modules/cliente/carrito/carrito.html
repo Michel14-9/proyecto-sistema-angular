@@ -1,1 +1,244 @@
-<p>carrito works!</p>
+<!-- src/app/modules/cliente/carrito/carrito.html -->
+<main class="carrito-page py-4">
+  <div class="container">
+    <div class="row">
+      <!-- Columna izquierda - Productos del carrito -->
+      <div class="col-lg-8 mb-4">
+        <!-- Header del carrito -->
+        <div class="carrito-header mb-4">
+          <div class="d-flex justify-content-between align-items-center">
+            <a routerLink="/menu" class="btn btn-outline-secondary btn-volver">
+              <i class="fas fa-arrow-left me-2"></i>Seguir Comprando
+            </a>
+            <h1 class="carrito-title mb-0 text-luren">
+              <i class="fas fa-shopping-cart me-2"></i>Mi Carrito
+            </h1>
+            <div class="contador-productos badge bg-luren">
+              {{ carritoItems.length }} productos
+            </div>
+          </div>
+        </div>
+
+        <!-- Loading -->
+        <div *ngIf="isLoading" class="text-center py-5">
+          <div class="spinner-border text-warning" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <p class="mt-2">Cargando tu carrito...</p>
+        </div>
+
+        <!-- Error -->
+        <div *ngIf="errorMessage" class="alert alert-danger">
+          <i class="fas fa-exclamation-circle me-2"></i>{{ errorMessage }}
+        </div>
+
+        <!-- Alertas de autenticación -->
+        <div *ngIf="!isAuthenticated && !isLoading" class="alert alert-warning-custom" role="alert">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          <strong>¡Inicia sesión!</strong> Para guardar tu carrito y continuar más tarde.
+          <a routerLink="/login" class="alert-link">Iniciar sesión</a>
+        </div>
+
+        <!-- Carrito vacío -->
+        <div *ngIf="!isLoading && carritoItems.length === 0 && isAuthenticated" class="text-center py-5">
+          <div class="empty-cart">
+            <i class="fas fa-shopping-cart fa-4x text-muted mb-3"></i>
+            <h3 class="text-muted">Tu carrito está vacío</h3>
+            <p class="text-muted-custom mb-4">Agrega productos desde nuestro delicioso menú</p>
+            <a routerLink="/menu" class="btn btn-luren btn-lg">
+              <i class="fas fa-utensils me-2"></i>Explorar Menú
+            </a>
+          </div>
+        </div>
+
+        <!-- Lista de productos -->
+        <div *ngIf="!isLoading && carritoItems.length > 0">
+          <div class="carrito-productos">
+            <div class="producto-item card mb-3 border-0 shadow-sm" *ngFor="let item of carritoItems">
+              <div class="card-body">
+                <div class="row align-items-center">
+                  <!-- Imagen del producto -->
+                  <div class="col-md-2 col-3">
+                    <!-- ✅ CORREGIDO: usar imagenUrl en lugar de imagen -->
+                    <img [src]="item.imagenUrl || 'assets/archivos/placeholder.jpg'"
+                         alt="Imagen producto"
+                         class="img-fluid rounded producto-imagen"
+                         (error)="item.imagenUrl = 'assets/archivos/placeholder.jpg'">
+                  </div>
+
+                  <!-- Información del producto -->
+                  <div class="col-md-5 col-6">
+                    <h5 class="producto-nombre mb-2">{{ item.nombre }}</h5>
+                    <p class="producto-descripcion text-muted-custom small mb-2">
+                      {{ item.descripcion || 'Sin descripción' }}
+                    </p>
+                    <p class="producto-precio-unitario fw-bold text-success mb-0">
+                      <!-- ✅ CORREGIDO: usar precioUnitario en lugar de precio -->
+                      S/ {{ (item.precioUnitario || 0) | number:'1.2-2' }}
+                    </p>
+                  </div>
+
+                  <!-- Controles de cantidad -->
+                  <div class="col-md-3 col-6">
+                    <div class="cantidad-controls d-flex align-items-center justify-content-center">
+                      <button class="btn btn-outline-secondary btn-sm cantidad-btn disminuir"
+                              (click)="actualizarCantidad(item.id, item.cantidad - 1)"
+                              [disabled]="item.cantidad <= 1">
+                        <i class="fas fa-minus"></i>
+                      </button>
+                      <span class="cantidad-display mx-3 fw-bold">{{ item.cantidad }}</span>
+                      <button class="btn btn-outline-secondary btn-sm cantidad-btn aumentar"
+                              (click)="actualizarCantidad(item.id, item.cantidad + 1)">
+                        <i class="fas fa-plus"></i>
+                      </button>
+                    </div>
+                    <div class="subtotal text-center mt-2">
+                      <small class="text-muted-custom">Subtotal:</small>
+                      <div class="fw-bold text-success">
+                        <!-- ✅ CORREGIDO: usar precioUnitario en lugar de precio -->
+                        S/ {{ ((item.precioUnitario || 0) * item.cantidad) | number:'1.2-2' }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Botón eliminar -->
+                  <div class="col-md-2 col-3 text-end">
+                    <button class="btn btn-outline-danger btn-sm eliminar-btn"
+                            (click)="confirmarEliminar(item.id)"
+                            title="Eliminar producto">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Promociones y ofertas -->
+          <div class="promociones-card card mt-4">
+            <div class="card-header card-header-custom">
+              <h5 class="mb-0"><i class="fas fa-tag me-2 text-success"></i>Ofertas Especiales</h5>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="promo-item d-flex align-items-center mb-3">
+                    <i class="fas fa-gift text-warning me-3"></i>
+                    <div>
+                      <h6 class="mb-1">Descuento especial</h6>
+                      <small class="text-muted-custom">10% en pedidos mayores a S/ 80.00</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="promo-item d-flex align-items-center mb-3">
+                    <i class="fas fa-shipping-fast text-primary me-3"></i>
+                    <div>
+                      <h6 class="mb-1">Envío gratis</h6>
+                      <small class="text-muted-custom">En pedidos mayores a S/ 50.00</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Columna derecha - Resumen del pedido -->
+      <div class="col-lg-4">
+        <div class="resumen-pedido card sticky-top resumen-sticky" *ngIf="!isLoading && isAuthenticated">
+          <div class="card-header bg-luren text-white text-center py-3">
+            <h4 class="mb-0"><i class="fas fa-receipt me-2"></i>Resumen del Pedido</h4>
+          </div>
+          <div class="card-body">
+            <!-- Subtotal -->
+            <div class="resumen-item d-flex justify-content-between mb-2">
+              <span class="resumen-label">Subtotal</span>
+              <span class="resumen-valor">S/ {{ total | number:'1.2-2' }}</span>
+            </div>
+
+            <!-- Envío -->
+            <div class="resumen-item d-flex justify-content-between mb-2">
+              <span class="resumen-label">Costo de envío</span>
+              <span class="resumen-valor">
+                <span *ngIf="total > 0 && total >= 50" class="text-success">GRATIS</span>
+                <span *ngIf="total > 0 && total < 50">S/ 5.00</span>
+                <span *ngIf="total === 0">S/ 0.00</span>
+              </span>
+            </div>
+
+            <!-- Descuento -->
+            <div class="resumen-item d-flex justify-content-between mb-2" *ngIf="total >= 80">
+              <span class="resumen-label text-success">Descuento</span>
+              <span class="resumen-valor text-success">-S/ 10.00</span>
+            </div>
+
+            <hr>
+
+            <!-- Total -->
+            <div class="resumen-total d-flex justify-content-between mb-4">
+              <span class="total-label fw-bold">Total a pagar</span>
+              <span class="total-valor fw-bold text-luren">
+                S/ {{ getTotalFinal() | number:'1.2-2' }}
+              </span>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="acciones-carrito">
+              <button class="btn btn-pagar w-100 py-3 mb-3"
+                      [disabled]="carritoItems.length === 0"
+                      (click)="irAlCheckout()">
+                <i class="fas fa-credit-card me-2"></i>Proceder al Pago
+              </button>
+
+              <button class="btn btn-outline-danger w-100 btn-vaciar-carrito"
+                      [disabled]="carritoItems.length === 0"
+                      (click)="vaciarCarrito()">
+                <i class="fas fa-trash me-2"></i>Vaciar Carrito
+              </button>
+            </div>
+
+            <!-- Información adicional -->
+            <div class="info-adicional mt-4">
+              <div class="d-flex align-items-center text-muted-custom small mb-2">
+                <i class="fas fa-shield-alt me-2 text-success"></i>
+                <span>Compra 100% segura</span>
+              </div>
+              <div class="d-flex align-items-center text-muted-custom small mb-2">
+                <i class="fas fa-clock me-2 text-warning"></i>
+                <span>Entrega en 30-45 min</span>
+              </div>
+              <div class="d-flex align-items-center text-muted-custom small">
+                <i class="fas fa-undo me-2 text-info"></i>
+                <span>Devolución garantizada</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Modal de confirmación -->
+<div class="modal" [class.show]="mostrarModal" style="display: block;" *ngIf="mostrarModal">
+  <div class="modal-dialog">
+    <div class="modal-content modal-content-custom">
+      <div class="modal-header modal-header-custom">
+        <h5 class="modal-title">Confirmar acción</h5>
+        <button type="button" class="btn-close" (click)="mostrarModal = false"></button>
+      </div>
+      <div class="modal-body">
+        {{ modalMensaje }}
+      </div>
+      <div class="modal-footer modal-footer-custom">
+        <button type="button" class="btn btn-secondary btn-cancelar" (click)="mostrarModal = false">Cancelar</button>
+        <button type="button" class="btn btn-danger btn-confirmar" (click)="accionConfirmar?.()">Confirmar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade show" *ngIf="mostrarModal"></div>
+
+

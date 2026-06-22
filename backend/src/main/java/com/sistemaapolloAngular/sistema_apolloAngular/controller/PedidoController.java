@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -32,7 +33,6 @@ public class PedidoController {
         this.usuarioService = usuarioService;
         this.objectMapper = new ObjectMapper();
     }
-
 
     @PostMapping("/crear")
     public ResponseEntity<Map<String, Object>> crearPedido(@RequestBody Map<String, Object> datos,
@@ -88,12 +88,14 @@ public class PedidoController {
         }
     }
 
-
     @GetMapping("/{pedidoId}")
+    @Transactional(readOnly = true)
     public ResponseEntity<?> obtenerPedido(@PathVariable Long pedidoId, Authentication authentication) {
         Map<String, Object> response = new HashMap<>();
 
         try {
+            System.out.println("🔍 Buscando pedido: " + pedidoId);
+
             if (authentication == null || !authentication.isAuthenticated()) {
                 response.put("success", false);
                 response.put("message", "Usuario no autenticado");
@@ -104,63 +106,97 @@ public class PedidoController {
             Usuario usuario = usuarioService.buscarPorCorreo(correo)
                     .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-            Optional<Pedido> pedidoOpt = pedidoService.obtenerPedidoPorId(pedidoId);
+            // ✅ Usar obtenerPedidoConItems que hace JOIN FETCH
+            Optional<Pedido> pedidoOpt = pedidoService.obtenerPedidoConItems(pedidoId);
 
-            if (pedidoOpt.isPresent() && pedidoOpt.get().getUsuario().getId().equals(usuario.getId())) {
-                Pedido pedido = pedidoOpt.get();
-
-                // Crear respuesta con datos del pedido
-                Map<String, Object> pedidoData = new HashMap<>();
-                pedidoData.put("id", pedido.getId());
-                pedidoData.put("numeroPedido", pedido.getNumeroPedido());
-                pedidoData.put("fechaPedido", pedido.getFechaPedido());
-                pedidoData.put("total", pedido.getTotal());
-                pedidoData.put("estado", pedido.getEstado());
-                pedidoData.put("metodoPago", pedido.getMetodoPago());
-                pedidoData.put("tipoEntrega", pedido.getTipoEntrega());
-                pedidoData.put("direccionEntrega", pedido.getDireccionEntrega());
-                pedidoData.put("subtotal", pedido.getSubtotal());
-                pedidoData.put("costoEnvio", pedido.getCostoEnvio());
-                pedidoData.put("descuento", pedido.getDescuento());
-                pedidoData.put("observaciones", pedido.getObservaciones());
-
-                // Items del pedido
-                List<Map<String, Object>> itemsList = new ArrayList<>();
-                if (pedido.getItems() != null) {
-                    for (ItemPedido item : pedido.getItems()) {
-                        Map<String, Object> itemMap = new HashMap<>();
-                        itemMap.put("id", item.getId());
-                        itemMap.put("cantidad", item.getCantidad());
-                        itemMap.put("precio", item.getPrecio());
-                        itemMap.put("subtotal", item.getSubtotal());
-                        itemMap.put("nombreProducto", item.getNombreProducto());
-                        itemsList.add(itemMap);
-                    }
-                }
-                pedidoData.put("items", itemsList);
-
-                // Información del usuario
-                Map<String, Object> usuarioData = new HashMap<>();
-                usuarioData.put("nombres", pedido.getUsuario().getNombres());
-                usuarioData.put("apellidos", pedido.getUsuario().getApellidos());
-                usuarioData.put("telefono", pedido.getUsuario().getTelefono());
-                usuarioData.put("email", pedido.getUsuario().getUsername());
-                pedidoData.put("usuario", usuarioData);
-
-                return ResponseEntity.ok(pedidoData);
-            } else {
+            if (pedidoOpt.isEmpty()) {
                 response.put("success", false);
                 response.put("message", "Pedido no encontrado");
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
             }
 
+            Pedido pedido = pedidoOpt.get();
+
+            // Verificar que el usuario sea el dueño
+            if (!pedido.getUsuario().getId().equals(usuario.getId())) {
+                response.put("success", false);
+                response.put("message", "No autorizado");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+            }
+
+            // ✅ Inicializar items y productos de forma segura
+            List<Map<String, Object>> itemsList = new ArrayList<>();
+            if (pedido.getItems() != null && !pedido.getItems().isEmpty()) {
+                for (ItemPedido item : pedido.getItems()) {
+                    Map<String, Object> itemMap = new HashMap<>();
+                    itemMap.put("id", item.getId());
+                    itemMap.put("cantidad", item.getCantidad());
+                    itemMap.put("precio", item.getPrecio());
+                    itemMap.put("subtotal", item.getSubtotal());
+
+                    // ✅ Obtener nombre del producto de forma segura
+                    String nombreProducto = item.getNombreProducto();
+                    if (nombreProducto == null || nombreProducto.isEmpty()) {
+                        try {
+                            if (item.getProductoFinal() != null) {
+                                nombreProducto = item.getProductoFinal().getNombre();
+                            }
+                        } catch (Exception e) {
+                            nombreProducto = "Producto";
+                        }
+                    }
+                    itemMap.put("nombreProducto", nombreProducto != null ? nombreProducto : "Producto");
+
+                    try {
+                        if (item.getProductoFinal() != null) {
+                            itemMap.put("productoId", item.getProductoFinal().getId());
+                        }
+                    } catch (Exception e) {
+                        // Ignorar
+                    }
+
+                    itemsList.add(itemMap);
+                }
+            }
+
+            // Crear respuesta con datos del pedido
+            Map<String, Object> pedidoData = new HashMap<>();
+            pedidoData.put("id", pedido.getId());
+            pedidoData.put("numeroPedido", pedido.getNumeroPedido());
+            pedidoData.put("fechaPedido", pedido.getFechaPedido());
+            pedidoData.put("total", pedido.getTotal());
+            pedidoData.put("estado", pedido.getEstado());
+            pedidoData.put("metodoPago", pedido.getMetodoPago());
+            pedidoData.put("tipoEntrega", pedido.getTipoEntrega());
+            pedidoData.put("direccionEntrega", pedido.getDireccionEntrega());
+            pedidoData.put("subtotal", pedido.getSubtotal());
+            pedidoData.put("costoEnvio", pedido.getCostoEnvio());
+            pedidoData.put("descuento", pedido.getDescuento());
+            pedidoData.put("observaciones", pedido.getObservaciones());
+            pedidoData.put("paymentId", pedido.getPaymentId());
+            pedidoData.put("items", itemsList);
+
+            // Información del usuario
+            Map<String, Object> usuarioData = new HashMap<>();
+            usuarioData.put("nombres", pedido.getUsuario().getNombres());
+            usuarioData.put("apellidos", pedido.getUsuario().getApellidos());
+            usuarioData.put("telefono", pedido.getUsuario().getTelefono());
+            usuarioData.put("email", pedido.getUsuario().getUsername());
+            pedidoData.put("usuario", usuarioData);
+
+            System.out.println("✅ Pedido encontrado: " + pedidoId + " - Estado: " + pedido.getEstado());
+
+            return ResponseEntity.ok(pedidoData);
+
         } catch (Exception e) {
+            System.err.println("❌ Error al cargar pedido: " + e.getMessage());
+            e.printStackTrace();
+
             response.put("success", false);
             response.put("message", "Error al cargar el pedido: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
-
 
     @GetMapping("/todos")
     public ResponseEntity<?> obtenerTodosLosPedidos() {
@@ -253,7 +289,19 @@ public class PedidoController {
                         itemMap.put("cantidad", item.getCantidad());
                         itemMap.put("precio", item.getPrecio());
                         itemMap.put("subtotal", item.getSubtotal());
-                        itemMap.put("nombreProducto", item.getNombreProducto());
+
+                        // ✅ Obtener nombre del producto de forma segura
+                        String nombreProducto = item.getNombreProducto();
+                        if (nombreProducto == null || nombreProducto.isEmpty()) {
+                            try {
+                                if (item.getProductoFinal() != null) {
+                                    nombreProducto = item.getProductoFinal().getNombre();
+                                }
+                            } catch (Exception e) {
+                                nombreProducto = "Producto";
+                            }
+                        }
+                        itemMap.put("nombreProducto", nombreProducto != null ? nombreProducto : "Producto");
                         itemsList.add(itemMap);
                     }
                 }
@@ -277,7 +325,6 @@ public class PedidoController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
-
 
     @GetMapping("/buscar/{numeroPedido}")
     public ResponseEntity<?> buscarPedido(@PathVariable String numeroPedido) {
@@ -309,7 +356,17 @@ public class PedidoController {
                 if (pedido.getItems() != null) {
                     for (ItemPedido item : pedido.getItems()) {
                         Map<String, Object> itemMap = new HashMap<>();
-                        itemMap.put("nombreProducto", item.getNombreProducto());
+                        String nombreProducto = item.getNombreProducto();
+                        if (nombreProducto == null || nombreProducto.isEmpty()) {
+                            try {
+                                if (item.getProductoFinal() != null) {
+                                    nombreProducto = item.getProductoFinal().getNombre();
+                                }
+                            } catch (Exception e) {
+                                nombreProducto = "Producto";
+                            }
+                        }
+                        itemMap.put("nombreProducto", nombreProducto != null ? nombreProducto : "Producto");
                         itemMap.put("cantidad", item.getCantidad());
                         itemMap.put("precio", item.getPrecio());
                         itemMap.put("subtotal", item.getSubtotal());
@@ -330,6 +387,66 @@ public class PedidoController {
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", "Error al buscar pedido: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    @GetMapping("/{id}/estado")
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> obtenerEstadoPedido(@PathVariable Long id, Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            System.out.println("🔍 Verificando estado del pedido: " + id);
+
+            if (authentication == null || !authentication.isAuthenticated()) {
+                response.put("error", "Usuario no autenticado");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+
+            String correo = authentication.getName();
+            Optional<Usuario> usuarioOpt = usuarioService.buscarPorCorreo(correo);
+
+            if (usuarioOpt.isEmpty()) {
+                response.put("error", "Usuario no encontrado");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+
+            Usuario usuario = usuarioOpt.get();
+            Optional<Pedido> pedidoOpt = pedidoService.obtenerPedidoConItems(id);
+
+            if (pedidoOpt.isEmpty()) {
+                System.err.println("❌ Pedido no encontrado: " + id);
+                response.put("error", "Pedido no encontrado");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+
+            Pedido pedido = pedidoOpt.get();
+
+            // Verificar que el usuario sea el dueño del pedido
+            if (!pedido.getUsuario().getId().equals(usuario.getId())) {
+                System.err.println("❌ Usuario no autorizado: " + correo);
+                response.put("error", "No autorizado");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+            }
+
+            // Preparar respuesta
+            response.put("pedidoId", pedido.getId());
+            response.put("numeroPedido", pedido.getNumeroPedido());
+            response.put("estado", pedido.getEstado());
+            response.put("total", pedido.getTotal());
+            response.put("fecha", pedido.getFechaPedido());
+            response.put("paymentId", pedido.getPaymentId());
+            response.put("preferenceId", pedido.getPreferenceId());
+
+            System.out.println("✅ Estado del pedido " + id + ": " + pedido.getEstado());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.err.println("❌ Error al obtener estado del pedido: " + e.getMessage());
+            e.printStackTrace();
+            response.put("error", "Error al obtener estado del pedido: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }

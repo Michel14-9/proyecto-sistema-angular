@@ -1,1 +1,217 @@
-<p>mis-datos works!</p>
+<!-- src/app/modules/cliente/mis-datos/mis-datos.html -->
+<main class="container my-5 main-container">
+  <div class="row">
+    <!-- Menú Lateral -->
+    <div class="col-md-3 mb-4">
+      <div class="card sidebar-menu">
+        <div class="card-header bg-luren text-white">
+          <h5 class="mb-0"><i class="fas fa-user-circle me-2"></i>Mi Cuenta</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush">
+            <a routerLink="/mis-cuentas" class="list-group-item list-group-item-action">
+              <i class="fas fa-user me-2"></i>Mi Perfil
+            </a>
+            <a routerLink="/mis-datos" class="list-group-item list-group-item-action active">
+              <i class="fas fa-address-card me-2"></i>Mis Datos
+            </a>
+            <a routerLink="/mis-direcciones" class="list-group-item list-group-item-action">
+              <i class="fas fa-map-marker-alt me-2"></i>Mis Direcciones
+            </a>
+            <a routerLink="/mis-pedidos" class="list-group-item list-group-item-action">
+              <i class="fas fa-receipt me-2"></i>Mis Pedidos
+            </a>
+            <a routerLink="/favoritos" class="list-group-item list-group-item-action">
+              <i class="fas fa-heart me-2"></i>Mis Favoritos
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenido Principal -->
+    <div class="col-md-9">
+      <!-- Header de la página -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h1 class="h2 page-title mb-1">Mis Datos Personales</h1>
+          <p class="text-muted-custom">Gestiona y actualiza tu información personal</p>
+        </div>
+        <a routerLink="/cuenta" class="btn btn-outline-luren">
+          <i class="fas fa-arrow-left me-2"></i>Volver al Perfil
+        </a>
+      </div>
+
+      <!-- Estado de Sesión (solo para no autenticados) -->
+      <div *ngIf="!isAuthenticated" class="alert alert-warning-custom">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        Debes <a routerLink="/login" class="alert-link">iniciar sesión</a> para ver y editar tu información personal.
+      </div>
+
+      <!-- Contenido para usuarios autenticados -->
+      <div *ngIf="isAuthenticated">
+        <!-- Loading -->
+        <div *ngIf="isLoading" class="text-center py-5">
+          <div class="spinner-border text-warning" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <p class="mt-2 text-muted">Cargando tus datos...</p>
+        </div>
+
+        <!-- Error -->
+        <div *ngIf="errorMessage" class="alert alert-danger text-center">
+          <i class="fas fa-exclamation-circle me-2"></i>
+          {{ errorMessage }}
+        </div>
+
+        <!-- Información Actual -->
+        <div *ngIf="!isLoading && !errorMessage" class="card card-custom mb-4" id="infoView">
+          <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
+            <h4 class="mb-0"><i class="fas fa-user me-2"></i>Información Personal</h4>
+            <button class="btn btn-luren btn-sm" (click)="habilitarEdicion()">
+              <i class="fas fa-edit me-1"></i>Editar
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="info-item mb-3">
+                  <strong class="info-label">Nombre:</strong>
+                  <span class="info-value">{{ usuario.nombre || '-' }}</span>
+                </div>
+                <div class="info-item mb-3">
+                  <strong class="info-label">Apellidos:</strong>
+                  <span class="info-value">{{ usuario.apellidos || '-' }}</span>
+                </div>
+                <div class="info-item mb-3">
+                  <strong class="info-label">Email:</strong>
+                  <span class="info-value">{{ usuario.email || '-' }}</span>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="info-item mb-3">
+                  <strong class="info-label">Tipo de Documento:</strong>
+                  <span class="info-value">{{ usuario.tipoDocumento || '-' }}</span>
+                </div>
+                <div class="info-item mb-3">
+                  <strong class="info-label">Número de Documento:</strong>
+                  <span class="info-value">{{ usuario.numeroDocumento || '-' }}</span>
+                </div>
+                <div class="info-item mb-3">
+                  <strong class="info-label">Teléfono:</strong>
+                  <span class="info-value">{{ usuario.telefono || '-' }}</span>
+                </div>
+                <div class="info-item mb-3">
+                  <strong class="info-label">Fecha de Nacimiento:</strong>
+                  <span class="info-value">{{ formatearFecha(usuario.fechaNacimiento) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formulario de Edición -->
+        <div *ngIf="mostrarFormulario" class="card card-custom edit-form">
+          <div class="card-header bg-luren text-white">
+            <h4 class="mb-0"><i class="fas fa-edit me-2"></i>Editar Información</h4>
+          </div>
+          <div class="card-body">
+            <form #datosForm="ngForm" (ngSubmit)="guardarCambios()">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label form-label-custom">Nombre *</label>
+                    <input type="text" class="form-control form-control-custom"
+                           [(ngModel)]="formData.nombre" name="nombre"
+                           placeholder="Tu nombre" required>
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label form-label-custom">Apellidos *</label>
+                    <input type="text" class="form-control form-control-custom"
+                           [(ngModel)]="formData.apellidos" name="apellidos"
+                           placeholder="Tus apellidos" required>
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label form-label-custom">Fecha de Nacimiento *</label>
+                    <input type="date" class="form-control form-control-custom"
+                           [(ngModel)]="formData.fechaNacimiento" name="fechaNacimiento"
+                           required>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label form-label-custom">Tipo de Documento *</label>
+                    <select class="form-select form-select-custom"
+                            [(ngModel)]="formData.tipoDocumento" name="tipoDocumento"
+                            required>
+                      <option value="">Seleccione...</option>
+                      <option value="DNI">DNI</option>
+                      <option value="Pasaporte">Pasaporte</option>
+                      <option value="Carné de extranjería">Carné de extranjería</option>
+                    </select>
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label form-label-custom">Número de Documento *</label>
+                    <input type="text" class="form-control form-control-custom"
+                           [(ngModel)]="formData.numeroDocumento" name="numeroDocumento"
+                           placeholder="Número de documento" required>
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label form-label-custom">Teléfono *</label>
+                    <input type="tel" class="form-control form-control-custom"
+                           [(ngModel)]="formData.telefono" name="telefono"
+                           placeholder="Número de teléfono" required>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sección de Cambio de Contraseña -->
+              <div class="password-section mt-4">
+                <h5 class="mb-3"><i class="fas fa-lock me-2"></i>Cambiar Contraseña</h5>
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label form-label-custom">Contraseña Actual</label>
+                      <input type="password" class="form-control form-control-custom"
+                             [(ngModel)]="formData.passwordActual" name="passwordActual"
+                             placeholder="Ingresa tu contraseña actual">
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label form-label-custom">Nueva Contraseña</label>
+                      <input type="password" class="form-control form-control-custom"
+                             [(ngModel)]="formData.nuevaPassword" name="nuevaPassword"
+                             placeholder="Nueva contraseña" (input)="validarFortalezaPassword(formData.nuevaPassword)">
+                      <div class="password-strength small mt-1" [ngStyle]="{'color': passwordStrengthColor}">
+                        {{ passwordStrengthMessage }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Botones de Acción -->
+              <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-luren" [disabled]="guardando">
+                  <span *ngIf="!guardando"><i class="fas fa-save me-2"></i>Guardar Cambios</span>
+                  <span *ngIf="guardando">
+                    <span class="spinner-border spinner-border-sm me-2"></span>Guardando...
+                  </span>
+                </button>
+                <button type="button" class="btn btn-outline-secondary-custom" (click)="cancelarEdicion()">
+                  <i class="fas fa-times me-2"></i>Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

@@ -1,4 +1,5 @@
 // src/app/core/services/combo.service.ts
+
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -15,7 +16,10 @@ export interface Combo {
   providedIn: 'root'
 })
 export class ComboService {
-  private apiUrl = 'http://localhost:8080/api/combos';
+
+
+
+  private apiUrl = 'http://localhost:8080/api/menu/combos';
 
   constructor(private http: HttpClient) {}
 

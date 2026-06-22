@@ -1,0 +1,235 @@
+/* src/app/modules/cliente/mis-cuentas/mis-cuentas.css */
+
+/* ======== PALETA DE COLORES ======== */
+:root {
+  --naranja: #ffb74d;
+  --naranja-oscuro: #f57c00;
+  --amarillo: #fff9c4;
+  --rojo: #e53935;
+  --gris: #6c757d;
+  --blanco: #fafafa;
+}
+
+/* ======= PÁGINA DE CUENTA ======= */
+.text-luren {
+  color: var(--naranja-oscuro);
+}
+
+.text-muted-custom {
+  color: var(--gris);
+}
+
+/* ======= MENÚ LATERAL ======= */
+.sidebar-menu {
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.bg-luren {
+  background-color: var(--naranja-oscuro);
+}
+
+.sidebar-menu .list-group-item {
+  border: none;
+  padding: 0.8rem 1.2rem;
+  transition: all 0.3s ease;
+}
+
+.sidebar-menu .list-group-item:hover {
+  background-color: var(--amarillo);
+  color: var(--naranja-oscuro);
+}
+
+.sidebar-menu .list-group-item.active {
+  background-color: var(--naranja-oscuro);
+  border-color: var(--naranja-oscuro);
+  color: white;
+}
+
+/* ======= BOTONES ======= */
+.btn-luren {
+  background-color: var(--naranja-oscuro);
+  color: white;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-luren:hover {
+  background-color: #e65100;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 124, 0, 0.3);
+}
+
+.btn-outline-luren {
+  border-color: var(--naranja-oscuro);
+  color: var(--naranja-oscuro);
+  transition: all 0.3s ease;
+}
+
+.btn-outline-luren:hover {
+  background-color: var(--naranja-oscuro);
+  color: white;
+}
+
+.btn-outline-primary {
+  border-color: var(--naranja-oscuro);
+  color: var(--naranja-oscuro);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--naranja-oscuro);
+  border-color: var(--naranja-oscuro);
+  color: white;
+}
+
+/* ======= CARDS ======= */
+.card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.card-header {
+  border-bottom: 1px solid #e9ecef;
+}
+
+.bg-light {
+  background-color: #f8f9fa !important;
+}
+
+/* ======= INFORMACIÓN PERSONAL ======= */
+.info-item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  color: var(--gris);
+  font-size: 0.9rem;
+  min-width: 140px;
+  display: inline-block;
+}
+
+.info-value {
+  font-weight: 500;
+  color: #333;
+}
+
+/* ======= ALERTAS ======= */
+.alert-warning-custom {
+  background-color: #fff3cd;
+  border-color: #ffc107;
+  color: #856404;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.alert-link {
+  color: var(--naranja-oscuro);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.alert-link:hover {
+  text-decoration: underline;
+}
+
+/* ======= SPINNER ======= */
+.spinner-border.text-warning {
+  color: var(--naranja-oscuro) !important;
+  width: 3rem;
+  height: 3rem;
+}
+
+/* ======= BADGES ======= */
+.badge.bg-luren {
+  background-color: var(--naranja-oscuro);
+  color: white;
+}
+
+/* ======= ACCIONES RÁPIDAS ======= */
+.btn-outline-success {
+  border-color: #28a745;
+  color: #28a745;
+}
+
+.btn-outline-success:hover {
+  background-color: #28a745;
+  color: white;
+}
+
+.btn-outline-warning {
+  border-color: #ffc107;
+  color: #ffc107;
+}
+
+.btn-outline-warning:hover {
+  background-color: #ffc107;
+  color: white;
+}
+
+/* ======= RESPONSIVE ======= */
+@media (max-width: 768px) {
+  .info-label {
+    min-width: 100%;
+    display: block;
+  }
+
+  .info-value {
+    display: block;
+    margin-top: 0.25rem;
+  }
+
+  .d-flex.justify-content-between.align-items-center.mb-4 {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start !important;
+  }
+
+  .card-header.d-flex.justify-content-between.align-items-center {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start !important;
+  }
+
+  .row .col-md-4.mb-3 .btn {
+    font-size: 0.9rem;
+    padding: 0.8rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .page-title {
+    font-size: 1.5rem;
+  }
+
+  .d-flex.gap-2 {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .d-flex.gap-2 .btn {
+    flex: 1;
+    min-width: 100px;
+  }
+
+  .bg-primary.bg-opacity-10.p-3.rounded {
+    padding: 1rem !important;
+  }
+
+  .bg-primary.bg-opacity-10.p-3.rounded i {
+    font-size: 1.2rem !important;
+  }
+
+  .h3 {
+    font-size: 1.5rem;
+  }
+}

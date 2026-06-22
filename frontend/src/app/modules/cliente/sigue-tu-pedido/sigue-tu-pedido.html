@@ -1,0 +1,193 @@
+<!-- src/app/modules/cliente/sigue-tu-pedido/sigue-tu-pedido.html -->
+<main class="seguimiento-pedido py-5">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8 col-md-10">
+        <!-- Banner superior -->
+        <div class="pedido-banner text-center mb-5">
+          <h1 class="pedido-title">¡Sigue tu pedido!</h1>
+          <p class="pedido-subtitle">
+            Para saber el estado de tu pedido, ingresa el número de pedido que te enviamos al correo en
+            el momento de realizar tu compra
+          </p>
+        </div>
+
+        <!-- Estado de Sesión (solo para no autenticados) -->
+        <div *ngIf="!isAuthenticated" class="alert alert-warning-custom">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          Debes <a routerLink="/login" class="alert-link">iniciar sesión</a> para ver el estado de tus pedidos.
+        </div>
+
+        <!-- Contenido para usuarios autenticados -->
+        <div *ngIf="isAuthenticated">
+          <!-- Loading -->
+          <div *ngIf="isLoading" class="text-center py-5">
+            <div class="spinner-border text-warning" role="status">
+              <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2 text-muted">Cargando información del pedido...</p>
+          </div>
+
+          <!-- Error -->
+          <div *ngIf="errorMessage && !pedidoEncontrado" class="alert alert-danger text-center">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            {{ errorMessage }}
+          </div>
+
+          <!-- Formulario de búsqueda -->
+          <div class="pedido-form-container" *ngIf="!isLoading">
+            <div class="card shadow-sm">
+              <div class="card-body p-4">
+                <form #pedidoForm="ngForm" (ngSubmit)="buscarPedido()" class="pedido-form">
+                  <div class="row mb-4">
+                    <div class="col-md-6">
+                      <label class="form-label fw-bold">Canal de pedido</label>
+                      <select class="form-select" [(ngModel)]="canalPedido" name="canalPedido" required>
+                        <option value="WEB">Página Web</option>
+                      </select>
+                      <div class="form-text">Todos los pedidos se realizan a través de nuestra página web</div>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label fw-bold">Número de pedido</label>
+                      <input type="text" class="form-control" id="numeroPedido"
+                             [(ngModel)]="numeroPedido" name="numeroPedido"
+                             placeholder="Ej: LR000001, LR000002, etc."
+                             pattern="LR\d{6}"
+                             title="Formato: LR seguido de 6 números (Ej: LR000001)"
+                             required>
+                      <div class="form-text">Ingresa el número que recibiste en tu correo</div>
+                    </div>
+                  </div>
+
+                  <div class="d-grid">
+                    <button type="submit" class="btn btn-luren btn-buscar" [disabled]="buscando">
+                      <span *ngIf="!buscando"><i class="fas fa-search me-2"></i>Buscar Pedido</span>
+                      <span *ngIf="buscando">
+                        <span class="spinner-border spinner-border-sm me-2"></span>Buscando...
+                      </span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Resultado del pedido -->
+          <div *ngIf="pedidoEncontrado && pedido" class="pedido-resultado mt-5">
+            <div class="card shadow-sm border-0">
+              <div class="card-header bg-luren text-white">
+                <h4 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Estado de tu Pedido</h4>
+              </div>
+              <div class="card-body">
+                <!-- Timeline del estado -->
+                <div class="timeline-pedido mb-4">
+                  <div class="progress progress-pedido">
+                    <div class="progress-bar bg-luren progress-bar-pedido" role="progressbar"
+                         [style.width.%]="getPorcentajeEstado(pedido.estado)">
+                    </div>
+                  </div>
+                  <div class="d-flex justify-content-between mt-2 timeline-labels">
+                    <span [class]="isEstadoActivo(pedido.estado, 'PENDIENTE') ? 'text-luren fw-bold' : 'text-muted'">Pendiente</span>
+                    <span [class]="isEstadoActivo(pedido.estado, 'CONFIRMADO') || isEstadoActivo(pedido.estado, 'PAGADO') ? 'text-luren fw-bold' : 'text-muted'">Pagado</span>
+                    <span [class]="isEstadoActivo(pedido.estado, 'PREPARACION') ? 'text-luren fw-bold' : 'text-muted'">Preparación</span>
+                    <span [class]="isEstadoActivo(pedido.estado, 'EN_CAMINO') ? 'text-luren fw-bold' : 'text-muted'">En Camino</span>
+                    <span [class]="isEstadoActivo(pedido.estado, 'ENTREGADO') ? 'text-luren fw-bold' : 'text-muted'">Entregado</span>
+                  </div>
+                </div>
+
+                <!-- Información del pedido -->
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="info-pedido">
+                      <h6 class="text-muted mb-2">Información del Pedido</h6>
+                      <p><strong>Número de Pedido:</strong> <span>{{ pedido.numeroPedido || pedido.id }}</span></p>
+                      <p><strong>Canal:</strong> <span>{{ pedido.canal || 'WEB' }}</span></p>
+                      <p><strong>Estado:</strong>
+                        <span class="badge" [class]="getEstadoClase(pedido.estado)">
+                          {{ getEstadoTexto(pedido.estado) }}
+                        </span>
+                      </p>
+                      <p><strong>Fecha:</strong> <span>{{ formatearFecha(pedido.fechaPedido || pedido.fecha) }}</span></p>
+                      <p *ngIf="pedido.total"><strong>Total:</strong> S/. {{ pedido.total | number:'1.2-2' }}</p>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div *ngIf="pedido.observaciones" class="observaciones-pedido">
+                      <h6 class="text-muted mb-2">Observaciones</h6>
+                      <p class="text-muted">{{ pedido.observaciones }}</p>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="acciones-pedido mt-3">
+                      <button class="btn btn-outline-luren btn-sm" (click)="repetirPedido()">
+                        <i class="fas fa-redo me-1"></i>Repetir Pedido
+                      </button>
+                      <button class="btn btn-outline-secondary btn-sm ms-2" (click)="descargarComprobante()">
+                        <i class="fas fa-download me-1"></i>Descargar
+                      </button>
+                      <button class="btn btn-outline-primary btn-sm ms-2" (click)="copiarNumeroPedido()">
+                        <i class="fas fa-copy me-1"></i>Copiar Número
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Items del pedido -->
+                <div *ngIf="pedido.items && pedido.items.length > 0" class="items-pedido mt-4">
+                  <h6 class="text-muted mb-3">Productos del Pedido</h6>
+                  <div class="table-responsive">
+                    <table class="table table-sm table-pedido">
+                      <thead>
+                      <tr>
+                        <th>Producto</th>
+                        <th class="text-center">Cantidad</th>
+                        <th class="text-end">Precio</th>
+                        <th class="text-end">Subtotal</th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                      <tr *ngFor="let item of pedido.items">
+                        <td>{{ item.nombreProducto || item.nombre }}</td>
+                        <td class="text-center">{{ item.cantidad }}</td>
+                        <td class="text-end">S/. {{ (item.precio || 0) | number:'1.2-2' }}</td>
+                        <td class="text-end">S/. {{ (item.subtotal || (item.precio * item.cantidad) || 0) | number:'1.2-2' }}</td>
+                      </tr>
+                      </tbody>
+                      <tfoot>
+                      <tr>
+                        <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                        <td class="text-end"><strong>S/. {{ pedido.total | number:'1.2-2' }}</strong></td>
+                      </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Información de contacto -->
+          <div class="contacto-info text-center mt-5">
+            <div class="card bg-light border-0">
+              <div class="card-body py-4">
+                <h5 class="card-title mb-3">¿Necesitas ayuda con tu pedido?</h5>
+                <div class="row">
+                  <div class="col-md-6 mb-3 mb-md-0">
+                    <i class="fas fa-phone fa-2x text-luren mb-2"></i>
+                    <p class="mb-1">Llámanos</p>
+                    <a href="tel:123456789" class="fw-bold text-decoration-none text-dark">123-456-789</a>
+                  </div>
+                  <div class="col-md-6">
+                    <i class="fab fa-whatsapp fa-2x text-success mb-2"></i>
+                    <p class="mb-1">Escríbenos por WhatsApp</p>
+                    <a href="https://wa.me/51123456789" class="fw-bold text-decoration-none text-dark">+51 123 456 789</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

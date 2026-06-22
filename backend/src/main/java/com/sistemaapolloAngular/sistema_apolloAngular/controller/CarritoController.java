@@ -1,5 +1,6 @@
 package com.sistemaapolloAngular.sistema_apolloAngular.controller;
 
+import com.sistemaapolloAngular.sistema_apolloAngular.dto.CarritoItemDTO;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.CarritoItem;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.ProductoFinal;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.Usuario;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors; // ✅ IMPORTANTE: Agregar esta importación
 
 @RestController
 @RequestMapping("/api/carrito")
@@ -29,7 +31,6 @@ public class CarritoController {
         this.usuarioService = usuarioService;
     }
 
-
     @GetMapping
     @ResponseBody
     public Map<String, Object> obtenerCarrito(Authentication authentication) {
@@ -42,6 +43,11 @@ public class CarritoController {
 
             List<CarritoItem> carrito = carritoService.obtenerCarrito(usuario.getId());
 
+            // ✅ CONVERTIR A DTO
+            List<CarritoItemDTO> itemsDTO = carrito.stream()
+                    .map(CarritoItemDTO::new)
+                    .collect(Collectors.toList());
+
             // Calcular total
             double total = carrito.stream()
                     .mapToDouble(item -> item.getPrecioUnitario() * item.getCantidad())
@@ -53,7 +59,7 @@ public class CarritoController {
                     .sum();
 
             response.put("success", true);
-            response.put("items", carrito);
+            response.put("items", itemsDTO); // ✅ Enviar DTO, no la entidad
             response.put("total", total);
             response.put("cantidadItems", cantidadItems);
             response.put("totalItems", carrito.size());
@@ -68,7 +74,6 @@ public class CarritoController {
 
         return response;
     }
-
 
     @PostMapping("/agregar")
     @ResponseBody
@@ -107,7 +112,6 @@ public class CarritoController {
         return response;
     }
 
-
     @PutMapping("/actualizar/{id}")
     @ResponseBody
     public Map<String, Object> actualizarCantidad(@PathVariable Long id,
@@ -141,7 +145,6 @@ public class CarritoController {
         return response;
     }
 
-
     @DeleteMapping("/eliminar/{id}")
     @ResponseBody
     public Map<String, Object> eliminarDelCarrito(@PathVariable Long id,
@@ -174,7 +177,6 @@ public class CarritoController {
         return response;
     }
 
-
     @DeleteMapping("/vaciar")
     @ResponseBody
     public Map<String, Object> vaciarCarrito(Authentication authentication) {
@@ -199,7 +201,6 @@ public class CarritoController {
 
         return response;
     }
-
 
     @GetMapping("/total")
     @ResponseBody

@@ -1,0 +1,159 @@
+/* src/app/app.css */
+
+/* ======== PALETA DE COLORES ======== */
+:root {
+  --verde: #81c784;
+  --naranja: #ffb74d;
+  --amarillo: #fff9c4;
+  --rojo: #e53935;
+  --gris: #6c757d;
+  --blanco: #fafafa;
+}
+
+/* ======= ESTILOS GLOBALES ======= */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg, var(--amarillo) 0%, var(--blanco) 100%);
+  color: var(--gris);
+  min-height: 100vh;
+}
+
+/* ======= APP ROOT ======= */
+app-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ======= COMPONENTES PRINCIPALES ======= */
+app-header {
+  display: block !important;
+  width: 100% !important;
+  background-color: var(--amarillo) !important;
+  border-bottom: 3px solid var(--naranja) !important;
+  flex-shrink: 0 !important;
+}
+
+app-footer {
+  display: block !important;
+  width: 100% !important;
+  background-color: var(--amarillo) !important;
+  border-top: 4px solid var(--naranja) !important;
+  margin-top: auto !important;
+  flex-shrink: 0 !important;
+}
+
+/* ======= ROUTER OUTLET ======= */
+router-outlet {
+  flex: 1;
+}
+
+/* ======= UTILIDADES GLOBALES ======= */
+.text-orange {
+  color: var(--naranja) !important;
+}
+
+.text-verde {
+  color: var(--verde) !important;
+}
+
+.text-rojo {
+  color: var(--rojo) !important;
+}
+
+.text-gris {
+  color: var(--gris) !important;
+}
+
+.bg-amarillo {
+  background-color: var(--amarillo) !important;
+}
+
+.bg-blanco {
+  background-color: var(--blanco) !important;
+}
+
+.text-decoration-none {
+  text-decoration: none !important;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* ======= BOTONES GLOBALES ======= */
+.btn {
+  border-radius: 25px;
+  padding: 0.6rem 1.3rem;
+  font-weight: 600;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  transform: scale(1.03);
+}
+
+/* ======= RESPONSIVO GLOBAL ======= */
+@media (max-width: 768px) {
+  .container-fluid {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+}
+/* src/app/app.css - Agregar al final */
+
+/* ======= REDES SOCIALES EN FOOTER ======= */
+.social-btn {
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50% !important;
+  transition: all 0.3s ease !important;
+  text-decoration: none !important;
+  font-size: 1.3rem !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.social-btn:hover {
+  transform: scale(1.15) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+}
+
+.social-btn.instagram:hover {
+  background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888) !important;
+  color: white !important;
+  border-color: #bc1888 !important;
+}
+
+.social-btn.facebook:hover {
+  background-color: #1877f2 !important;
+  color: white !important;
+  border-color: #1877f2 !important;
+}
+
+.social-btn.whatsapp:hover {
+  background-color: #25D366 !important;
+  color: white !important;
+  border-color: #25D366 !important;
+}
+
+.social-btn.tiktok:hover {
+  background: linear-gradient(45deg, #00f2ea, #ff0050) !important;
+  color: white !important;
+  border-color: #000000 !important;
+}

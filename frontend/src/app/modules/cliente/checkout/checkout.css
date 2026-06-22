@@ -1,0 +1,203 @@
+/* src/app/modules/cliente/checkout/checkout.css */
+
+:root {
+  --naranja: #ffb74d;
+  --naranja-oscuro: #f57c00;
+  --amarillo: #fff9c4;
+  --gris: #6c757d;
+}
+
+.checkout-page {
+  background-color: #f8f9fa;
+  min-height: 80vh;
+}
+
+.checkout-title {
+  color: var(--naranja-oscuro);
+  font-weight: 700;
+}
+
+.text-orange {
+  color: var(--naranja-oscuro) !important;
+}
+
+.bg-orange {
+  background-color: var(--naranja-oscuro);
+}
+
+/* ======= PROGRESO ======= */
+.progreso-checkout {
+  padding: 1rem 0;
+}
+
+.progreso-paso {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.1rem;
+  margin: 0 auto;
+  transition: all 0.3s ease;
+}
+
+.progreso-paso.completado {
+  background: #28a745;
+}
+
+.progreso-paso.activo {
+  background: var(--naranja-oscuro);
+  box-shadow: 0 0 0 4px rgba(245, 124, 0, 0.3);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.progreso-linea {
+  flex: 1;
+  height: 3px;
+  background: #e0e0e0;
+  margin: 0 5px;
+  position: relative;
+  top: -10px;
+}
+
+.progreso-linea.completado {
+  background: #28a745;
+}
+
+/* ======= CARD ======= */
+.card {
+  border: none;
+  border-radius: 12px;
+}
+
+.card-header {
+  border-radius: 12px 12px 0 0 !important;
+}
+
+/* ======= MÉTODOS DE PAGO ======= */
+.metodo-pago-item {
+  padding: 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.metodo-pago-item:hover {
+  border-color: var(--naranja);
+  background-color: var(--amarillo);
+}
+
+.metodo-pago-item.active {
+  border-color: var(--naranja-oscuro);
+  background-color: var(--amarillo);
+}
+
+.radio-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.radio-circle.active {
+  border-color: var(--naranja-oscuro);
+}
+
+.radio-circle.active::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--naranja-oscuro);
+}
+
+.metodo-iconos i,
+.metodo-iconos img {
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+.metodo-pago-item:hover .metodo-iconos i,
+.metodo-pago-item:hover .metodo-iconos img,
+.metodo-pago-item.active .metodo-iconos i,
+.metodo-pago-item.active .metodo-iconos img {
+  opacity: 1;
+}
+
+/* ======= RESUMEN STICKY ======= */
+.resumen-sticky {
+  position: sticky;
+  top: 20px;
+}
+
+/* ======= BOTÓN PAGAR ======= */
+.btn-pagar {
+  background: linear-gradient(135deg, #00a650, #008c3e);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-pagar:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 166, 80, 0.4);
+  color: white;
+}
+
+.btn-pagar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ======= RESPONSIVE ======= */
+@media (max-width: 768px) {
+  .checkout-page {
+    padding: 1rem 0;
+  }
+
+  .resumen-sticky {
+    position: relative;
+    top: 0;
+  }
+
+  .metodo-pago-item .metodo-iconos {
+    display: none;
+  }
+
+  .progreso-paso {
+    width: 35px;
+    height: 35px;
+    font-size: 0.9rem;
+  }
+
+  .progreso-linea {
+    top: -8px;
+  }
+}
+
+@media (max-width: 576px) {
+  .checkout-title {
+    font-size: 1.3rem;
+  }
+
+  .btn-pagar {
+    font-size: 1rem;
+    padding: 12px;
+  }
+}

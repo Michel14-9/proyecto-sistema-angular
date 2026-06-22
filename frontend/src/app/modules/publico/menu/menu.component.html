@@ -1,0 +1,71 @@
+<!-- src/app/modules/publico/menu/menu.component.html -->
+
+<main class="container my-4">
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="text-center py-5">
+    <div class="spinner-border text-warning" role="status">
+      <span class="visually-hidden">Cargando menú...</span>
+    </div>
+    <p class="mt-2 text-muted">Cargando nuestro delicioso menú...</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="errorMessage" class="alert alert-danger">
+    <i class="fa-solid fa-exclamation-circle me-2"></i> {{ errorMessage }}
+  </div>
+
+  <!-- Menú -->
+  <ng-container *ngIf="!isLoading && !errorMessage">
+
+    <!-- Categorías -->
+    <section class="categories-nav text-center mb-4">
+      <div class="btn-group flex-wrap" role="group">
+        <button *ngFor="let categoria of categorias"
+                (click)="scrollToCategory(categoria)"
+                class="btn btn-outline-dark category-tab">
+          {{ categoria | titlecase }}
+        </button>
+      </div>
+    </section>
+
+    <!-- Productos por categoría -->
+    <div *ngFor="let categoria of categorias">
+      <div *ngIf="getProductos(categoria).length > 0">
+        <h2 class="category-title" [id]="categoria">{{ categoria | titlecase }}</h2>
+        <div class="row g-3 mb-5">
+          <div class="col-md-6 col-lg-4" *ngFor="let producto of getProductos(categoria)">
+            <div class="card h-100 product-card">
+              <!-- ✅ CAMBIADO: producto.id en lugar de producto.idProducto -->
+              <button class="favorite-btn"
+                      (click)="toggleFavorito(producto.id, $event)"
+                      [class.favorito-activo]="esFavorito(producto.id)">
+                <i [class]="esFavorito(producto.id) ? 'fas fa-heart' : 'far fa-heart'"></i>
+              </button>
+
+              <!-- Imagen -->
+              <img [src]="producto.imagenUrl || 'assets/imagenes/default-product.jpg'"
+                   class="card-img-top product-image"
+                   [alt]="producto.nombre"
+                   (error)="producto.imagenUrl = 'assets/imagenes/default-product.jpg'">
+
+              <div class="card-body d-flex flex-column">
+                <h5 class="card-title product-title">{{ producto.nombre }}</h5>
+                <p class="card-text product-description flex-grow-1">{{ producto.descripcion || 'Sin descripción' }}</p>
+                <p class="fw-bold text-success price-current">S/ {{ producto.precio | number:'1.2-2' }}</p>
+
+                <!-- ✅ CAMBIADO: producto.id en lugar de producto.idProducto -->
+                <button class="btn btn-primary w-100 agregar-carrito-btn"
+                        (click)="agregarAlCarrito(producto.id, $event)">
+                  <i class="fa-solid fa-cart-plus me-1"></i> Agregar al carrito
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+
+</main>

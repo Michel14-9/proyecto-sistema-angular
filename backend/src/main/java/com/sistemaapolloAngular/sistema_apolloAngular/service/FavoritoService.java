@@ -18,23 +18,24 @@ public class FavoritoService {
     @Autowired
     private FavoritoRepository favoritoRepository;
 
-    // Obtener todos los favoritos activos de un usuario
+    // ✅ CORREGIDO: Agregar @Transactional(readOnly = true)
+    @Transactional(readOnly = true)
     public List<Favorito> obtenerFavoritosPorUsuario(Long usuarioId) {
-        System.out.println(" Buscando favoritos para usuario ID: " + usuarioId);
+        System.out.println("🔍 Buscando favoritos para usuario ID: " + usuarioId);
         List<Favorito> favoritos = favoritoRepository.findByUsuarioIdAndActivoTrue(usuarioId);
-        System.out.println(" Favoritos encontrados: " + favoritos.size());
+        System.out.println("✅ Favoritos encontrados: " + favoritos.size());
         return favoritos;
     }
 
     // Agregar producto a favoritos
     @Transactional
     public Favorito agregarFavorito(Usuario usuario, ProductoFinal producto) {
-        System.out.println("Agregando favorito - Usuario: " + usuario.getUsername() + ", Producto: " + producto.getNombre());
+        System.out.println("➕ Agregando favorito - Usuario: " + usuario.getUsername() + ", Producto: " + producto.getNombre());
 
         // Verificar si ya existe
         boolean yaExiste = favoritoRepository.existsByUsuarioIdAndProductoIdAndActivoTrue(usuario.getId(), producto.getId());
         if (yaExiste) {
-            System.out.println(" El producto ya está en favoritos");
+            System.out.println("⚠️ El producto ya está en favoritos");
             // Reactivar si estaba desactivado
             Optional<Favorito> favoritoExistente = favoritoRepository.findByUsuarioIdAndProductoId(usuario.getId(), producto.getId());
             if (favoritoExistente.isPresent()) {
@@ -53,44 +54,43 @@ public class FavoritoService {
         favorito.setActivo(true);
 
         Favorito saved = favoritoRepository.save(favorito);
-        System.out.println(" Favorito agregado - ID: " + saved.getId());
+        System.out.println("✅ Favorito agregado - ID: " + saved.getId());
         return saved;
     }
 
     // Eliminar favorito (soft delete)
     @Transactional
     public void eliminarFavorito(Long favoritoId) {
-        System.out.println(" Eliminando favorito ID: " + favoritoId);
+        System.out.println("🗑️ Eliminando favorito ID: " + favoritoId);
         Optional<Favorito> favoritoOpt = favoritoRepository.findById(favoritoId);
 
         if (favoritoOpt.isPresent()) {
             Favorito favorito = favoritoOpt.get();
             favorito.setActivo(false);
             favoritoRepository.save(favorito);
-            System.out.println(" Favorito desactivado: " + favoritoId);
+            System.out.println("✅ Favorito desactivado: " + favoritoId);
         } else {
-            System.out.println(" Favorito no encontrado: " + favoritoId);
+            System.out.println("❌ Favorito no encontrado: " + favoritoId);
             throw new RuntimeException("Favorito no encontrado");
         }
     }
 
-
     @Transactional
     public boolean eliminarFavoritoPorUsuarioYProducto(Long usuarioId, Long productoId) {
-        System.out.println(" Eliminando favorito - Usuario: " + usuarioId + ", Producto: " + productoId);
+        System.out.println("🗑️ Eliminando favorito - Usuario: " + usuarioId + ", Producto: " + productoId);
         try {
             Optional<Favorito> favorito = favoritoRepository.findByUsuarioIdAndProductoId(usuarioId, productoId);
             if (favorito.isPresent()) {
                 Favorito fav = favorito.get();
                 fav.setActivo(false);
                 favoritoRepository.save(fav);
-                System.out.println(" Favorito eliminado por usuario y producto");
+                System.out.println("✅ Favorito eliminado por usuario y producto");
                 return true;
             }
-            System.out.println(" Favorito no encontrado para eliminar");
+            System.out.println("⚠️ Favorito no encontrado para eliminar");
             return false;
         } catch (Exception e) {
-            System.err.println(" Error eliminando favorito: " + e.getMessage());
+            System.err.println("❌ Error eliminando favorito: " + e.getMessage());
             return false;
         }
     }
@@ -98,9 +98,9 @@ public class FavoritoService {
     // Eliminar todos los favoritos de un usuario
     @Transactional
     public int eliminarTodosLosFavoritos(Long usuarioId) {
-        System.out.println(" Eliminando todos los favoritos del usuario ID: " + usuarioId);
+        System.out.println("🗑️ Eliminando todos los favoritos del usuario ID: " + usuarioId);
         int eliminados = favoritoRepository.desactivarByUsuarioId(usuarioId);
-        System.out.println(" Favoritos eliminados: " + eliminados);
+        System.out.println("✅ Favoritos eliminados: " + eliminados);
         return eliminados;
     }
 

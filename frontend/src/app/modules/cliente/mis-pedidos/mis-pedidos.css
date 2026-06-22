@@ -1,0 +1,376 @@
+/* src/app/modules/cliente/mis-pedidos/mis-pedidos.component.css */
+
+/* 🔍 DIAGNÓSTICO: Si ves este comentario en el inspector, el CSS se cargó */
+
+/* ======== PALETA DE COLORES ======== */
+:root {
+  --naranja: #ffb74d;
+  --naranja-oscuro: #f57c00;
+  --amarillo: #fff9c4;
+  --rojo: #e53935;
+  --gris: #6c757d;
+  --blanco: #fafafa;
+}
+
+/* ======= PÁGINA DE PEDIDOS ======= */
+.main-container {
+  padding: 2rem 0;
+  min-height: 60vh;
+}
+
+.page-title {
+  color: var(--naranja-oscuro);
+  font-weight: 700;
+}
+
+.text-muted-custom {
+  color: var(--gris);
+}
+
+.text-orange {
+  color: var(--naranja-oscuro);
+}
+
+/* ======= MENÚ LATERAL ======= */
+.sidebar-menu {
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.bg-luren {
+  background-color: var(--naranja-oscuro);
+}
+
+.sidebar-menu .list-group-item {
+  border: none;
+  padding: 0.8rem 1.2rem;
+  transition: all 0.3s ease;
+}
+
+.sidebar-menu .list-group-item:hover {
+  background-color: var(--amarillo);
+  color: var(--naranja-oscuro);
+}
+
+.sidebar-menu .list-group-item.active {
+  background-color: var(--naranja-oscuro);
+  border-color: var(--naranja-oscuro);
+  color: white;
+}
+
+/* ======= BOTONES ======= */
+.btn-luren {
+  background-color: var(--naranja-oscuro);
+  color: white;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-luren:hover {
+  background-color: #e65100;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 124, 0, 0.3);
+}
+
+.btn-luren:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-outline-luren {
+  border: 1px solid var(--naranja-oscuro);
+  color: var(--naranja-oscuro);
+  background-color: transparent;
+  transition: all 0.3s ease;
+}
+
+.btn-outline-luren:hover {
+  background-color: var(--naranja-oscuro);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 124, 0, 0.2);
+}
+
+/* ======= TARJETAS DE PEDIDOS ======= */
+.pedido-card {
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  background-color: white;
+}
+
+.pedido-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.pedido-card .card-header {
+  background-color: var(--blanco);
+  border-bottom: 1px solid #e9ecef;
+}
+
+.pedido-card .card-body {
+  background-color: white;
+}
+
+/* ======= ESTADOS DE PEDIDOS ======= */
+.estado-badge {
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.estado-pendiente {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.estado-pagado {
+  background: #d4edda;
+  color: #155724;
+}
+
+.estado-entregado {
+  background: #cce5ff;
+  color: #004085;
+}
+
+.estado-rechazado {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.estado-cancelado {
+  background: #e2e3e5;
+  color: #383d41;
+}
+
+.estado-procesando {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.estado-enviado {
+  background: #d6d8db;
+  color: #383d41;
+}
+
+/* ======= ALERTAS ======= */
+.alert-warning-custom {
+  background-color: #fff3cd;
+  border-color: #ffc107;
+  color: #856404;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.alert-warning-custom .alert-link {
+  color: var(--naranja-oscuro);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.alert-warning-custom .alert-link:hover {
+  text-decoration: underline;
+}
+
+/* ======= CARDS CUSTOM ======= */
+.card-custom {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  background-color: white;
+}
+
+.card-custom .card-body {
+  padding: 1.5rem;
+}
+
+/* ======= ESTADO VACÍO ======= */
+.estado-vacio {
+  border: 2px dashed #e0e0e0;
+  background-color: #fafafa;
+  border-radius: 12px;
+}
+
+.estado-vacio .card-body {
+  padding: 3rem 1.5rem;
+}
+
+/* ======= INFO SECTION ======= */
+.info-section {
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  background-color: white;
+}
+
+.card-header-custom {
+  background-color: var(--amarillo);
+  border-bottom: 2px solid var(--naranja);
+}
+
+/* ======= FILTROS ======= */
+.form-select:focus,
+.form-control:focus {
+  border-color: var(--naranja);
+  box-shadow: 0 0 0 0.2rem rgba(245, 124, 0, 0.25);
+}
+
+.input-group-text {
+  background-color: var(--blanco);
+  border-color: #ced4da;
+}
+
+/* ======= SPINNER ======= */
+.spinner-border.text-warning {
+  color: var(--naranja-oscuro) !important;
+  width: 3rem;
+  height: 3rem;
+}
+
+/* ======= BADGES ======= */
+.badge.bg-luren {
+  background-color: var(--naranja-oscuro);
+  color: white;
+}
+
+.badge.bg-light.text-dark {
+  background-color: #f8f9fa !important;
+  color: #212529 !important;
+}
+
+/* ======= LINK DE INICIO DE SESIÓN ======= */
+.alert-link {
+  color: var(--naranja-oscuro);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.alert-link:hover {
+  text-decoration: underline;
+}
+
+/* ======= ANIMACIONES ======= */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pedido-card {
+  animation: fadeInUp 0.4s ease forwards;
+}
+
+.pedido-card:nth-child(1) { animation-delay: 0.05s; }
+.pedido-card:nth-child(2) { animation-delay: 0.10s; }
+.pedido-card:nth-child(3) { animation-delay: 0.15s; }
+.pedido-card:nth-child(4) { animation-delay: 0.20s; }
+.pedido-card:nth-child(5) { animation-delay: 0.25s; }
+.pedido-card:nth-child(6) { animation-delay: 0.30s; }
+.pedido-card:nth-child(7) { animation-delay: 0.35s; }
+.pedido-card:nth-child(8) { animation-delay: 0.40s; }
+.pedido-card:nth-child(9) { animation-delay: 0.45s; }
+.pedido-card:nth-child(10) { animation-delay: 0.50s; }
+
+/* ======= RESPONSIVE ======= */
+@media (max-width: 768px) {
+  .main-container {
+    padding: 1rem 0;
+  }
+
+  .sidebar-menu {
+    margin-bottom: 1rem;
+  }
+
+  .pedido-card .card-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.5rem;
+  }
+
+  .pedido-card .card-header > div:first-child {
+    width: 100%;
+  }
+
+  .pedido-card .card-body .row {
+    text-align: center;
+  }
+
+  .pedido-card .card-body .col-md-8 {
+    margin-bottom: 1rem;
+  }
+
+  .pedido-card .card-body .col-md-4 {
+    text-align: center !important;
+  }
+
+  .estado-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+  }
+
+  .d-flex.justify-content-between.align-items-center.mb-4 {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start !important;
+  }
+
+  .d-flex.justify-content-between.align-items-center.mb-4 .d-flex.gap-2 {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .d-flex.justify-content-between.align-items-center.mb-4 .d-flex.gap-2 .btn {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .estado-vacio .card-body {
+    padding: 2rem 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .pedido-card {
+    margin-bottom: 1rem;
+  }
+
+  .pedido-card .card-header h5 {
+    font-size: 0.9rem;
+  }
+
+  .estado-badge {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.4rem;
+  }
+
+  .form-label {
+    font-size: 0.9rem;
+  }
+
+  .btn-luren,
+  .btn-outline-luren {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+  }
+}

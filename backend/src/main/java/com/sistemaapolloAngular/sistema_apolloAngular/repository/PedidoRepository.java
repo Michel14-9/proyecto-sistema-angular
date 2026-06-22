@@ -4,10 +4,12 @@ import com.sistemaapolloAngular.sistema_apolloAngular.model.Pedido;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public interface PedidoRepository extends JpaRepository<Pedido, Long> {
 
     Optional<Pedido> findByCanalAndNumero(String canal, String numero);
@@ -15,9 +17,13 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     @Query("SELECT DISTINCT p FROM Pedido p LEFT JOIN FETCH p.items WHERE p.id = :id")
     Optional<Pedido> findByIdWithItems(@Param("id") Long id);
 
-
+    // ✅ CORREGIDO - Usar "producto" en lugar de "productoFinal"
     @Query("SELECT DISTINCT p FROM Pedido p LEFT JOIN FETCH p.items i LEFT JOIN FETCH i.producto ORDER BY p.fecha DESC")
     List<Pedido> findAllWithItemsAndProducts();
+
+    // ✅ CORREGIDO - Usar "producto" en lugar de "productoFinal"
+    @Query("SELECT DISTINCT p FROM Pedido p LEFT JOIN FETCH p.items i LEFT JOIN FETCH i.producto WHERE p.estado = :estado ORDER BY p.fecha ASC")
+    List<Pedido> findByEstadoWithItems(@Param("estado") String estado);
 
     @Query("SELECT DISTINCT p FROM Pedido p LEFT JOIN FETCH p.items ORDER BY p.fecha DESC")
     List<Pedido> findAllWithItems();
@@ -28,12 +34,8 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     @Query("SELECT p FROM Pedido p WHERE p.numero = :numero")
     Optional<Pedido> findByNumero(@Param("numero") String numero);
 
-
     @Query("SELECT p FROM Pedido p WHERE p.estado = :estado ORDER BY p.fecha DESC")
     List<Pedido> findByEstadoOrderByFechaDesc(@Param("estado") String estado);
-
-    @Query("SELECT DISTINCT p FROM Pedido p LEFT JOIN FETCH p.items WHERE p.estado = :estado ORDER BY p.fecha ASC")
-    List<Pedido> findByEstadoWithItems(@Param("estado") String estado);
 
     @Query("SELECT p FROM Pedido p WHERE p.estado = :estado ORDER BY p.fecha ASC")
     List<Pedido> findByEstadoOrderByFechaAsc(@Param("estado") String estado);

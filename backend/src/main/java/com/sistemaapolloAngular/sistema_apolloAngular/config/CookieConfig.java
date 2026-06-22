@@ -25,27 +25,24 @@ public class CookieConfig {
             sessionCookieConfig.setHttpOnly(true);
 
             // Secure = false → Para desarrollo local (HTTP)
-            // Cambiar a true en producción con HTTPS
             sessionCookieConfig.setSecure(false);
 
             // Path de la cookie
             sessionCookieConfig.setPath("/");
 
-            // Nombre de la cookie
-            sessionCookieConfig.setName("APOLLO_SESSION");
+            // ✅ Nombre de la cookie - USAR JSESSIONID (estándar de Spring Security)
+            sessionCookieConfig.setName("JSESSIONID");
 
             // SameSite: "Lax" para Angular en desarrollo
-            // Cambiar a "None" en producción con HTTPS
             sessionCookieConfig.setAttribute("SameSite", "Lax");
 
-            // Configurar tracking por cookie (CORREGIDO)
+            // Configurar tracking por cookie
             servletContext.setSessionTrackingModes(
                     EnumSet.of(SessionTrackingMode.COOKIE)
             );
         };
     }
 
-    // Configuración adicional para CORS con cookies
     @Bean
     public WebMvcConfigurer webMvcConfigurer() {
         return new WebMvcConfigurer() {

@@ -1,0 +1,246 @@
+/* src/app/modules/cliente/mis-datos/mis-datos.css */
+
+/* ======== PALETA DE COLORES ======== */
+:root {
+  --naranja: #ffb74d;
+  --naranja-oscuro: #f57c00;
+  --amarillo: #fff9c4;
+  --rojo: #e53935;
+  --gris: #6c757d;
+  --blanco: #fafafa;
+}
+
+/* ======= PÁGINA DE DATOS ======= */
+.main-container {
+  padding: 2rem 0;
+  min-height: 60vh;
+}
+
+.page-title {
+  color: var(--naranja-oscuro);
+  font-weight: 700;
+}
+
+.text-muted-custom {
+  color: var(--gris);
+}
+
+/* ======= MENÚ LATERAL ======= */
+.sidebar-menu {
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.bg-luren {
+  background-color: var(--naranja-oscuro);
+}
+
+.sidebar-menu .list-group-item {
+  border: none;
+  padding: 0.8rem 1.2rem;
+  transition: all 0.3s ease;
+}
+
+.sidebar-menu .list-group-item:hover {
+  background-color: var(--amarillo);
+  color: var(--naranja-oscuro);
+}
+
+.sidebar-menu .list-group-item.active {
+  background-color: var(--naranja-oscuro);
+  border-color: var(--naranja-oscuro);
+  color: white;
+}
+
+/* ======= BOTONES ======= */
+.btn-luren {
+  background-color: var(--naranja-oscuro);
+  color: white;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-luren:hover {
+  background-color: #e65100;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 124, 0, 0.3);
+}
+
+.btn-outline-luren {
+  border-color: var(--naranja-oscuro);
+  color: var(--naranja-oscuro);
+  transition: all 0.3s ease;
+}
+
+.btn-outline-luren:hover {
+  background-color: var(--naranja-oscuro);
+  color: white;
+}
+
+/* ======= CARDS ======= */
+.card-custom {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.card-header-custom {
+  background-color: var(--amarillo);
+  border-bottom: 2px solid var(--naranja);
+}
+
+/* ======= INFORMACIÓN PERSONAL ======= */
+.info-item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  color: var(--gris);
+  font-size: 0.9rem;
+  min-width: 140px;
+  display: inline-block;
+}
+
+.info-value {
+  font-weight: 500;
+  color: #333;
+}
+
+/* ======= FORMULARIO ======= */
+.edit-form {
+  display: block;
+}
+
+.form-label-custom {
+  font-weight: 600;
+  color: #333;
+}
+
+.form-control-custom,
+.form-select-custom {
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  padding: 0.6rem 1rem;
+  transition: all 0.3s ease;
+}
+
+.form-control-custom:focus,
+.form-select-custom:focus {
+  border-color: var(--naranja);
+  box-shadow: 0 0 0 0.2rem rgba(245, 124, 0, 0.25);
+}
+
+.form-control-custom.is-invalid {
+  border-color: #dc3545;
+}
+
+.form-control-custom.is-invalid:focus {
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.invalid-feedback {
+  display: block;
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.password-strength {
+  font-weight: bold;
+  margin-top: 0.25rem;
+}
+
+.password-section {
+  border-top: 1px solid #e9ecef;
+  padding-top: 1.5rem;
+}
+
+/* ======= ALERTAS ======= */
+.alert-warning-custom {
+  background-color: #fff3cd;
+  border-color: #ffc107;
+  color: #856404;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.alert-link {
+  color: var(--naranja-oscuro);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.alert-link:hover {
+  text-decoration: underline;
+}
+
+/* ======= SPINNER ======= */
+.spinner-border.text-warning {
+  color: var(--naranja-oscuro) !important;
+  width: 3rem;
+  height: 3rem;
+}
+
+/* ======= RESPONSIVE ======= */
+@media (max-width: 768px) {
+  .main-container {
+    padding: 1rem 0;
+  }
+
+  .sidebar-menu {
+    margin-bottom: 1rem;
+  }
+
+  .info-label {
+    min-width: 100%;
+    display: block;
+  }
+
+  .info-value {
+    display: block;
+    margin-top: 0.25rem;
+  }
+
+  .d-flex.justify-content-between.align-items-center.mb-4 {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start !important;
+  }
+
+  .btn-group {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .btn-group .btn {
+    flex: 1;
+    min-width: 60px;
+    font-size: 0.8rem;
+    padding: 0.35rem 0.5rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .page-title {
+    font-size: 1.5rem;
+  }
+
+  .d-flex.gap-2 {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .d-flex.gap-2 .btn {
+    flex: 1;
+    min-width: 100px;
+  }
+}
