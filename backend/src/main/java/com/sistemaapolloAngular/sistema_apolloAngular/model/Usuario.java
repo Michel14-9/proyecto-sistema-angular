@@ -19,7 +19,8 @@ public class Usuario {
 
     @Column(name = "tipo_documento", nullable = false)
     private String tipoDocumento;
-
+    @Column(name = "activo", nullable = false)
+    private boolean activo = true;
     @Column(name = "numero_documento", nullable = false, unique = true)
     private String numeroDocumento;
 
@@ -42,7 +43,9 @@ public class Usuario {
     // --- Getters y Setters ---
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-
+    public void setActivo(boolean activo) {
+        this.activo = activo;
+    }
     public String getNombres() { return nombres; }
     public void setNombres(String nombres) { this.nombres = nombres; }
 

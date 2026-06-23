@@ -1,4 +1,4 @@
-// src/app/modules/cocinero/cocinero/cocinero.ts
+// src/app/modules/delivery/delivery/delivery.ts
 import { Component, OnInit, ViewEncapsulation, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
@@ -13,34 +13,32 @@ interface Pedido {
   estado: string;
   tipoEntrega: string;
   direccionEntrega: string;
+  referenciaDireccion?: string;
   observaciones: string;
   cliente: any;
   items: any[];
-  fechaPreparacionCompleta?: string; // ✅ Agregado como opcional
 }
 
 @Component({
-  selector: 'app-cocinero',
+  selector: 'app-delivery',
   standalone: true,
   imports: [CommonModule, RouterModule],
-  templateUrl: './cocinero.html',
-  styleUrls: ['./cocinero.css'],
+  templateUrl: './delivery.html',
+  styleUrls: ['./delivery.css'],
   encapsulation: ViewEncapsulation.None
 })
-export class CocineroComponent implements OnInit, OnDestroy {
+export class DeliveryComponent implements OnInit, OnDestroy {
   private apiUrl = 'http://localhost:8080';
 
-  pedidosPorPreparar: Pedido[] = [];
-  pedidosEnPreparacion: Pedido[] = [];
-  pedidosListos: Pedido[] = [];
+  pedidosPendientesEntrega: Pedido[] = [];
+  pedidosEnCamino: Pedido[] = [];
   pedidoSeleccionado: Pedido | null = null;
   estadoSeleccionado: string = '';
 
   estadisticas: any = {
-    porPreparar: 0,
-    enPreparacion: 0,
-    listos: 0,
-    tiempoPromedio: 0
+    pendientesEntrega: 0,
+    enCamino: 0,
+    entregadosHoy: 0
   };
 
   // Autenticación
@@ -69,11 +67,11 @@ export class CocineroComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.cargarPedidosCocina();
+    this.cargarPedidosDelivery();
 
     // Recargar pedidos cada 30 segundos
     this.recargaId = setInterval(() => {
-      this.cargarPedidosCocina();
+      this.cargarPedidosDelivery();
     }, 30000);
   }
 
@@ -104,87 +102,58 @@ export class CocineroComponent implements OnInit, OnDestroy {
     return headers;
   }
 
-  cargarPedidosCocina(): void {
-    console.log('🔄 Cargando pedidos de cocina...');
+  cargarPedidosDelivery(): void {
+    console.log('🔄 Cargando pedidos para delivery...');
 
-    // Cargar pedidos por preparar (PAGADOS)
-    this.http.get(`${this.apiUrl}/cocinero/pedidos-por-preparar`, {
+    // Cargar pedidos pendientes de entrega (LISTO)
+    this.http.get(`${this.apiUrl}/delivery/pedidos-para-entrega`, {
       headers: this.getHeaders(),
       withCredentials: true
     }).subscribe({
       next: (response: any) => {
-        this.pedidosPorPreparar = Array.isArray(response) ? response : [];
-        console.log(`📦 Por preparar: ${this.pedidosPorPreparar.length}`);
-        this.estadisticas.porPreparar = this.pedidosPorPreparar.length;
+        this.pedidosPendientesEntrega = Array.isArray(response) ? response : [];
+        console.log(`📦 Pendientes entrega: ${this.pedidosPendientesEntrega.length}`);
+        this.estadisticas.pendientesEntrega = this.pedidosPendientesEntrega.length;
       },
       error: (error) => {
-        console.error('❌ Error cargando pedidos por preparar:', error);
+        console.error('❌ Error cargando pedidos pendientes de entrega:', error);
       }
     });
 
-    // Cargar pedidos en preparación (PREPARACION)
-    this.http.get(`${this.apiUrl}/cocinero/pedidos-en-preparacion`, {
+    // Cargar pedidos en camino (EN_CAMINO)
+    this.http.get(`${this.apiUrl}/delivery/pedidos-en-camino`, {
       headers: this.getHeaders(),
       withCredentials: true
     }).subscribe({
       next: (response: any) => {
-        this.pedidosEnPreparacion = Array.isArray(response) ? response : [];
-        console.log(`📦 En preparación: ${this.pedidosEnPreparacion.length}`);
-        this.estadisticas.enPreparacion = this.pedidosEnPreparacion.length;
+        this.pedidosEnCamino = Array.isArray(response) ? response : [];
+        console.log(`📦 En camino: ${this.pedidosEnCamino.length}`);
+        this.estadisticas.enCamino = this.pedidosEnCamino.length;
       },
       error: (error) => {
-        console.error('❌ Error cargando pedidos en preparación:', error);
+        console.error('❌ Error cargando pedidos en camino:', error);
       }
     });
 
-    // Cargar pedidos listos (LISTO)
-    this.http.get(`${this.apiUrl}/cocinero/pedidos-listos-hoy`, {
-      headers: this.getHeaders(),
-      withCredentials: true
-    }).subscribe({
-      next: (response: any) => {
-        this.pedidosListos = Array.isArray(response) ? response : [];
-        console.log(`📦 Listos: ${this.pedidosListos.length}`);
-        this.estadisticas.listos = this.pedidosListos.length;
-        this.calcularTiempoPromedio();
-      },
-      error: (error) => {
-        console.error('❌ Error cargando pedidos listos:', error);
-      }
-    });
+    // Cargar métricas
+    this.cargarMetricasDelivery();
   }
 
-  // ✅ CORREGIDO: Con verificación de propiedad
-  calcularTiempoPromedio(): void {
-    if (this.pedidosListos.length === 0) {
-      this.estadisticas.tiempoPromedio = 0;
-      return;
-    }
-
-    let totalMinutos = 0;
-    let pedidosConTiempo = 0;
-
-    this.pedidosListos.forEach(pedido => {
-      // ✅ Verificar si existe la propiedad antes de usarla
-      if (pedido.fecha && pedido.fechaPreparacionCompleta) {
-        try {
-          const fechaInicio = new Date(pedido.fecha);
-          const fechaFin = new Date(pedido.fechaPreparacionCompleta);
-          const diferenciaMs = fechaFin.getTime() - fechaInicio.getTime();
-          const minutos = Math.floor(diferenciaMs / (1000 * 60));
-
-          if (minutos > 0 && minutos < 480) {
-            totalMinutos += minutos;
-            pedidosConTiempo++;
-          }
-        } catch (error) {
-          console.warn('Error calculando tiempo para pedido:', pedido.id);
+  cargarMetricasDelivery(): void {
+    this.http.get(`${this.apiUrl}/delivery/metricas-delivery`, {
+      headers: this.getHeaders(),
+      withCredentials: true
+    }).subscribe({
+      next: (response: any) => {
+        console.log('📊 Métricas delivery:', response);
+        if (response && response.success) {
+          this.estadisticas.entregadosHoy = response.totalEntregadosHoy || 0;
         }
+      },
+      error: (error) => {
+        console.error('❌ Error cargando métricas delivery:', error);
       }
     });
-
-    this.estadisticas.tiempoPromedio = pedidosConTiempo > 0 ? Math.round(totalMinutos / pedidosConTiempo) : 0;
-    console.log(`⏱️ Tiempo promedio: ${this.estadisticas.tiempoPromedio} min`);
   }
 
   mostrarDetallePedido(pedido: Pedido, estado: string): void {
@@ -197,101 +166,101 @@ export class CocineroComponent implements OnInit, OnDestroy {
     this.estadoSeleccionado = '';
   }
 
-  // === MODAL INICIAR PREPARACIÓN ===
-  abrirModalIniciarPreparacion(): void {
+  // === MODAL INICIAR ENTREGA ===
+  abrirModalIniciarEntrega(): void {
     if (!this.pedidoSeleccionado) return;
-    const modal = document.getElementById('modalIniciarPreparacion');
+    const modal = document.getElementById('modalIniciarEntrega');
     if (modal) {
       modal.classList.add('show');
       modal.style.display = 'block';
     }
   }
 
-  cerrarModalIniciar(): void {
-    const modal = document.getElementById('modalIniciarPreparacion');
+  cerrarModalIniciarEntrega(): void {
+    const modal = document.getElementById('modalIniciarEntrega');
     if (modal) {
       modal.classList.remove('show');
       modal.style.display = 'none';
     }
   }
 
-  confirmarIniciarPreparacion(): void {
+  confirmarIniciarEntrega(): void {
     if (!this.pedidoSeleccionado) return;
-    this.cerrarModalIniciar();
-    this.iniciarPreparacion(this.pedidoSeleccionado.id);
+    this.cerrarModalIniciarEntrega();
+    this.iniciarEntrega(this.pedidoSeleccionado.id);
   }
 
-  iniciarPreparacion(pedidoId: number): void {
-    console.log(`🍳 Iniciando preparación del pedido ${pedidoId}...`);
+  iniciarEntrega(pedidoId: number): void {
+    console.log(`🚚 Iniciando entrega del pedido ${pedidoId}...`);
 
-    this.http.post(`${this.apiUrl}/cocinero/iniciar-preparacion/${pedidoId}`, {}, {
+    this.http.post(`${this.apiUrl}/delivery/iniciar-entrega/${pedidoId}`, {}, {
       headers: this.getHeaders(),
       withCredentials: true,
       responseType: 'text'
     }).subscribe({
       next: (response: any) => {
         console.log('✅ Respuesta:', response);
-        this.mostrarToastExito('Preparación iniciada correctamente');
-        this.cargarPedidosCocina();
+        this.mostrarToastExito('Entrega iniciada correctamente');
+        this.cargarPedidosDelivery();
         this.ocultarDetalle();
       },
       error: (error) => {
-        console.error('❌ Error iniciando preparación:', error);
+        console.error('❌ Error iniciando entrega:', error);
         if (error.status === 401 || error.status === 403) {
           this.mostrarToastError('Sesión expirada. Redirigiendo...');
           setTimeout(() => this.router.navigate(['/login']), 2000);
         } else {
-          this.mostrarToastError(error.error || 'Error al iniciar preparación');
+          this.mostrarToastError(error.error || 'Error al iniciar entrega');
         }
       }
     });
   }
 
-  // === MODAL MARCAR COMO LISTO ===
-  abrirModalMarcarListo(): void {
+  // === MODAL MARCAR ENTREGADO ===
+  abrirModalMarcarEntregado(): void {
     if (!this.pedidoSeleccionado) return;
-    const modal = document.getElementById('modalMarcarListo');
+    const modal = document.getElementById('modalMarcarEntregado');
     if (modal) {
       modal.classList.add('show');
       modal.style.display = 'block';
     }
   }
 
-  cerrarModalListo(): void {
-    const modal = document.getElementById('modalMarcarListo');
+  cerrarModalMarcarEntregado(): void {
+    const modal = document.getElementById('modalMarcarEntregado');
     if (modal) {
       modal.classList.remove('show');
       modal.style.display = 'none';
     }
   }
 
-  confirmarMarcarListo(): void {
+  confirmarMarcarEntregado(): void {
     if (!this.pedidoSeleccionado) return;
-    this.cerrarModalListo();
-    this.marcarComoListo(this.pedidoSeleccionado.id);
+    this.cerrarModalMarcarEntregado();
+    this.marcarComoEntregado(this.pedidoSeleccionado.id);
   }
 
-  marcarComoListo(pedidoId: number): void {
-    console.log(`✅ Marcando pedido ${pedidoId} como LISTO...`);
+  marcarComoEntregado(pedidoId: number): void {
+    console.log(`✅ Marcando pedido ${pedidoId} como ENTREGADO...`);
 
-    this.http.post(`${this.apiUrl}/cocinero/marcar-listo/${pedidoId}`, {}, {
+    this.http.post(`${this.apiUrl}/delivery/marcar-entregado/${pedidoId}`, {}, {
       headers: this.getHeaders(),
       withCredentials: true,
       responseType: 'text'
     }).subscribe({
       next: (response: any) => {
         console.log('✅ Respuesta:', response);
-        this.mostrarToastExito('Pedido marcado como LISTO correctamente');
-        this.cargarPedidosCocina();
+        this.mostrarToastExito('Pedido marcado como ENTREGADO correctamente');
+        this.cargarPedidosDelivery();
         this.ocultarDetalle();
       },
       error: (error) => {
-        console.error('❌ Error marcando como listo:', error);
+        console.error('❌ Error marcando como entregado:', error);
         if (error.status === 401 || error.status === 403) {
           this.mostrarToastError('Sesión expirada. Redirigiendo...');
           setTimeout(() => this.router.navigate(['/login']), 2000);
         } else {
-          this.mostrarToastError(error.error || 'Error al marcar como listo');
+          this.mostrarToastError(error.error || 'Error al marcar como entregado');
         }
       }
     });
@@ -307,6 +276,13 @@ export class CocineroComponent implements OnInit, OnDestroy {
       return pedido.cliente;
     }
     return 'Cliente no especificado';
+  }
+
+  obtenerTelefonoCliente(pedido: Pedido): string {
+    if (pedido.cliente && typeof pedido.cliente === 'object') {
+      return pedido.cliente.telefono || 'No especificado';
+    }
+    return 'No especificado';
   }
 
   getTiempoTranscurrido(fechaString: string): { texto: string; minutosTotales: number } {

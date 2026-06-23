@@ -1,1 +1,254 @@
-<p>cajero works!</p>
+<!-- src/app/modules/cajero/cajero/cajero.html -->
+<div class="container my-4">
+  <!-- Sección de Métricas -->
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="card stat-card text-warning">
+        <i class="fas fa-clock-history"></i>
+        <div class="number" id="total-pendientes">{{ estadisticas.pendientes || 0 }}</div>
+        <div class="label">Pendientes</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card text-success">
+        <i class="fas fa-cash-coin"></i>
+        <div class="number" id="total-pagados-hoy">{{ estadisticas.pagadosHoy || 0 }}</div>
+        <div class="label">Pagados Hoy</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card text-info">
+        <i class="fas fa-chart-line"></i>
+        <div class="number" id="ingresos-hoy">S/ {{ (estadisticas.ingresosHoy || 0) | number:'1.2-2' }}</div>
+        <div class="label">Ingresos Hoy</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8">
+      <!-- Lista de Pedidos Pendientes -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-warning text-dark">
+          <h5 class="mb-0">
+            <i class="fas fa-clock me-2"></i>Pedidos Pendientes
+            <span class="badge bg-dark float-end" id="badge-pendientes">{{ pedidosPendientes.length }}</span>
+          </h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush" id="lista-pedidos-pendientes">
+            <div *ngFor="let pedido of pedidosPendientes"
+                 class="list-group-item list-group-item-action pedido-item"
+                 [class.selected]="pedidoSeleccionado?.id === pedido.id"
+                 (click)="mostrarDetallePedido(pedido)">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="mb-1">{{ pedido.numeroPedido || '#' + pedido.id }}</h6>
+                  <p class="mb-1">{{ obtenerNombreCliente(pedido) }}</p>
+                  <small class="text-muted">{{ formatearFecha(pedido.fechaPedido || pedido.fecha) }}</small>
+                </div>
+                <div class="text-end">
+                  <strong class="text-success">S/ {{ (pedido.total || 0) | number:'1.2-2' }}</strong>
+                  <br>
+                  <span class="badge badge-pendiente">PENDIENTE</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="pedidosPendientes.length === 0" class="text-center py-5">
+            <i class="fas fa-check-circle text-muted fs-1"></i>
+            <p class="text-muted mt-2">No hay pedidos pendientes</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detalle del Pedido Seleccionado -->
+      <div class="card shadow-sm mb-4 p-3" *ngIf="pedidoSeleccionado">
+        <h5 class="mb-3">
+          Información del Pedido
+          <span class="badge bg-primary">{{ pedidoSeleccionado.numeroPedido || '#' + pedidoSeleccionado.id }}</span>
+          <button class="btn btn-sm btn-outline-secondary float-end" (click)="ocultarDetalle()">
+            <i class="fas fa-times"></i>
+          </button>
+        </h5>
+
+        <div class="d-flex justify-content-between mb-2">
+          <span>Número de Orden:</span>
+          <span class="fw-bold text-primary">{{ pedidoSeleccionado.numeroPedido || '#' + pedidoSeleccionado.id }}</span>
+        </div>
+        <hr>
+
+        <div id="order-items-container">
+          <div id="order-items-list">
+            <div *ngFor="let item of pedidoSeleccionado.items"
+                 class="d-flex justify-content-between border-bottom pb-2 mb-2 order-item">
+              <span>{{ item.nombreProductoSeguro || item.nombreProducto || 'Producto' }} x {{ item.cantidad || 1 }}</span>
+              <span>S/ {{ ((item.precio || 0) * (item.cantidad || 1)) | number:'1.2-2' }}</span>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between fw-bold fs-5 text-info">
+            <span>Total:</span>
+            <span>S/ {{ (pedidoSeleccionado.total || 0) | number:'1.2-2' }}</span>
+          </div>
+        </div>
+
+        <div class="card shadow-sm mb-4 p-3 mt-3">
+          <h5 class="mb-3">Tipo de Entrega</h5>
+          <div class="row g-3">
+            <div class="col-6">
+              <div class="delivery-option p-3 text-center border rounded-3"
+                   [class.selected]="(pedidoSeleccionado.tipoEntrega || 'DELIVERY') === 'DELIVERY'">
+                <i class="fas fa-truck fs-3"></i>
+                <div>Delivery</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="delivery-option p-3 text-center border rounded-3"
+                   [class.selected]="(pedidoSeleccionado.tipoEntrega || 'DELIVERY') === 'RECOJO'">
+                <i class="fas fa-box fs-3"></i>
+                <div>Recojo en Tienda</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Información de Delivery -->
+        <div *ngIf="(pedidoSeleccionado.tipoEntrega || 'DELIVERY') === 'DELIVERY'" class="mb-4">
+          <h5 class="mt-4 mb-2">Información de Entrega</h5>
+          <p><strong>Dirección:</strong> {{ pedidoSeleccionado.direccionEntrega || 'No especificada' }}</p>
+          <p><strong>Teléfono:</strong> {{ pedidoSeleccionado.cliente?.telefono || 'No especificado' }}</p>
+        </div>
+
+        <!-- Información de Recojo -->
+        <div *ngIf="(pedidoSeleccionado.tipoEntrega || 'DELIVERY') === 'RECOJO'" class="card shadow-sm mb-4 p-3">
+          <h5 class="mb-3">Información de la Tienda</h5>
+          <p class="mb-1 text-muted"><i class="fas fa-map-marker-alt me-2"></i> Calle Principal 123</p>
+          <p class="mb-1 text-muted"><i class="fas fa-clock me-2"></i> Lun-Dom: 11:00 - 23:00</p>
+          <p class="mb-0 text-muted"><i class="fas fa-phone me-2"></i> +51 123 456 789</p>
+        </div>
+
+        <div class="card shadow-sm mb-4 p-3">
+          <h5 class="mb-3">Estado del Pedido</h5>
+          <div class="order-status-bar d-flex justify-content-between align-items-center">
+            <div class="status-item text-center" [class.active]="isEstadoActivo('PENDIENTE')">
+              <span class="step-circle">1</span>
+              <div class="mt-1">Pendiente</div>
+            </div>
+            <div class="status-item text-center" [class.active]="isEstadoActivo('PAGADO')">
+              <span class="step-circle">2</span>
+              <div class="mt-1">Pagado</div>
+            </div>
+            <div class="status-item text-center" [class.active]="isEstadoActivo('PREPARACION')">
+              <span class="step-circle">3</span>
+              <div class="mt-1">Preparando</div>
+            </div>
+            <div class="status-item text-center" [class.active]="isEstadoActivo('ENTREGADO')">
+              <span class="step-circle">4</span>
+              <div class="mt-1">Entregado</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="d-grid gap-2">
+          <button class="btn btn-success btn-lg" (click)="abrirModalPago()">
+            <i class="fas fa-check-circle me-2"></i>Marcar como Pagado
+          </button>
+          <button class="btn btn-danger btn-lg" (click)="abrirModalCancelar()">
+            <i class="fas fa-times-circle me-2"></i>Cancelar Pedido
+          </button>
+        </div>
+      </div>
+
+      <!-- Sin pedido seleccionado -->
+      <div *ngIf="!pedidoSeleccionado" class="text-center text-muted py-4">
+        <i class="fas fa-cart fs-1"></i>
+        <p class="mt-2">Selecciona un pedido para ver las acciones</p>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card p-3 shadow-sm">
+        <h5>Información del Sistema</h5>
+        <p class="mb-1">
+          <i class="fas fa-calendar me-2"></i>
+          {{ fechaActual }}
+        </p>
+        <p class="mb-1">
+          <i class="fas fa-clock me-2"></i>
+          {{ horaActual }}
+        </p>
+        <p class="mb-0">
+          <i class="fas fa-user me-2"></i>
+          {{ username }}
+        </p>
+
+        <div class="mt-3 pt-3 border-top">
+          <button class="btn btn-outline-danger btn-sm w-100" (click)="logout()">
+            <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmación Pago -->
+<div class="modal fade" id="modalConfirmarPago" tabindex="-1" aria-labelledby="modalConfirmarPagoLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalConfirmarPagoLabel">Confirmar Pago</h5>
+        <button type="button" class="btn-close" (click)="cerrarModalPago()"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Confirmar que el pedido <strong>{{ pedidoSeleccionado?.numeroPedido || '#' + pedidoSeleccionado?.id }}</strong> ha sido pagado?</p>
+        <p class="text-muted">El pedido pasará a estado "PAGADO" y será enviado a cocina.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalPago()">Cancelar</button>
+        <button type="button" class="btn btn-success" (click)="confirmarPago()">
+          <i class="fas fa-check-circle me-2"></i>Confirmar Pago
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Cancelación -->
+<div class="modal fade" id="modalCancelar" tabindex="-1" aria-labelledby="modalCancelarLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalCancelarLabel">Cancelar Pedido</h5>
+        <button type="button" class="btn-close" (click)="cerrarModalCancelar()"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Está seguro de que desea cancelar el pedido <strong>{{ pedidoSeleccionado?.numeroPedido || '#' + pedidoSeleccionado?.id }}</strong>?</p>
+        <div class="mb-3">
+          <label class="form-label">Motivo de cancelación (opcional):</label>
+          <textarea class="form-control" [(ngModel)]="motivoCancelacion" rows="3"
+                    placeholder="Ej: Cliente no contestó, producto no disponible..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalCancelar()">Volver</button>
+        <button type="button" class="btn btn-danger" (click)="confirmarCancelacion()">
+          <i class="fas fa-times-circle me-2"></i>Confirmar Cancelación
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Alertas Toast -->
+<div class="position-fixed top-0 end-0 p-3 toast-container">
+  <div *ngIf="mensajeToast" class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="toast-header" [class]="tipoToast === 'success' ? 'bg-success text-white' : tipoToast === 'error' ? 'bg-danger text-white' : 'bg-info text-white'">
+      <i class="fas me-2" [class.fa-check-circle]="tipoToast === 'success'" [class.fa-exclamation-triangle]="tipoToast === 'error'" [class.fa-info-circle]="tipoToast === 'info'"></i>
+      <strong class="me-auto">{{ tipoToast === 'success' ? 'Éxito' : tipoToast === 'error' ? 'Error' : 'Información' }}</strong>
+      <button type="button" class="btn-close btn-close-white" (click)="cerrarToast()"></button>
+    </div>
+    <div class="toast-body">{{ mensajeToast }}</div>
+  </div>
+</div>

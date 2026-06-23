@@ -1,4 +1,4 @@
-/* src/app/modules/cocinero/cocinero/cocinero.css */
+/* src/app/modules/delivery/delivery/delivery.css */
 
 /* ======== PALETA DE COLORES ======== */
 :root {
@@ -44,17 +44,13 @@
   font-weight: 500;
 }
 
-.stat-card.text-warning .number,
-.stat-card.text-warning i {
-  color: #ffc107;
+.stat-card.text-success .number,
+.stat-card.text-success i {
+  color: #28a745;
 }
 .stat-card.text-primary .number,
 .stat-card.text-primary i {
   color: #007bff;
-}
-.stat-card.text-success .number,
-.stat-card.text-success i {
-  color: #28a745;
 }
 .stat-card.text-info .number,
 .stat-card.text-info i {
@@ -62,30 +58,21 @@
 }
 
 /* ======= PEDIDO ITEMS ======= */
-.pedido-item-cocina {
+.pedido-item-delivery {
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.pedido-item-cocina:hover {
+.pedido-item-delivery:hover {
   background-color: #f8f9fa;
 }
 
-.estado-por-preparar {
-  border-left: 4px solid #ffc107;
-}
-
-.estado-en-preparacion {
-  border-left: 4px solid #007bff;
-}
-
-.estado-listos {
+.estado-pendientes {
   border-left: 4px solid #28a745;
 }
 
-.badge-tiempo {
-  font-size: 0.7rem;
-  padding: 0.25rem 0.5rem;
+.estado-en-camino {
+  border-left: 4px solid #007bff;
 }
 
 /* ======= CARD HEADERS ======= */
@@ -96,16 +83,6 @@
 .card-header .badge {
   font-size: 0.8rem;
   padding: 0.35rem 0.65rem;
-}
-
-/* ======= DETALLE ======= */
-.detalle-items .order-item {
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.detalle-items .order-item:last-child {
-  border-bottom: none;
 }
 
 /* ======= TOAST ======= */
@@ -120,7 +97,7 @@
 
 /* ======= RESPONSIVE ======= */
 @media (max-width: 992px) {
-  .col-lg-4 {
+  .col-lg-6 {
     margin-bottom: 1.5rem;
   }
 }

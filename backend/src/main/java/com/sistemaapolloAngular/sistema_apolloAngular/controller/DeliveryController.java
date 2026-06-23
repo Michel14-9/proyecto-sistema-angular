@@ -5,17 +5,21 @@ import com.sistemaapolloAngular.sistema_apolloAngular.model.ItemPedido;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.Usuario;
 import com.sistemaapolloAngular.sistema_apolloAngular.repository.PedidoRepository;
 import com.sistemaapolloAngular.sistema_apolloAngular.repository.UsuarioRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/delivery")
+@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
 public class DeliveryController {
 
     @Autowired
@@ -24,9 +28,76 @@ public class DeliveryController {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    @GetMapping("/pedidos-para-entrega")
+    @ResponseBody
+    @Transactional
+    public ResponseEntity<?> obtenerPedidosParaEntrega() {
+        try {
+            List<Pedido> pedidos = pedidoRepository.findByEstadoWithItems("LISTO");
+
+            if (pedidos == null || pedidos.isEmpty()) {
+                return ResponseEntity.ok(new ArrayList<>());
+            }
+
+            List<Map<String, Object>> pedidosDTO = mapearPedidosParaFrontend(pedidos);
+            return ResponseEntity.ok(pedidosDTO);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("❌ Error en pedidos-para-entrega: " + e.getMessage());
+            return ResponseEntity.ok(new ArrayList<>());
+        }
+    }
+
+    @GetMapping("/pedidos-en-camino")
+    @ResponseBody
+    @Transactional
+    public ResponseEntity<?> obtenerPedidosEnCamino() {
+        try {
+            List<Pedido> pedidos = pedidoRepository.findByEstadoWithItems("EN_CAMINO");
+
+            if (pedidos == null || pedidos.isEmpty()) {
+                return ResponseEntity.ok(new ArrayList<>());
+            }
+
+            List<Map<String, Object>> pedidosDTO = mapearPedidosParaFrontend(pedidos);
+            return ResponseEntity.ok(pedidosDTO);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("❌ Error en pedidos-en-camino: " + e.getMessage());
+            return ResponseEntity.ok(new ArrayList<>());
+        }
+    }
+
+    @GetMapping("/pedidos-entregados-hoy")
+    @ResponseBody
+    @Transactional
+    public ResponseEntity<?> obtenerPedidosEntregadosHoy() {
+        try {
+            LocalDate hoy = LocalDate.now();
+            LocalDateTime hoyInicio = hoy.atStartOfDay();
+            LocalDateTime hoyFin = hoy.atTime(23, 59, 59);
+
+            List<Pedido> pedidos = pedidoRepository.findByEstadoWithItems("ENTREGADO")
+                    .stream()
+                    .filter(p -> p.getFecha() != null)
+                    .filter(p -> !p.getFecha().isBefore(hoyInicio) && !p.getFecha().isAfter(hoyFin))
+                    .collect(Collectors.toList());
+
+            List<Map<String, Object>> pedidosDTO = mapearPedidosParaFrontend(pedidos);
+            return ResponseEntity.ok(pedidosDTO);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("❌ Error en pedidos-entregados-hoy: " + e.getMessage());
+            return ResponseEntity.ok(new ArrayList<>());
+        }
+    }
 
     @PostMapping("/iniciar-entrega/{pedidoId}")
     @ResponseBody
+    @Transactional
     public ResponseEntity<Map<String, Object>> iniciarEntrega(@PathVariable Long pedidoId,
                                                               Authentication authentication) {
         Map<String, Object> response = new HashMap<>();
@@ -38,41 +109,52 @@ public class DeliveryController {
                 return ResponseEntity.status(401).body(response);
             }
 
+            boolean hasDeliveryRole = authentication.getAuthorities().stream()
+                    .anyMatch(grantedAuthority ->
+                            grantedAuthority.getAuthority().equals("ROLE_DELIVERY"));
+
+            if (!hasDeliveryRole) {
+                response.put("status", "ERROR");
+                response.put("message", "No tiene permisos de delivery");
+                return ResponseEntity.status(403).body(response);
+            }
+
             Optional<Pedido> pedidoOpt = pedidoRepository.findById(pedidoId);
-
-            if (pedidoOpt.isPresent()) {
-                Pedido pedido = pedidoOpt.get();
-
-                if (!"LISTO".equals(pedido.getEstado())) {
-                    response.put("status", "ERROR");
-                    response.put("message", "El pedido no está en estado LISTO. Estado actual: " + pedido.getEstado());
-                    return ResponseEntity.badRequest().body(response);
-                }
-
-                pedido.setEstado("EN_CAMINO");
-                pedidoRepository.save(pedido);
-
-                response.put("status", "SUCCESS");
-                response.put("message", "Entrega iniciada correctamente");
-                response.put("numeroPedido", pedido.getNumeroPedido());
-
-                return ResponseEntity.ok(response);
-            } else {
+            if (pedidoOpt.isEmpty()) {
                 response.put("status", "ERROR");
                 response.put("message", "Pedido no encontrado");
                 return ResponseEntity.badRequest().body(response);
             }
 
+            Pedido pedido = pedidoOpt.get();
+
+            if (!"LISTO".equals(pedido.getEstado())) {
+                response.put("status", "ERROR");
+                response.put("message", "El pedido no está en estado LISTO. Estado actual: " + pedido.getEstado());
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            pedido.setEstado("EN_CAMINO");
+            pedido.setFechaActualizacion(LocalDateTime.now());
+            pedidoRepository.save(pedido);
+
+            response.put("status", "SUCCESS");
+            response.put("message", "Entrega iniciada correctamente");
+            response.put("numeroPedido", pedido.getNumeroPedido());
+
+            return ResponseEntity.ok(response);
+
         } catch (Exception e) {
+            e.printStackTrace();
             response.put("status", "ERROR");
             response.put("message", "Error: " + e.getMessage());
             return ResponseEntity.status(500).body(response);
         }
     }
 
-
     @PostMapping("/marcar-entregado/{pedidoId}")
     @ResponseBody
+    @Transactional
     public ResponseEntity<Map<String, Object>> marcarComoEntregado(@PathVariable Long pedidoId,
                                                                    Authentication authentication) {
         Map<String, Object> response = new HashMap<>();
@@ -84,148 +166,118 @@ public class DeliveryController {
                 return ResponseEntity.status(401).body(response);
             }
 
+            boolean hasDeliveryRole = authentication.getAuthorities().stream()
+                    .anyMatch(grantedAuthority ->
+                            grantedAuthority.getAuthority().equals("ROLE_DELIVERY"));
+
+            if (!hasDeliveryRole) {
+                response.put("status", "ERROR");
+                response.put("message", "No tiene permisos de delivery");
+                return ResponseEntity.status(403).body(response);
+            }
+
             Optional<Pedido> pedidoOpt = pedidoRepository.findById(pedidoId);
-
-            if (pedidoOpt.isPresent()) {
-                Pedido pedido = pedidoOpt.get();
-
-                if (!"EN_CAMINO".equals(pedido.getEstado())) {
-                    response.put("status", "ERROR");
-                    response.put("message", "El pedido no está en estado EN_CAMINO. Estado actual: " + pedido.getEstado());
-                    return ResponseEntity.badRequest().body(response);
-                }
-
-                pedido.setEstado("ENTREGADO");
-                pedidoRepository.save(pedido);
-
-                response.put("status", "SUCCESS");
-                response.put("message", "Pedido marcado como ENTREGADO correctamente");
-                response.put("numeroPedido", pedido.getNumeroPedido());
-
-                return ResponseEntity.ok(response);
-            } else {
+            if (pedidoOpt.isEmpty()) {
                 response.put("status", "ERROR");
                 response.put("message", "Pedido no encontrado");
                 return ResponseEntity.badRequest().body(response);
             }
 
+            Pedido pedido = pedidoOpt.get();
+
+            if (!"EN_CAMINO".equals(pedido.getEstado())) {
+                response.put("status", "ERROR");
+                response.put("message", "El pedido no está en estado EN_CAMINO. Estado actual: " + pedido.getEstado());
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            pedido.setEstado("ENTREGADO");
+            pedido.setFechaActualizacion(LocalDateTime.now());
+            pedidoRepository.save(pedido);
+
+            response.put("status", "SUCCESS");
+            response.put("message", "Pedido marcado como ENTREGADO correctamente");
+            response.put("numeroPedido", pedido.getNumeroPedido());
+
+            return ResponseEntity.ok(response);
+
         } catch (Exception e) {
+            e.printStackTrace();
             response.put("status", "ERROR");
             response.put("message", "Error: " + e.getMessage());
             return ResponseEntity.status(500).body(response);
         }
     }
 
-
-    @GetMapping("/pedidos-para-entrega")
-    @ResponseBody
-    public ResponseEntity<List<Map<String, Object>>> obtenerPedidosParaEntrega() {
-        try {
-            List<Pedido> pedidos = pedidoRepository.findByEstadoWithItems("LISTO");
-            List<Map<String, Object>> pedidosDTO = mapearPedidosParaFrontend(pedidos);
-            return ResponseEntity.ok(pedidosDTO);
-        } catch (Exception e) {
-            List<Pedido> pedidos = pedidoRepository.findByEstadoOrderByFechaAsc("LISTO");
-            List<Map<String, Object>> pedidosDTO = mapearPedidosParaFrontend(pedidos);
-            return ResponseEntity.ok(pedidosDTO);
-        }
-    }
-
-
-    @GetMapping("/pedidos-en-camino")
-    @ResponseBody
-    public ResponseEntity<List<Map<String, Object>>> obtenerPedidosEnCamino() {
-        try {
-            List<Pedido> pedidos = pedidoRepository.findByEstadoWithItems("EN_CAMINO");
-            List<Map<String, Object>> pedidosDTO = mapearPedidosParaFrontend(pedidos);
-            return ResponseEntity.ok(pedidosDTO);
-        } catch (Exception e) {
-            List<Pedido> pedidos = pedidoRepository.findByEstadoOrderByFechaAsc("EN_CAMINO");
-            List<Map<String, Object>> pedidosDTO = mapearPedidosParaFrontend(pedidos);
-            return ResponseEntity.ok(pedidosDTO);
-        }
-    }
-
-
-    @GetMapping("/pedidos-entregados-hoy")
-    @ResponseBody
-    public ResponseEntity<List<Pedido>> obtenerPedidosEntregadosHoy() {
-        List<Pedido> pedidos = pedidoRepository.findAll().stream()
-                .filter(p -> "ENTREGADO".equals(p.getEstado()) &&
-                        p.getFecha() != null &&
-                        p.getFecha().toLocalDate().equals(java.time.LocalDate.now()))
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(pedidos);
-    }
-
-
     @GetMapping("/metricas-delivery")
     @ResponseBody
+    @Transactional
     public ResponseEntity<Map<String, Object>> obtenerMetricasDelivery() {
         Map<String, Object> metricas = new HashMap<>();
 
         try {
-            List<Pedido> pedidosParaEntregar = pedidoRepository.findByEstadoOrderByFechaAsc("LISTO");
-            List<Pedido> pedidosEnCamino = pedidoRepository.findByEstadoOrderByFechaAsc("EN_CAMINO");
-            List<Pedido> pedidosEntregadosHoy = pedidoRepository.findAll().stream()
-                    .filter(p -> "ENTREGADO".equals(p.getEstado()) &&
-                            p.getFecha() != null &&
-                            p.getFecha().toLocalDate().equals(java.time.LocalDate.now()))
+            List<Pedido> pedidosParaEntregar = pedidoRepository.findByEstadoWithItems("LISTO");
+            List<Pedido> pedidosEnCamino = pedidoRepository.findByEstadoWithItems("EN_CAMINO");
+
+            LocalDate hoy = LocalDate.now();
+            LocalDateTime hoyInicio = hoy.atStartOfDay();
+            LocalDateTime hoyFin = hoy.atTime(23, 59, 59);
+
+            List<Pedido> pedidosEntregadosHoy = pedidoRepository.findByEstadoWithItems("ENTREGADO")
+                    .stream()
+                    .filter(p -> p.getFecha() != null)
+                    .filter(p -> !p.getFecha().isBefore(hoyInicio) && !p.getFecha().isAfter(hoyFin))
                     .collect(Collectors.toList());
 
-            double eficiencia = calcularEficienciaDelivery(pedidosEntregadosHoy);
-            double tiempoPromedio = calcularTiempoPromedioEntrega(pedidosEntregadosHoy);
-
-            metricas.put("totalParaEntregar", pedidosParaEntregar.size());
-            metricas.put("totalEnCamino", pedidosEnCamino.size());
-            metricas.put("totalEntregadosHoy", pedidosEntregadosHoy.size());
-            metricas.put("eficienciaDelivery", Math.round(eficiencia));
-            metricas.put("tiempoPromedioEntrega", Math.round(tiempoPromedio));
             metricas.put("success", true);
+            metricas.put("totalParaEntregar", pedidosParaEntregar != null ? pedidosParaEntregar.size() : 0);
+            metricas.put("totalEnCamino", pedidosEnCamino != null ? pedidosEnCamino.size() : 0);
+            metricas.put("totalEntregadosHoy", pedidosEntregadosHoy.size());
 
         } catch (Exception e) {
+            e.printStackTrace();
             metricas.put("success", false);
             metricas.put("error", e.getMessage());
+            metricas.put("totalParaEntregar", 0);
+            metricas.put("totalEnCamino", 0);
+            metricas.put("totalEntregadosHoy", 0);
         }
 
         return ResponseEntity.ok(metricas);
     }
 
-
     @GetMapping("/pedido/{pedidoId}")
     @ResponseBody
-    public ResponseEntity<Pedido> obtenerDetallePedidoDelivery(@PathVariable Long pedidoId) {
-        Optional<Pedido> pedidoOpt = pedidoRepository.findById(pedidoId);
-        return pedidoOpt.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-
-    @GetMapping("/ruta-optimizada")
-    @ResponseBody
-    public ResponseEntity<Map<String, Object>> obtenerRutaOptimizada() {
-        Map<String, Object> ruta = new HashMap<>();
-
+    @Transactional
+    public ResponseEntity<?> obtenerDetallePedidoDelivery(@PathVariable Long pedidoId) {
         try {
-            List<Pedido> pedidosParaEntregar = pedidoRepository.findByEstadoOrderByFechaAsc("LISTO");
-            List<Pedido> pedidosEnCamino = pedidoRepository.findByEstadoOrderByFechaAsc("EN_CAMINO");
+            Optional<Pedido> pedidoOpt = pedidoRepository.findByIdWithItems(pedidoId);
 
-            ruta.put("pedidosParaEntregar", pedidosParaEntregar);
-            ruta.put("pedidosEnCamino", pedidosEnCamino);
-            ruta.put("totalParadas", pedidosParaEntregar.size() + pedidosEnCamino.size());
-            ruta.put("success", true);
+            if (pedidoOpt.isPresent()) {
+                Pedido pedido = pedidoOpt.get();
+                Map<String, Object> pedidoDTO = crearPedidoDetalleDTO(pedido);
+                return ResponseEntity.ok(pedidoDTO);
+            } else {
+                return ResponseEntity.status(404).body(Map.of(
+                        "error", "Pedido no encontrado"
+                ));
+            }
 
         } catch (Exception e) {
-            ruta.put("success", false);
-            ruta.put("error", e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of(
+                    "error", "Error al obtener detalle del pedido: " + e.getMessage()
+            ));
         }
-
-        return ResponseEntity.ok(ruta);
     }
 
     // ==================== MÉTODOS PRIVADOS ====================
 
     private List<Map<String, Object>> mapearPedidosParaFrontend(List<Pedido> pedidos) {
+        if (pedidos == null || pedidos.isEmpty()) {
+            return new ArrayList<>();
+        }
+
         return pedidos.stream().map(pedido -> {
             Map<String, Object> pedidoMap = new HashMap<>();
 
@@ -233,22 +285,33 @@ public class DeliveryController {
             pedidoMap.put("numeroPedido", pedido.getNumeroPedido());
             pedidoMap.put("total", pedido.getTotal());
             pedidoMap.put("fecha", pedido.getFecha());
+            pedidoMap.put("fechaPedido", pedido.getFecha());
+            pedidoMap.put("estado", pedido.getEstado());
             pedidoMap.put("tipoEntrega", pedido.getTipoEntrega());
             pedidoMap.put("direccionEntrega", pedido.getDireccionEntrega());
             pedidoMap.put("referenciaDireccion", pedido.getInstrucciones());
             pedidoMap.put("observaciones", pedido.getObservaciones());
+            pedidoMap.put("metodoPago", pedido.getMetodoPago());
 
             if (pedido.getUsuario() != null) {
+                Usuario usuario = pedido.getUsuario();
                 Map<String, Object> clienteMap = new HashMap<>();
-                clienteMap.put("nombres", pedido.getUsuario().getNombres());
-                clienteMap.put("apellidos", pedido.getUsuario().getApellidos());
-                clienteMap.put("telefono", pedido.getUsuario().getTelefono());
+
+                clienteMap.put("id", usuario.getId());
+                clienteMap.put("nombres", usuario.getNombres() != null ? usuario.getNombres() : "");
+                clienteMap.put("apellidos", usuario.getApellidos() != null ? usuario.getApellidos() : "");
+                clienteMap.put("telefono", usuario.getTelefono() != null ? usuario.getTelefono() : "No disponible");
+                // ✅ CORREGIDO: usar getUsername() que es el correo
+                clienteMap.put("email", usuario.getUsername() != null ? usuario.getUsername() : "");
+
                 pedidoMap.put("cliente", clienteMap);
             } else {
                 Map<String, Object> clienteMap = new HashMap<>();
+                clienteMap.put("id", null);
                 clienteMap.put("nombres", "Cliente");
                 clienteMap.put("apellidos", "No especificado");
                 clienteMap.put("telefono", "No disponible");
+                clienteMap.put("email", "");
                 pedidoMap.put("cliente", clienteMap);
             }
 
@@ -264,59 +327,58 @@ public class DeliveryController {
         if (pedido.getItems() != null && !pedido.getItems().isEmpty()) {
             for (ItemPedido item : pedido.getItems()) {
                 Map<String, Object> itemMap = new HashMap<>();
-                itemMap.put("nombreProducto", item.getNombreProductoSeguro());
+                itemMap.put("id", item.getId());
+                itemMap.put("nombreProducto", item.getNombreProductoSeguro() != null ?
+                        item.getNombreProductoSeguro() :
+                        (item.getNombreProducto() != null ? item.getNombreProducto() : "Producto"));
                 itemMap.put("cantidad", item.getCantidad());
                 itemMap.put("precio", item.getPrecio());
                 itemMap.put("subtotal", item.getSubtotal());
                 items.add(itemMap);
             }
-        } else {
-            Map<String, Object> itemMap = new HashMap<>();
-            itemMap.put("nombreProducto", "Items no disponibles");
-            itemMap.put("cantidad", 0);
-            itemMap.put("precio", 0.0);
-            itemMap.put("subtotal", 0.0);
-            items.add(itemMap);
         }
 
         return items;
     }
 
-    private double calcularEficienciaDelivery(List<Pedido> pedidosEntregados) {
-        if (pedidosEntregados.isEmpty()) return 0.0;
+    private Map<String, Object> crearPedidoDetalleDTO(Pedido pedido) {
+        Map<String, Object> pedidoDTO = new HashMap<>();
 
-        long entregadosATiempo = pedidosEntregados.stream()
-                .filter(this::fueEntregadoATiempo)
-                .count();
+        pedidoDTO.put("id", pedido.getId());
+        pedidoDTO.put("numeroPedido", pedido.getNumeroPedido());
+        pedidoDTO.put("total", pedido.getTotal());
+        pedidoDTO.put("fecha", pedido.getFecha());
+        pedidoDTO.put("estado", pedido.getEstado());
+        pedidoDTO.put("metodoPago", pedido.getMetodoPago());
+        pedidoDTO.put("tipoEntrega", pedido.getTipoEntrega());
+        pedidoDTO.put("direccionEntrega", pedido.getDireccionEntrega());
+        pedidoDTO.put("observaciones", pedido.getObservaciones());
+        pedidoDTO.put("instrucciones", pedido.getInstrucciones());
 
-        return (double) entregadosATiempo / pedidosEntregados.size() * 100;
-    }
-
-    private boolean fueEntregadoATiempo(Pedido pedido) {
-        if (pedido.getFecha() == null) return false;
-        LocalDateTime fechaPedido = pedido.getFecha();
-        LocalDateTime fechaMaximaEntrega = fechaPedido.plusMinutes(45);
-        return LocalDateTime.now().isBefore(fechaMaximaEntrega);
-    }
-
-    private double calcularTiempoPromedioEntrega(List<Pedido> pedidosEntregados) {
-        if (pedidosEntregados.isEmpty()) return 0.0;
-
-        double totalMinutos = 0;
-        int contador = 0;
-
-        for (Pedido pedido : pedidosEntregados) {
-            if (pedido.getFecha() != null) {
-                LocalDateTime fechaPedido = pedido.getFecha();
-                LocalDateTime ahora = LocalDateTime.now();
-                long minutos = java.time.Duration.between(fechaPedido, ahora).toMinutes();
-                if (minutos > 0) {
-                    totalMinutos += minutos;
-                    contador++;
-                }
-            }
+        if (pedido.getUsuario() != null) {
+            Usuario usuario = pedido.getUsuario();
+            Map<String, String> usuarioDTO = new HashMap<>();
+            usuarioDTO.put("nombres", usuario.getNombres() != null ? usuario.getNombres() : "");
+            usuarioDTO.put("apellidos", usuario.getApellidos() != null ? usuario.getApellidos() : "");
+            usuarioDTO.put("telefono", usuario.getTelefono() != null ? usuario.getTelefono() : "");
+            // ✅ CORREGIDO: usar getUsername()
+            usuarioDTO.put("email", usuario.getUsername() != null ? usuario.getUsername() : "");
+            pedidoDTO.put("cliente", usuarioDTO);
         }
 
-        return contador > 0 ? totalMinutos / contador : 0.0;
+        List<Map<String, Object>> itemsDTO = new ArrayList<>();
+        if (pedido.getItems() != null) {
+            for (ItemPedido item : pedido.getItems()) {
+                Map<String, Object> itemDTO = new HashMap<>();
+                itemDTO.put("nombreProducto", item.getNombreProducto());
+                itemDTO.put("cantidad", item.getCantidad());
+                itemDTO.put("precio", item.getPrecio());
+                itemDTO.put("subtotal", item.getSubtotal());
+                itemsDTO.add(itemDTO);
+            }
+        }
+        pedidoDTO.put("items", itemsDTO);
+
+        return pedidoDTO;
     }
 }

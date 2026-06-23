@@ -1,5 +1,12 @@
 package com.sistemaapolloAngular.sistema_apolloAngular.controller;
 
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.properties.TextAlignment;
+import com.itextpdf.layout.properties.UnitValue;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.ItemPedido;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.Pedido;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.ProductoFinal;
@@ -8,6 +15,7 @@ import com.sistemaapolloAngular.sistema_apolloAngular.repository.PedidoRepositor
 import com.sistemaapolloAngular.sistema_apolloAngular.repository.UsuarioRepository;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.ProductoFinalService;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.transaction.Transactional;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +32,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/admin-menu")
+@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
 public class AdminController {
 
     private final ProductoFinalService productoFinalService;
@@ -41,9 +50,9 @@ public class AdminController {
         this.productoFinalService = productoFinalService;
     }
 
-
     @GetMapping("/estadisticas-dashboard")
     @ResponseBody
+    @Transactional
     public Map<String, Object> obtenerEstadisticasDashboard() {
         Map<String, Object> estadisticas = new HashMap<>();
 
@@ -115,9 +124,9 @@ public class AdminController {
         return estadisticas;
     }
 
-
     @GetMapping("/ventas-recientes")
     @ResponseBody
+    @Transactional
     public List<Map<String, Object>> obtenerVentasRecientes() {
         try {
             List<Pedido> pedidos = pedidoRepository.findAllWithItemsAndProducts()
@@ -136,11 +145,14 @@ public class AdminController {
                 venta.put("estado", pedido.getEstado());
 
                 if (pedido.getUsuario() != null) {
+                    Usuario usuario = pedido.getUsuario();
+                    venta.put("cliente", usuario.getNombres() + " " + usuario.getApellidos());
                     venta.put("usuario", Map.of(
-                            "nombres", pedido.getUsuario().getNombres(),
-                            "apellidos", pedido.getUsuario().getApellidos()
+                            "nombres", usuario.getNombres(),
+                            "apellidos", usuario.getApellidos()
                     ));
                 } else {
+                    venta.put("cliente", "Cliente general");
                     venta.put("usuario", null);
                 }
 
@@ -168,9 +180,9 @@ public class AdminController {
         }
     }
 
-
     @GetMapping("/estadisticas-ventas")
     @ResponseBody
+    @Transactional
     public Map<String, Object> obtenerEstadisticasVentas() {
         Map<String, Object> estadisticas = new HashMap<>();
 
@@ -213,8 +225,8 @@ public class AdminController {
         return estadisticas;
     }
 
-
     @GetMapping("/exportar-dashboard-excel")
+    @Transactional
     public void exportarDashboardExcel(HttpServletResponse response) throws IOException {
         try {
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
@@ -344,7 +356,6 @@ public class AdminController {
         }
     }
 
-
     @PostMapping("/guardar")
     @ResponseBody
     public ResponseEntity<?> guardarProducto(
@@ -391,7 +402,6 @@ public class AdminController {
             return ResponseEntity.status(500).body(Map.of("success", false, "error", "Error al guardar el producto: " + e.getMessage()));
         }
     }
-
 
     @PostMapping("/actualizar/{id}")
     @ResponseBody
@@ -446,30 +456,55 @@ public class AdminController {
         }
     }
 
-
     @PostMapping("/eliminar/{id}")
     @ResponseBody
+    @Transactional
     public ResponseEntity<?> eliminarProducto(
             @PathVariable Long id,
             @RequestParam(required = false) String redirectSection) {
 
         try {
             Optional<ProductoFinal> productoOpt = productoFinalService.obtenerPorId(id);
-            if (productoOpt.isPresent()) {
+            if (productoOpt.isEmpty()) {
+                return ResponseEntity.status(404).body(Map.of(
+                        "success", false,
+                        "error", "Producto no encontrado"
+                ));
+            }
+
+            ProductoFinal producto = productoOpt.get();
+            String nombreProducto = producto.getNombre();
+
+            // Verificar si tiene pedidos históricos
+            boolean tieneItemsPedido = pedidoRepository.existsByItemsProductoId(id);
+
+            if (tieneItemsPedido) {
+                // Solo desactivar, conservar historial
+                producto.setActivo(false);
+                productoFinalService.guardar(producto);
+                return ResponseEntity.ok(Map.of(
+                        "success", true,
+                        "message", "Producto '" + nombreProducto + "' desactivado (tiene pedidos históricos).",
+                        "desactivado", true
+                ));
+            } else {
+                // Sin historial, eliminar físicamente
                 productoFinalService.eliminar(id);
                 return ResponseEntity.ok(Map.of(
                         "success", true,
-                        "message", "Producto eliminado exitosamente!"
+                        "message", "Producto '" + nombreProducto + "' eliminado exitosamente!",
+                        "desactivado", false
                 ));
-            } else {
-                return ResponseEntity.status(404).body(Map.of("success", false, "error", "Producto no encontrado"));
             }
 
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("success", false, "error", "Error al eliminar el producto: " + e.getMessage()));
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of(
+                    "success", false,
+                    "error", "Error al eliminar el producto: " + e.getMessage()
+            ));
         }
     }
-
 
     @GetMapping("/estadisticas")
     @ResponseBody
@@ -501,13 +536,11 @@ public class AdminController {
         return estadisticas;
     }
 
-
     @GetMapping("/productos")
     @ResponseBody
     public List<ProductoFinal> obtenerTodosProductos() {
         return productoFinalService.obtenerTodos();
     }
-
 
     @GetMapping("/productos/{id}")
     @ResponseBody
@@ -524,7 +557,6 @@ public class AdminController {
         }
     }
 
-
     @GetMapping("/usuarios")
     @ResponseBody
     public List<Usuario> obtenerTodosUsuarios() {
@@ -532,7 +564,6 @@ public class AdminController {
         System.out.println("👥 Enviando " + usuarios.size() + " usuarios al frontend");
         return usuarios;
     }
-
 
     @PostMapping("/usuarios/guardar")
     @ResponseBody
@@ -597,30 +628,383 @@ public class AdminController {
         }
     }
 
-
     @PostMapping("/usuarios/eliminar/{id}")
     @ResponseBody
+    @Transactional
     public ResponseEntity<?> eliminarUsuario(@PathVariable Long id) {
         try {
             Optional<Usuario> usuarioOpt = usuarioRepository.findById(id);
-            if (usuarioOpt.isPresent()) {
-                usuarioRepository.deleteById(id);
-                return ResponseEntity.ok(Map.of(
-                        "success", true,
-                        "message", "Usuario eliminado exitosamente!"
-                ));
-            } else {
+            if (usuarioOpt.isEmpty()) {
                 return ResponseEntity.status(404).body(Map.of(
                         "success", false,
                         "error", "Usuario no encontrado"
                 ));
             }
 
+            Usuario usuario = usuarioOpt.get();
+
+            if ("admin@luren.com".equals(usuario.getUsername())) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "error", "No se puede eliminar al administrador principal"
+                ));
+            }
+
+            String nombreUsuario = usuario.getNombres() + " " + usuario.getApellidos();
+
+            // Verificar si tiene pedidos asociados
+            boolean tienePedidos = pedidoRepository.existsByUsuarioId(id);
+
+            if (tienePedidos) {
+                // Solo desactivar, conservar historial de pedidos
+                usuario.setActivo(false);
+                usuarioRepository.save(usuario);
+                return ResponseEntity.ok(Map.of(
+                        "success", true,
+                        "message", "Usuario '" + nombreUsuario + "' desactivado (tiene pedidos históricos).",
+                        "desactivado", true
+                ));
+            } else {
+                // Sin historial, eliminar físicamente
+                usuarioRepository.deleteById(id);
+                return ResponseEntity.ok(Map.of(
+                        "success", true,
+                        "message", "Usuario '" + nombreUsuario + "' eliminado exitosamente!",
+                        "desactivado", false
+                ));
+            }
+
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of(
                     "success", false,
                     "error", "Error al eliminar el usuario: " + e.getMessage()
             ));
         }
+    }
+
+    // ============ REPORTES ============
+
+    @GetMapping("/reportes/ventas")
+    @ResponseBody
+    @Transactional
+    public ResponseEntity<?> obtenerReporteVentas(
+            @RequestParam String fechaInicio,
+            @RequestParam String fechaFin) {
+
+        try {
+            LocalDateTime inicio = LocalDate.parse(fechaInicio).atStartOfDay();
+            LocalDateTime fin = LocalDate.parse(fechaFin).atTime(23, 59, 59);
+
+            List<Pedido> pedidos = pedidoRepository.findAll().stream()
+                    .filter(p -> p.getFecha() != null)
+                    .filter(p -> !p.getFecha().isBefore(inicio) && !p.getFecha().isAfter(fin))
+                    .filter(p -> "ENTREGADO".equals(p.getEstado()))
+                    .collect(Collectors.toList());
+
+            Map<String, Object> resultado = new HashMap<>();
+            resultado.put("success", true);
+
+            // Métricas
+            Map<String, Object> metricas = new HashMap<>();
+            metricas.put("totalVentas", pedidos.stream().mapToDouble(Pedido::getTotal).sum());
+            metricas.put("totalPedidos", pedidos.size());
+            metricas.put("productosVendidos", pedidos.stream()
+                    .flatMap(p -> p.getItems().stream())
+                    .mapToInt(ItemPedido::getCantidad)
+                    .sum());
+            metricas.put("crecimiento", 0.0);
+            resultado.put("metricas", metricas);
+
+            // Datos del gráfico
+            Map<String, Object> datosGrafico = new HashMap<>();
+            List<String> labels = new ArrayList<>();
+            List<Double> datos = new ArrayList<>();
+
+            Map<LocalDate, Double> ventasPorDia = pedidos.stream()
+                    .collect(Collectors.groupingBy(
+                            p -> p.getFecha().toLocalDate(),
+                            Collectors.summingDouble(Pedido::getTotal)
+                    ));
+
+            LocalDate inicioDate = LocalDate.parse(fechaInicio);
+            LocalDate finDate = LocalDate.parse(fechaFin);
+
+            for (LocalDate date = inicioDate; !date.isAfter(finDate); date = date.plusDays(1)) {
+                labels.add(date.format(DateTimeFormatter.ofPattern("dd/MM")));
+                datos.add(ventasPorDia.getOrDefault(date, 0.0));
+            }
+
+            datosGrafico.put("labels", labels);
+            datosGrafico.put("datos", datos);
+
+            // Categorías para gráfico de pastel
+            Map<String, Double> categorias = new HashMap<>();
+            for (Pedido p : pedidos) {
+                for (ItemPedido item : p.getItems()) {
+                    String categoria = item.getNombreProducto() != null ?
+                            item.getNombreProducto().substring(0, Math.min(10, item.getNombreProducto().length())) : "Otros";
+                    categorias.merge(categoria, item.getSubtotal(), Double::sum);
+                }
+            }
+
+            Map<String, Object> categoriasData = new HashMap<>();
+            categoriasData.put("labels", new ArrayList<>(categorias.keySet()));
+            categoriasData.put("datos", new ArrayList<>(categorias.values()));
+            datosGrafico.put("categorias", categoriasData);
+
+            resultado.put("datosGrafico", datosGrafico);
+
+            // Tabla de datos
+            List<Map<String, Object>> tablaDatos = new ArrayList<>();
+            for (Pedido p : pedidos.stream().limit(50).collect(Collectors.toList())) {
+                Map<String, Object> fila = new HashMap<>();
+                fila.put("id", p.getId());
+                fila.put("fecha", p.getFecha().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+                fila.put("cliente", p.getUsuario() != null ?
+                        p.getUsuario().getNombres() + " " + p.getUsuario().getApellidos() : "Cliente general");
+                fila.put("productos", p.getItems().stream().map(ItemPedido::getNombreProducto).collect(Collectors.joining(", ")));
+                fila.put("total", p.getTotal());
+                fila.put("estado", p.getEstado());
+                tablaDatos.add(fila);
+            }
+            resultado.put("tablaDatos", tablaDatos);
+            resultado.put("columnas", List.of("id", "fecha", "cliente", "productos", "total", "estado"));
+
+            return ResponseEntity.ok(resultado);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("success", false, "error", e.getMessage()));
+        }
+    }
+
+    // ============ EXPORTAR PDF ============
+
+    @GetMapping("/exportar-pdf")
+    @ResponseBody
+    public void exportarPDF(
+            @RequestParam(required = false) String fechaInicio,
+            @RequestParam(required = false) String fechaFin,
+            @RequestParam(required = false) String tipo,
+            HttpServletResponse response) throws IOException {
+        try {
+            response.setContentType("application/pdf");
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String filename = "reporte_" + (tipo != null ? tipo : "ventas") + "_" + timestamp + ".pdf";
+            response.setHeader("Content-Disposition", "attachment; filename=" + filename);
+
+            // Obtener datos para el reporte
+            List<Pedido> pedidos = obtenerPedidosFiltrados(fechaInicio, fechaFin);
+
+            // Crear PDF con iText
+            PdfWriter writer = new PdfWriter(response.getOutputStream());
+            PdfDocument pdfDoc = new PdfDocument(writer);
+            Document document = new Document(pdfDoc);
+            document.setMargins(20, 20, 20, 20);
+
+            // Título
+            Paragraph titulo = new Paragraph("REPORTE DE " + (tipo != null ? tipo.toUpperCase() : "VENTAS"))
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setBold()
+                    .setFontSize(18);
+            document.add(titulo);
+            document.add(new Paragraph(" "));
+
+            Paragraph subtitulo = new Paragraph("Generado: " +
+                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")))
+                    .setTextAlignment(TextAlignment.CENTER);
+            document.add(subtitulo);
+            document.add(new Paragraph(" "));
+            document.add(new Paragraph("_________________________________________"));
+            document.add(new Paragraph(" "));
+
+            // Filtros aplicados
+            if (fechaInicio != null && fechaFin != null) {
+                document.add(new Paragraph("Período: " + fechaInicio + " al " + fechaFin));
+            }
+            document.add(new Paragraph("Total de registros: " + pedidos.size()));
+            document.add(new Paragraph(" "));
+
+            // Tabla de pedidos
+            float[] columnWidths = {2, 3, 2, 2, 2, 3};
+            Table table = new Table(UnitValue.createPercentArray(columnWidths));
+            table.setWidth(UnitValue.createPercentValue(100));
+            table.setMarginTop(10);
+            table.setMarginBottom(10);
+
+            table.addHeaderCell(new Paragraph("N° Pedido").setBold());
+            table.addHeaderCell(new Paragraph("Cliente").setBold());
+            table.addHeaderCell(new Paragraph("Fecha").setBold());
+            table.addHeaderCell(new Paragraph("Total").setBold());
+            table.addHeaderCell(new Paragraph("Estado").setBold());
+            table.addHeaderCell(new Paragraph("Tipo Entrega").setBold());
+
+            for (Pedido pedido : pedidos.stream().limit(100).collect(Collectors.toList())) {
+                table.addCell(new Paragraph(pedido.getNumeroPedido() != null ? pedido.getNumeroPedido() : "N/A"));
+
+                String cliente = "N/A";
+                if (pedido.getUsuario() != null) {
+                    cliente = (pedido.getUsuario().getNombres() != null ? pedido.getUsuario().getNombres() : "") + " " +
+                            (pedido.getUsuario().getApellidos() != null ? pedido.getUsuario().getApellidos() : "");
+                    cliente = cliente.trim().isEmpty() ? pedido.getUsuario().getUsername() : cliente;
+                }
+                table.addCell(new Paragraph(cliente));
+
+                table.addCell(new Paragraph(pedido.getFecha() != null ?
+                        pedido.getFecha().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) : "N/A"));
+                table.addCell(new Paragraph("S/ " + String.format("%.2f", pedido.getTotal())));
+                table.addCell(new Paragraph(pedido.getEstado() != null ? pedido.getEstado() : "N/A"));
+                table.addCell(new Paragraph(pedido.getTipoEntrega() != null ? pedido.getTipoEntrega() : "N/A"));
+            }
+
+            document.add(table);
+            document.add(new Paragraph(" "));
+            document.add(new Paragraph("_________________________________________"));
+            document.add(new Paragraph(" "));
+
+            // Totales
+            double totalGeneral = pedidos.stream().mapToDouble(Pedido::getTotal).sum();
+            document.add(new Paragraph("TOTAL GENERAL: S/ " + String.format("%.2f", totalGeneral)).setBold());
+            document.add(new Paragraph("TOTAL PEDIDOS: " + pedidos.size()));
+
+            document.close();
+            System.out.println("📄 Reporte PDF generado: " + filename);
+
+        } catch (Exception e) {
+            System.err.println("❌ Error al generar PDF: " + e.getMessage());
+            e.printStackTrace();
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error al generar el PDF");
+        }
+    }
+
+    // ============ EXPORTAR EXCEL ============
+
+    @GetMapping("/exportar-excel")
+    @ResponseBody
+    public void exportarExcel(
+            @RequestParam(required = false) String fechaInicio,
+            @RequestParam(required = false) String fechaFin,
+            @RequestParam(required = false) String tipo,
+            HttpServletResponse response) throws IOException {
+        try {
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String filename = "reporte_" + (tipo != null ? tipo : "ventas") + "_" + timestamp + ".xlsx";
+            response.setHeader("Content-Disposition", "attachment; filename=" + filename);
+
+            // Obtener datos para el reporte
+            List<Pedido> pedidos = obtenerPedidosFiltrados(fechaInicio, fechaFin);
+
+            Workbook workbook = new XSSFWorkbook();
+            Sheet sheet = workbook.createSheet("Reporte");
+
+            // Estilo para headers
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerFont.setFontHeightInPoints((short) 12);
+            headerStyle.setFont(headerFont);
+            headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            headerStyle.setBorderBottom(BorderStyle.THIN);
+            headerStyle.setBorderTop(BorderStyle.THIN);
+            headerStyle.setBorderLeft(BorderStyle.THIN);
+            headerStyle.setBorderRight(BorderStyle.THIN);
+
+            // Headers
+            String[] headers = {"N° Pedido", "Cliente", "Email", "Teléfono", "Fecha", "Subtotal", "Costo Envío", "Total", "Estado", "Tipo Entrega", "Dirección", "Items"};
+            Row headerRow = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+                sheet.setColumnWidth(i, 4000);
+            }
+
+            // Datos
+            int rowNum = 1;
+            for (Pedido pedido : pedidos) {
+                Row row = sheet.createRow(rowNum++);
+
+                row.createCell(0).setCellValue(pedido.getNumeroPedido() != null ? pedido.getNumeroPedido() : "N/A");
+
+                String cliente = "N/A";
+                String email = "";
+                String telefono = "";
+                if (pedido.getUsuario() != null) {
+                    cliente = (pedido.getUsuario().getNombres() != null ? pedido.getUsuario().getNombres() : "") + " " +
+                            (pedido.getUsuario().getApellidos() != null ? pedido.getUsuario().getApellidos() : "");
+                    cliente = cliente.trim().isEmpty() ? pedido.getUsuario().getUsername() : cliente;
+                    email = pedido.getUsuario().getUsername() != null ? pedido.getUsuario().getUsername() : "";
+                    telefono = pedido.getUsuario().getTelefono() != null ? pedido.getUsuario().getTelefono() : "";
+                }
+                row.createCell(1).setCellValue(cliente);
+                row.createCell(2).setCellValue(email);
+                row.createCell(3).setCellValue(telefono);
+
+                row.createCell(4).setCellValue(pedido.getFecha() != null ?
+                        pedido.getFecha().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) : "N/A");
+                row.createCell(5).setCellValue(pedido.getSubtotal() != null ? pedido.getSubtotal() : 0.0);
+                row.createCell(6).setCellValue(pedido.getCostoEnvio() != null ? pedido.getCostoEnvio() : 0.0);
+                row.createCell(7).setCellValue(pedido.getTotal());
+                row.createCell(8).setCellValue(pedido.getEstado() != null ? pedido.getEstado() : "N/A");
+                row.createCell(9).setCellValue(pedido.getTipoEntrega() != null ? pedido.getTipoEntrega() : "N/A");
+                row.createCell(10).setCellValue(pedido.getDireccionEntrega() != null ? pedido.getDireccionEntrega() : "N/A");
+
+                // Items
+                String itemsStr = "";
+                if (pedido.getItems() != null && !pedido.getItems().isEmpty()) {
+                    itemsStr = pedido.getItems().stream()
+                            .map(item -> item.getNombreProducto() + " x" + item.getCantidad())
+                            .collect(Collectors.joining(", "));
+                }
+                row.createCell(11).setCellValue(itemsStr);
+            }
+
+            // Agregar fila de totales
+            Row totalRow = sheet.createRow(rowNum);
+            totalRow.createCell(6).setCellValue("TOTAL GENERAL:");
+            double totalGeneral = pedidos.stream().mapToDouble(Pedido::getTotal).sum();
+            totalRow.createCell(7).setCellValue(totalGeneral);
+            totalRow.createCell(8).setCellValue("Total Pedidos: " + pedidos.size());
+
+            // Auto-ajustar columnas
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            workbook.write(response.getOutputStream());
+            workbook.close();
+
+            System.out.println("📊 Reporte Excel generado: " + filename);
+
+        } catch (Exception e) {
+            System.err.println("❌ Error al generar Excel: " + e.getMessage());
+            e.printStackTrace();
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error al generar el Excel");
+        }
+    }
+
+    // ============ MÉTODO AUXILIAR PARA FILTRAR PEDIDOS ============
+
+    private List<Pedido> obtenerPedidosFiltrados(String fechaInicio, String fechaFin) {
+        List<Pedido> pedidos = pedidoRepository.findAllWithItemsAndProducts();
+
+        if (fechaInicio != null && fechaFin != null) {
+            try {
+                LocalDateTime inicio = LocalDate.parse(fechaInicio).atStartOfDay();
+                LocalDateTime fin = LocalDate.parse(fechaFin).atTime(23, 59, 59);
+
+                pedidos = pedidos.stream()
+                        .filter(p -> p.getFecha() != null)
+                        .filter(p -> !p.getFecha().isBefore(inicio) && !p.getFecha().isAfter(fin))
+                        .collect(Collectors.toList());
+            } catch (Exception e) {
+                System.err.println("⚠️ Error al parsear fechas, usando todos los pedidos");
+            }
+        }
+
+        return pedidos;
     }
 }
