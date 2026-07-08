@@ -13,15 +13,24 @@ import java.util.Optional;
 public interface PedidoRepository extends JpaRepository<Pedido, Long> {
 
     Optional<Pedido> findByCanalAndNumero(String canal, String numero);
+    boolean existsByUsuarioId(Long usuarioId);
+
+
+    @Query("SELECT COUNT(i) > 0 FROM ItemPedido i WHERE i.producto.id = :productoId")
+    boolean existsByItemsProductoId(@Param("productoId") Long productoId);
+
 
     @Query("SELECT DISTINCT p FROM Pedido p LEFT JOIN FETCH p.items WHERE p.id = :id")
     Optional<Pedido> findByIdWithItems(@Param("id") Long id);
 
-    // ✅ CORREGIDO - Usar "producto" en lugar de "productoFinal"
-    @Query("SELECT DISTINCT p FROM Pedido p LEFT JOIN FETCH p.items i LEFT JOIN FETCH i.producto ORDER BY p.fecha DESC")
+
+    @Query("SELECT DISTINCT p FROM Pedido p " +
+            "LEFT JOIN FETCH p.items i " +
+            "LEFT JOIN FETCH i.producto " +
+            "LEFT JOIN FETCH p.usuario u " +  //
+            "ORDER BY p.fecha DESC")
     List<Pedido> findAllWithItemsAndProducts();
 
-    // ✅ CORREGIDO - Usar "producto" en lugar de "productoFinal"
     @Query("SELECT DISTINCT p FROM Pedido p LEFT JOIN FETCH p.items i LEFT JOIN FETCH i.producto WHERE p.estado = :estado ORDER BY p.fecha ASC")
     List<Pedido> findByEstadoWithItems(@Param("estado") String estado);
 

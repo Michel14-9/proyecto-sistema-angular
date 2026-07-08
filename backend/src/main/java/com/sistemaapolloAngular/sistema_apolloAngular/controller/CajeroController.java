@@ -12,6 +12,7 @@ import com.sistemaapolloAngular.sistema_apolloAngular.model.Pedido;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.Usuario;
 import com.sistemaapolloAngular.sistema_apolloAngular.repository.PedidoRepository;
 import com.sistemaapolloAngular.sistema_apolloAngular.repository.UsuarioRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -26,12 +27,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/cajero")
+@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
 public class CajeroController {
 
     @Autowired
@@ -41,8 +44,116 @@ public class CajeroController {
     private UsuarioRepository usuarioRepository;
 
 
+    @GetMapping("/pedidos-pendientes")
+    @ResponseBody
+    @Transactional
+    public ResponseEntity<?> obtenerPedidosPendientes() {
+        try {
+
+            List<Pedido> pedidos = pedidoRepository.findAllWithItemsAndProducts()
+                    .stream()
+                    .filter(p -> "PENDIENTE".equals(p.getEstado()))
+                    .collect(Collectors.toList());
+
+            List<Map<String, Object>> pedidosDTO = new ArrayList<>();
+
+            for (Pedido pedido : pedidos) {
+                Map<String, Object> pedidoDTO = new HashMap<>();
+                pedidoDTO.put("id", pedido.getId());
+                pedidoDTO.put("numeroPedido", pedido.getNumeroPedido());
+                pedidoDTO.put("total", pedido.getTotal());
+                pedidoDTO.put("fecha", pedido.getFecha());
+                pedidoDTO.put("fechaPedido", pedido.getFecha());
+                pedidoDTO.put("estado", pedido.getEstado());
+                pedidoDTO.put("metodoPago", pedido.getMetodoPago());
+                pedidoDTO.put("tipoEntrega", pedido.getTipoEntrega());
+                pedidoDTO.put("direccionEntrega", pedido.getDireccionEntrega());
+                pedidoDTO.put("observaciones", pedido.getObservaciones());
+
+
+                if (pedido.getUsuario() != null) {
+                    Usuario usuario = pedido.getUsuario();
+                    Map<String, String> usuarioDTO = new HashMap<>();
+                    usuarioDTO.put("nombres", usuario.getNombres() != null ? usuario.getNombres() : "");
+                    usuarioDTO.put("apellidos", usuario.getApellidos() != null ? usuario.getApellidos() : "");
+                    usuarioDTO.put("telefono", usuario.getTelefono() != null ? usuario.getTelefono() : "");
+                    pedidoDTO.put("cliente", usuarioDTO);
+                } else {
+                    pedidoDTO.put("cliente", null);
+                }
+
+                // Items del pedido
+                List<Map<String, Object>> itemsDTO = new ArrayList<>();
+                if (pedido.getItems() != null) {
+                    for (ItemPedido item : pedido.getItems()) {
+                        Map<String, Object> itemDTO = new HashMap<>();
+                        itemDTO.put("nombreProducto", item.getNombreProducto());
+                        itemDTO.put("nombreProductoSeguro", item.getNombreProductoSeguro());
+                        itemDTO.put("cantidad", item.getCantidad());
+                        itemDTO.put("precio", item.getPrecio());
+                        itemDTO.put("subtotal", item.getSubtotal());
+                        itemsDTO.add(itemDTO);
+                    }
+                }
+                pedidoDTO.put("items", itemsDTO);
+
+                pedidosDTO.add(pedidoDTO);
+            }
+
+            return ResponseEntity.ok(pedidosDTO);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of(
+                    "error", "Error al cargar pedidos: " + e.getMessage()
+            ));
+        }
+    }
+
+    // ✅ OBTENER MÉTRICAS DEL DÍA - Con @Transactional
+    @GetMapping("/metricas-hoy")
+    @ResponseBody
+    @Transactional
+    public ResponseEntity<?> obtenerMetricasHoy() {
+        try {
+            List<Pedido> pedidosPendientes = pedidoRepository.findByEstadoOrderByFechaDesc("PENDIENTE");
+
+            LocalDate hoy = LocalDate.now();
+            LocalDateTime hoyInicio = hoy.atStartOfDay();
+            LocalDateTime hoyFin = hoy.atTime(23, 59, 59);
+
+            List<Pedido> pedidosPagadosHoy = pedidoRepository.findAll().stream()
+                    .filter(p -> "PAGADO".equals(p.getEstado()) &&
+                            p.getFecha() != null &&
+                            !p.getFecha().isBefore(hoyInicio) &&
+                            !p.getFecha().isAfter(hoyFin))
+                    .collect(Collectors.toList());
+
+            double ingresosHoy = pedidosPagadosHoy.stream()
+                    .mapToDouble(Pedido::getTotal)
+                    .sum();
+
+            Map<String, Object> metricas = new HashMap<>();
+            metricas.put("success", true);
+            metricas.put("totalPedidosPendientes", pedidosPendientes.size());
+            metricas.put("totalPedidosPagadosHoy", pedidosPagadosHoy.size());
+            metricas.put("ingresosHoy", ingresosHoy);
+
+            return ResponseEntity.ok(metricas);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of(
+                    "success", false,
+                    "error", e.getMessage()
+            ));
+        }
+    }
+
+    // ✅ MARCAR PEDIDO COMO PAGADO - Con @Transactional
     @PostMapping("/marcar-pagado/{pedidoId}")
     @ResponseBody
+    @Transactional
     public ResponseEntity<?> marcarComoPagado(@PathVariable String pedidoId,
                                               Authentication authentication) {
         try {
@@ -75,7 +186,7 @@ public class CajeroController {
             }
 
             Optional<Pedido> pedidoOpt = pedidoRepository.findById(pedidoIdLong);
-            if (!pedidoOpt.isPresent()) {
+            if (pedidoOpt.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of(
                         "status", "ERROR",
                         "message", "Pedido no encontrado"
@@ -107,6 +218,7 @@ public class CajeroController {
             }
 
             pedido.setEstado("PAGADO");
+            pedido.setFechaActualizacion(LocalDateTime.now());
             Pedido pedidoGuardado = pedidoRepository.save(pedido);
 
             String boletaPath = generarBoletaPDF(pedidoGuardado, nombreCajero);
@@ -128,7 +240,7 @@ public class CajeroController {
         }
     }
 
-
+    // ✅ GENERAR BOLETA PDF
     private String generarBoletaPDF(Pedido pedido, String nombreCajero) {
         String directoryPath = "boletas/";
         String fileName = "boleta_" + pedido.getNumeroPedido() + ".pdf";
@@ -265,7 +377,7 @@ public class CajeroController {
         }
     }
 
-
+    // ✅ SERVIR BOLETA
     @GetMapping("/boletas/{filename:.+}")
     public ResponseEntity<Resource> servirBoleta(@PathVariable String filename) {
         try {
@@ -286,42 +398,10 @@ public class CajeroController {
         }
     }
 
-
-    @GetMapping("/metricas-hoy")
-    @ResponseBody
-    public Map<String, Object> obtenerMetricasHoy() {
-        Map<String, Object> metricas = new HashMap<>();
-
-        try {
-            List<Pedido> pedidosPendientes = pedidoRepository.findByEstadoOrderByFechaDesc("PENDIENTE");
-
-            LocalDate hoy = LocalDate.now();
-            List<Pedido> pedidosPagadosHoy = pedidoRepository.findAll().stream()
-                    .filter(p -> "PAGADO".equals(p.getEstado()) &&
-                            p.getFecha() != null &&
-                            p.getFecha().toLocalDate().equals(hoy))
-                    .collect(Collectors.toList());
-
-            double ingresosHoy = pedidosPagadosHoy.stream()
-                    .mapToDouble(Pedido::getTotal)
-                    .sum();
-
-            metricas.put("totalPedidosPendientes", pedidosPendientes.size());
-            metricas.put("totalPedidosPagadosHoy", pedidosPagadosHoy.size());
-            metricas.put("ingresosHoy", ingresosHoy);
-            metricas.put("success", true);
-
-        } catch (Exception e) {
-            metricas.put("success", false);
-            metricas.put("error", e.getMessage());
-        }
-
-        return metricas;
-    }
-
-    // ✅ MARCAR PEDIDO COMO CANCELADO
+    // ✅ MARCAR PEDIDO COMO CANCELADO - Con @Transactional
     @PostMapping("/marcar-cancelado/{pedidoId}")
     @ResponseBody
+    @Transactional
     public ResponseEntity<?> marcarComoCancelado(@PathVariable String pedidoId,
                                                  @RequestParam(required = false) String motivo,
                                                  Authentication authentication) {
@@ -356,6 +436,7 @@ public class CajeroController {
                 }
 
                 pedido.setEstado("CANCELADO");
+                pedido.setFechaActualizacion(LocalDateTime.now());
                 if (motivo != null && !motivo.trim().isEmpty()) {
                     pedido.setObservaciones("CANCELADO - Motivo: " + motivo);
                 }
@@ -377,63 +458,6 @@ public class CajeroController {
             return ResponseEntity.status(500).body(Map.of(
                     "status", "ERROR",
                     "message", "Error: " + e.getMessage()
-            ));
-        }
-    }
-
-    // ✅ OBTENER PEDIDOS PENDIENTES
-    @GetMapping("/pedidos-pendientes")
-    @ResponseBody
-    public ResponseEntity<?> obtenerPedidosPendientes() {
-        try {
-            List<Pedido> pedidos = pedidoRepository.findByEstadoOrderByFechaDesc("PENDIENTE");
-
-            List<Map<String, Object>> pedidosDTO = new ArrayList<>();
-
-            for (Pedido pedido : pedidos) {
-                Map<String, Object> pedidoDTO = new HashMap<>();
-                pedidoDTO.put("id", pedido.getId());
-                pedidoDTO.put("numeroPedido", pedido.getNumeroPedido());
-                pedidoDTO.put("total", pedido.getTotal());
-                pedidoDTO.put("fecha", pedido.getFecha());
-                pedidoDTO.put("estado", pedido.getEstado());
-                pedidoDTO.put("metodoPago", pedido.getMetodoPago());
-                pedidoDTO.put("tipoEntrega", pedido.getTipoEntrega());
-                pedidoDTO.put("direccionEntrega", pedido.getDireccionEntrega());
-                pedidoDTO.put("observaciones", pedido.getObservaciones());
-
-                if (pedido.getUsuario() != null) {
-                    Map<String, String> usuarioDTO = new HashMap<>();
-                    usuarioDTO.put("nombres", pedido.getUsuario().getNombres());
-                    usuarioDTO.put("apellidos", pedido.getUsuario().getApellidos());
-                    usuarioDTO.put("telefono", pedido.getUsuario().getTelefono());
-                    pedidoDTO.put("cliente", usuarioDTO);
-                } else {
-                    pedidoDTO.put("cliente", null);
-                }
-
-                List<Map<String, Object>> itemsDTO = new ArrayList<>();
-                if (pedido.getItems() != null) {
-                    for (ItemPedido item : pedido.getItems()) {
-                        Map<String, Object> itemDTO = new HashMap<>();
-                        itemDTO.put("nombreProducto", item.getNombreProducto());
-                        itemDTO.put("cantidad", item.getCantidad());
-                        itemDTO.put("precio", item.getPrecio());
-                        itemDTO.put("subtotal", item.getSubtotal());
-                        itemsDTO.add(itemDTO);
-                    }
-                }
-                pedidoDTO.put("items", itemsDTO);
-
-                pedidosDTO.add(pedidoDTO);
-            }
-
-            return ResponseEntity.ok(pedidosDTO);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of(
-                    "error", "Error al cargar pedidos: " + e.getMessage()
             ));
         }
     }

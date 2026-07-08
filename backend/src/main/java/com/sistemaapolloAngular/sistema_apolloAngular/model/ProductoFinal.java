@@ -22,7 +22,8 @@ public class ProductoFinal {
 
     @Column(nullable = false)
     private Double precio;
-
+    @Column(name = "activo", nullable = false)
+    private boolean activo = true;
 
     @Column(name = "imagen_url", columnDefinition = "TEXT")
     private String imagenUrl;
@@ -45,7 +46,9 @@ public class ProductoFinal {
     public void setId(Long id) {
         this.id = id;
     }
-
+    public void setActivo(boolean activo) {
+        this.activo = activo;
+    }
     public String getNombre() {
         return nombre;
     }

@@ -27,5 +27,27 @@ export const routes: Routes = [
     loadComponent: () => import('./modules/cliente/sigue-tu-pedido/sigue-tu-pedido')
       .then(m => m.SigueTuPedidoComponent)
   },
+{
+    path: 'admin-menu',
+    loadComponent: () => import('./modules/admin/admin-menu/admin-menu')
+      .then(m => m.AdminMenuComponent)
+  },
+{
+    path: 'cajero',
+    loadComponent: () => import('./modules/cajero/cajero/cajero')
+      .then(m => m.CajeroComponent)
+  },
+
+ {
+    path: 'cocinero',
+    loadComponent: () => import('./modules/cocinero/cocinero/cocinero')
+      .then(m => m.CocineroComponent)
+  },
+
+ {
+    path: 'delivery',
+    loadComponent: () => import('./modules/delivery/delivery/delivery')
+      .then(m => m.DeliveryComponent)
+  },
   { path: '**', redirectTo: '' }
 ];

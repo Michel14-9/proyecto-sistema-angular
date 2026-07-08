@@ -1,0 +1,261 @@
+<!-- src/app/modules/delivery/delivery/delivery.html -->
+<div class="container-fluid my-4">
+  <!-- Métricas Rápidas -->
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="card stat-card text-success">
+        <i class="fas fa-check-circle"></i>
+        <div class="number">{{ estadisticas.pendientesEntrega || 0 }}</div>
+        <div class="label">Pendientes Entrega</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card text-primary">
+        <i class="fas fa-truck"></i>
+        <div class="number">{{ estadisticas.enCamino || 0 }}</div>
+        <div class="label">En Camino</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card text-info">
+        <i class="fas fa-check-double"></i>
+        <div class="number">{{ estadisticas.entregadosHoy || 0 }}</div>
+        <div class="label">Entregados Hoy</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Columna: Pedidos Listos para Entrega -->
+    <div class="col-lg-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-check-circle me-2"></i>Listos para Entrega
+            <span class="badge bg-light text-dark float-end">{{ pedidosPendientesEntrega.length }}</span>
+          </h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush" id="lista-pendientes-entrega">
+            <div *ngFor="let pedido of pedidosPendientesEntrega"
+                 class="list-group-item list-group-item-action pedido-item-delivery estado-pendientes"
+                 (click)="mostrarDetallePedido(pedido, 'pendientes')">
+              <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                  <h6 class="mb-1">{{ pedido.numeroPedido || '#' + pedido.id }}</h6>
+                  <p class="mb-1 text-muted small">{{ obtenerNombreCliente(pedido) }}</p>
+                  <p class="mb-1 text-muted small">
+                    <i class="fas fa-map-marker-alt"></i> {{ pedido.direccionEntrega || 'Dirección no especificada' }}
+                  </p>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">{{ formatearFechaCorta(pedido.fecha) }}</small>
+                    <span class="badge" [class.bg-danger]="getTiempoTranscurrido(pedido.fecha).minutosTotales > 45"
+                          [class.bg-warning]="getTiempoTranscurrido(pedido.fecha).minutosTotales > 30 && getTiempoTranscurrido(pedido.fecha).minutosTotales <= 45"
+                          [class.bg-info]="getTiempoTranscurrido(pedido.fecha).minutosTotales <= 30">
+                      {{ getTiempoTranscurrido(pedido.fecha).texto }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="pedidosPendientesEntrega.length === 0" class="text-center py-5">
+            <i class="fas fa-check-circle text-muted fs-1"></i>
+            <p class="text-muted mt-2">No hay pedidos listos para entrega</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Columna: Pedidos En Camino -->
+    <div class="col-lg-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-truck me-2"></i>En Camino
+            <span class="badge bg-light text-dark float-end">{{ pedidosEnCamino.length }}</span>
+          </h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush" id="lista-en-camino">
+            <div *ngFor="let pedido of pedidosEnCamino"
+                 class="list-group-item list-group-item-action pedido-item-delivery estado-en-camino"
+                 (click)="mostrarDetallePedido(pedido, 'en-camino')">
+              <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                  <h6 class="mb-1">{{ pedido.numeroPedido || '#' + pedido.id }}</h6>
+                  <p class="mb-1 text-muted small">{{ obtenerNombreCliente(pedido) }}</p>
+                  <p class="mb-1 text-muted small">
+                    <i class="fas fa-map-marker-alt"></i> {{ pedido.direccionEntrega || 'Dirección no especificada' }}
+                  </p>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">{{ formatearFechaCorta(pedido.fecha) }}</small>
+                    <span class="badge bg-primary">🚚 En Camino</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="pedidosEnCamino.length === 0" class="text-center py-5">
+            <i class="fas fa-truck text-muted fs-1"></i>
+            <p class="text-muted mt-2">No hay pedidos en camino</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pedido Seleccionado (Detalle) -->
+  <div class="row mt-4" *ngIf="pedidoSeleccionado">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h5 class="mb-0">
+            Detalle del Pedido - Delivery
+            <span class="badge bg-primary">{{ pedidoSeleccionado.numeroPedido || '#' + pedidoSeleccionado.id }}</span>
+            <button class="btn btn-sm btn-outline-secondary float-end" (click)="ocultarDetalle()">
+              <i class="fas fa-times"></i> Cerrar
+            </button>
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <h6>Items del Pedido:</h6>
+              <div id="detalle-items-pedido">
+                <div *ngFor="let item of pedidoSeleccionado.items"
+                     class="d-flex justify-content-between border-bottom pb-2 mb-2">
+                  <div class="d-flex align-items-center">
+                    <span class="badge bg-secondary me-2">{{ item.cantidad || 1 }}</span>
+                    <span>{{ item.nombreProducto || 'Producto' }}</span>
+                  </div>
+                  <div class="text-end">
+                    <div>S/ {{ ((item.precio || 0) * (item.cantidad || 1)) | number:'1.2-2' }}</div>
+                    <small class="text-muted">S/ {{ (item.precio || 0) | number:'1.2-2' }} c/u</small>
+                  </div>
+                </div>
+              </div>
+              <div class="mt-3">
+                <strong>Total: </strong><span class="fw-bold text-success">S/ {{ (pedidoSeleccionado.total || 0) | number:'1.2-2' }}</span>
+              </div>
+
+              <div class="mt-3" *ngIf="pedidoSeleccionado.observaciones">
+                <h6>Observaciones:</h6>
+                <div class="alert alert-info">
+                  {{ pedidoSeleccionado.observaciones }}
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <h6>Información del Cliente:</h6>
+              <p><strong>Cliente:</strong> <span>{{ obtenerNombreCliente(pedidoSeleccionado) }}</span></p>
+              <p><strong>Teléfono:</strong> <span>{{ obtenerTelefonoCliente(pedidoSeleccionado) }}</span></p>
+              <p><strong>Dirección:</strong> <span>{{ pedidoSeleccionado.direccionEntrega || 'No especificada' }}</span></p>
+              <p><strong>Referencia:</strong> <span>{{ pedidoSeleccionado.referenciaDireccion || 'No especificada' }}</span></p>
+
+              <h6 class="mt-3">Información del Pedido:</h6>
+              <p><strong>Tipo de Entrega:</strong> <span>{{ pedidoSeleccionado.tipoEntrega || 'DELIVERY' }}</span></p>
+              <p><strong>Hora del Pedido:</strong> <span>{{ formatearFecha(pedidoSeleccionado.fecha) }}</span></p>
+              <p><strong>Tiempo Transcurrido:</strong>
+                <span class="badge" [class.bg-danger]="getTiempoTranscurrido(pedidoSeleccionado.fecha).minutosTotales > 45"
+                      [class.bg-warning]="getTiempoTranscurrido(pedidoSeleccionado.fecha).minutosTotales > 30 && getTiempoTranscurrido(pedidoSeleccionado.fecha).minutosTotales <= 45"
+                      [class.bg-info]="getTiempoTranscurrido(pedidoSeleccionado.fecha).minutosTotales <= 30">
+                  {{ getTiempoTranscurrido(pedidoSeleccionado.fecha).texto }}
+                </span>
+              </p>
+
+              <div class="mt-3" id="acciones-delivery">
+                <!-- Acciones según estado -->
+                <div *ngIf="estadoSeleccionado === 'pendientes'">
+                  <button class="btn btn-primary btn-lg w-100 mb-2" (click)="abrirModalIniciarEntrega()">
+                    <i class="fas fa-truck me-2"></i>Iniciar Entrega
+                  </button>
+                  <small class="text-muted d-block text-center">El pedido pasará a "En Camino"</small>
+                </div>
+
+                <div *ngIf="estadoSeleccionado === 'en-camino'">
+                  <button class="btn btn-success btn-lg w-100 mb-2" (click)="abrirModalMarcarEntregado()">
+                    <i class="fas fa-check-double me-2"></i>Marcar como Entregado
+                  </button>
+                  <small class="text-muted d-block text-center">Confirmar entrega al cliente</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Iniciar Entrega -->
+<div class="modal fade" id="modalIniciarEntrega" tabindex="-1" aria-labelledby="modalIniciarEntregaLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="modalIniciarEntregaLabel">
+          <i class="fas fa-truck me-2"></i>Iniciar Entrega
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="cerrarModalIniciarEntrega()"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Está seguro de que desea iniciar la entrega del pedido?</p>
+        <div class="mb-3">
+          <strong>Pedido:</strong> <span class="badge bg-primary">{{ pedidoSeleccionado?.numeroPedido || '#' + pedidoSeleccionado?.id }}</span>
+        </div>
+        <div class="alert alert-warning">
+          <i class="fas fa-exclamation-triangle"></i>
+          El pedido pasará al estado "En Camino".
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalIniciarEntrega()">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="confirmarIniciarEntrega()">
+          <i class="fas fa-truck"></i> Iniciar Entrega
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Marcar como Entregado -->
+<div class="modal fade" id="modalMarcarEntregado" tabindex="-1" aria-labelledby="modalMarcarEntregadoLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="modalMarcarEntregadoLabel">
+          <i class="fas fa-check-double me-2"></i>Marcar como Entregado
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="cerrarModalMarcarEntregado()"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Confirmar que el pedido ha sido entregado al cliente?</p>
+        <div class="mb-3">
+          <strong>Pedido:</strong> <span class="badge bg-success">{{ pedidoSeleccionado?.numeroPedido || '#' + pedidoSeleccionado?.id }}</span>
+        </div>
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle"></i>
+          El pedido pasará al estado "ENTREGADO" y se completará el proceso.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalMarcarEntregado()">Cancelar</button>
+        <button type="button" class="btn btn-success" (click)="confirmarMarcarEntregado()">
+          <i class="fas fa-check-double"></i> Marcar como Entregado
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast para Alertas -->
+<div class="position-fixed top-0 end-0 p-3 toast-container">
+  <div *ngIf="mensajeToast" class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="toast-header" [class]="tipoToast === 'success' ? 'bg-success text-white' : tipoToast === 'error' ? 'bg-danger text-white' : 'bg-info text-white'">
+      <i class="fas me-2" [class.fa-check-circle]="tipoToast === 'success'" [class.fa-exclamation-triangle]="tipoToast === 'error'" [class.fa-info-circle]="tipoToast === 'info'"></i>
+      <strong class="me-auto">{{ tipoToast === 'success' ? 'Éxito' : tipoToast === 'error' ? 'Error' : 'Información' }}</strong>
+      <button type="button" class="btn-close btn-close-white" (click)="cerrarToast()"></button>
+    </div>
+    <div class="toast-body">{{ mensajeToast }}</div>
+  </div>
+</div>
