@@ -1,11 +1,11 @@
 // src/app/modules/publico/index/index.ts
 
-import { Component, OnInit, AfterViewInit, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewEncapsulation, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { AuthService } from '../../../core/services/auth.service'; // ← CORREGIDO
-import { CarritoService } from '../../../core/services/carrito.service'; // ← CORREGIDO
-import { ComboService } from '../../../core/services/combo.service'; // ← CORREGIDO
+import { AuthService } from '../../../core/services/auth.service';
+import { CarritoService } from '../../../core/services/carrito.service';
+import { ComboService } from '../../../core/services/combo.service';
 
 declare var bootstrap: any;
 
@@ -13,15 +13,16 @@ declare var bootstrap: any;
   selector: 'app-index',
   standalone: true,
   imports: [CommonModule, RouterModule],
-  templateUrl: './index.html',
+  templateUrl: './index.html',  // ← Usar index.html
   styleUrls: ['./index.css'],
   encapsulation: ViewEncapsulation.None
 })
-export class IndexComponent implements OnInit, AfterViewInit {
+export class IndexComponent implements OnInit, AfterViewInit, OnDestroy {
   isAuthenticated: boolean = false;
   username: string = '';
   combos: any[] = [];
   totalCarrito: number = 0;
+  private carouselInstance: any = null;
 
   constructor(
     private authService: AuthService,
@@ -33,12 +34,25 @@ export class IndexComponent implements OnInit, AfterViewInit {
     this.isAuthenticated = this.authService.isAuthenticated();
     this.username = this.authService.getUsername();
 
-    // ✅ CORREGIDO: Extraer 'data' de la respuesta
+    console.log('🚀 IndexComponent inicializado');
+
     this.comboService.getCombos().subscribe({
       next: (response: any) => {
-        // La respuesta viene como { success: true, data: [...], total: ... }
-        this.combos = response?.data || response || [];
-        console.log('✅ Combos cargados:', this.combos);
+        console.log('📦 Respuesta del servidor:', response);
+
+        if (response && response.success) {
+          this.combos = response.data || [];
+          console.log('✅ Combos cargados:', this.combos.length);
+          console.log('📋 Primer combo:', this.combos[0]);
+
+          // ✅ Inicializar carrusel DESPUÉS de cargar datos
+          setTimeout(() => {
+            this.inicializarCarousel();
+          }, 300);
+        } else {
+          console.warn('⚠️ Respuesta sin success:', response);
+          this.combos = response || [];
+        }
       },
       error: (err: any) => {
         console.error('❌ Error cargando combos:', err);
@@ -58,16 +72,67 @@ export class IndexComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    setTimeout(() => {
-      const carousel = document.getElementById('combosCarousel');
-      if (carousel && typeof bootstrap !== 'undefined') {
-        new bootstrap.Carousel(carousel, {
-          interval: 5000,
-          wrap: true,
-          pause: 'hover'
-        });
+    console.log('🔄 ngAfterViewInit - Verificando carrusel...');
+    if (this.combos && this.combos.length > 0) {
+      this.inicializarCarousel();
+    } else {
+      console.log('⏳ Esperando combos para inicializar carrusel...');
+    }
+  }
+
+  ngOnDestroy(): void {
+    // Limpiar carrusel al destruir el componente
+    if (this.carouselInstance) {
+      try {
+        this.carouselInstance.dispose();
+        console.log('♻️ Carrusel destruido al salir');
+      } catch (e) {
+        // Ignorar
       }
-    }, 100);
+    }
+  }
+
+  inicializarCarousel(): void {
+    console.log('🔍 Inicializando carrusel...');
+
+    const carouselElement = document.getElementById('combosCarousel');
+    console.log('🔍 Elemento carrusel:', carouselElement);
+
+    if (!carouselElement) {
+      console.warn('⚠️ No se encontró #combosCarousel en el DOM');
+      return;
+    }
+
+    if (typeof bootstrap === 'undefined') {
+      console.warn('⚠️ Bootstrap no está disponible');
+      return;
+    }
+
+    try {
+      // Destruir carrusel existente
+      if (this.carouselInstance) {
+        this.carouselInstance.dispose();
+        console.log('♻️ Carrusel existente destruido');
+      }
+
+      // Crear nuevo carrusel
+      this.carouselInstance = new bootstrap.Carousel(carouselElement, {
+        interval: 5000,
+        wrap: true,
+        pause: 'hover'
+      });
+
+      console.log('✅ Carrusel creado exitosamente');
+
+      // Iniciar el carrusel
+      setTimeout(() => {
+        this.carouselInstance.cycle();
+        console.log('🔄 Carrusel iniciado');
+      }, 100);
+
+    } catch (error) {
+      console.error('❌ Error creando carrusel:', error);
+    }
   }
 
   agregarAlCarrito(combo: any): void {

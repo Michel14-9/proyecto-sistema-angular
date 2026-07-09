@@ -15,7 +15,6 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     Optional<Pedido> findByCanalAndNumero(String canal, String numero);
     boolean existsByUsuarioId(Long usuarioId);
 
-
     @Query("SELECT COUNT(i) > 0 FROM ItemPedido i WHERE i.producto.id = :productoId")
     boolean existsByItemsProductoId(@Param("productoId") Long productoId);
 
@@ -23,11 +22,10 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     @Query("SELECT DISTINCT p FROM Pedido p LEFT JOIN FETCH p.items WHERE p.id = :id")
     Optional<Pedido> findByIdWithItems(@Param("id") Long id);
 
-
     @Query("SELECT DISTINCT p FROM Pedido p " +
             "LEFT JOIN FETCH p.items i " +
             "LEFT JOIN FETCH i.producto " +
-            "LEFT JOIN FETCH p.usuario u " +  //
+            "LEFT JOIN FETCH p.usuario u " +
             "ORDER BY p.fecha DESC")
     List<Pedido> findAllWithItemsAndProducts();
 
@@ -52,4 +50,39 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     List<Pedido> findAllByOrderByFechaDesc();
 
     Optional<Pedido> findByNumeroPedido(String numeroPedido);
+
+
+
+    /**
+     * Busca un pedido por número de pedido con JOIN FETCH
+     * ✅ CORREGIDO: usar 'producto' en lugar de 'productoFinal'
+     */
+    @Query("SELECT DISTINCT p FROM Pedido p " +
+            "LEFT JOIN FETCH p.usuario u " +
+            "LEFT JOIN FETCH p.items i " +
+            "LEFT JOIN FETCH i.producto " +
+            "WHERE p.numeroPedido = :numeroPedido")
+    Optional<Pedido> findByNumeroPedidoWithUsuarioAndItems(@Param("numeroPedido") String numeroPedido);
+
+    /**
+     * Busca un pedido por número con JOIN FETCH
+     * ✅ CORREGIDO: usar 'producto' en lugar de 'productoFinal'
+     */
+    @Query("SELECT DISTINCT p FROM Pedido p " +
+            "LEFT JOIN FETCH p.usuario u " +
+            "LEFT JOIN FETCH p.items i " +
+            "LEFT JOIN FETCH i.producto " +
+            "WHERE p.numero = :numero")
+    Optional<Pedido> findByNumeroWithUsuarioAndItems(@Param("numero") String numero);
+
+    /**
+     * Busca pedidos por usuario con JOIN FETCH
+     * ✅ CORREGIDO: usar 'producto' en lugar de 'productoFinal'
+     */
+    @Query("SELECT DISTINCT p FROM Pedido p " +
+            "LEFT JOIN FETCH p.items i " +
+            "LEFT JOIN FETCH i.producto " +
+            "WHERE p.usuario.id = :usuarioId " +
+            "ORDER BY p.fecha DESC")
+    List<Pedido> findByUsuarioIdWithItems(@Param("usuarioId") Long usuarioId);
 }

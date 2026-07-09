@@ -7,6 +7,7 @@ import com.sistemaapolloAngular.sistema_apolloAngular.model.Usuario;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.PedidoService;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.CarritoService;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.UsuarioService;
+import com.sistemaapolloAngular.sistema_apolloAngular.repository.PedidoRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,14 +24,17 @@ public class PedidoController {
     private final PedidoService pedidoService;
     private final CarritoService carritoService;
     private final UsuarioService usuarioService;
+    private final PedidoRepository pedidoRepository; // ✅ Agregado
     private final ObjectMapper objectMapper;
 
     public PedidoController(PedidoService pedidoService,
                             CarritoService carritoService,
-                            UsuarioService usuarioService) {
+                            UsuarioService usuarioService,
+                            PedidoRepository pedidoRepository) { // ✅ Agregado
         this.pedidoService = pedidoService;
         this.carritoService = carritoService;
         this.usuarioService = usuarioService;
+        this.pedidoRepository = pedidoRepository;
         this.objectMapper = new ObjectMapper();
     }
 
@@ -49,13 +53,10 @@ public class PedidoController {
             }
 
             String correo = authentication.getName();
-            System.out.println(" Usuario autenticado: " + correo);
-
             Usuario usuario = usuarioService.buscarPorCorreo(correo)
                     .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
             List<CarritoItem> carrito = carritoService.obtenerCarrito(usuario.getId());
-            System.out.println("🛒 Items en carrito: " + carrito.size());
 
             if (carrito.isEmpty()) {
                 response.put("success", false);
@@ -64,10 +65,8 @@ public class PedidoController {
             }
 
             Pedido pedido = pedidoService.crearPedido(usuario, carrito, datos);
-            System.out.println(" Pedido creado - ID: " + pedido.getId());
 
             carritoService.limpiarCarrito(usuario.getId());
-            System.out.println(" Carrito limpiado");
 
             response.put("success", true);
             response.put("message", "Pedido creado exitosamente");
@@ -106,7 +105,6 @@ public class PedidoController {
             Usuario usuario = usuarioService.buscarPorCorreo(correo)
                     .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-            // ✅ Usar obtenerPedidoConItems que hace JOIN FETCH
             Optional<Pedido> pedidoOpt = pedidoService.obtenerPedidoConItems(pedidoId);
 
             if (pedidoOpt.isEmpty()) {
@@ -117,14 +115,12 @@ public class PedidoController {
 
             Pedido pedido = pedidoOpt.get();
 
-            // Verificar que el usuario sea el dueño
             if (!pedido.getUsuario().getId().equals(usuario.getId())) {
                 response.put("success", false);
                 response.put("message", "No autorizado");
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
             }
 
-            // ✅ Inicializar items y productos de forma segura
             List<Map<String, Object>> itemsList = new ArrayList<>();
             if (pedido.getItems() != null && !pedido.getItems().isEmpty()) {
                 for (ItemPedido item : pedido.getItems()) {
@@ -133,33 +129,11 @@ public class PedidoController {
                     itemMap.put("cantidad", item.getCantidad());
                     itemMap.put("precio", item.getPrecio());
                     itemMap.put("subtotal", item.getSubtotal());
-
-                    // ✅ Obtener nombre del producto de forma segura
-                    String nombreProducto = item.getNombreProducto();
-                    if (nombreProducto == null || nombreProducto.isEmpty()) {
-                        try {
-                            if (item.getProductoFinal() != null) {
-                                nombreProducto = item.getProductoFinal().getNombre();
-                            }
-                        } catch (Exception e) {
-                            nombreProducto = "Producto";
-                        }
-                    }
-                    itemMap.put("nombreProducto", nombreProducto != null ? nombreProducto : "Producto");
-
-                    try {
-                        if (item.getProductoFinal() != null) {
-                            itemMap.put("productoId", item.getProductoFinal().getId());
-                        }
-                    } catch (Exception e) {
-                        // Ignorar
-                    }
-
+                    itemMap.put("nombreProducto", item.getNombreProductoSeguro());
                     itemsList.add(itemMap);
                 }
             }
 
-            // Crear respuesta con datos del pedido
             Map<String, Object> pedidoData = new HashMap<>();
             pedidoData.put("id", pedido.getId());
             pedidoData.put("numeroPedido", pedido.getNumeroPedido());
@@ -176,15 +150,12 @@ public class PedidoController {
             pedidoData.put("paymentId", pedido.getPaymentId());
             pedidoData.put("items", itemsList);
 
-            // Información del usuario
             Map<String, Object> usuarioData = new HashMap<>();
             usuarioData.put("nombres", pedido.getUsuario().getNombres());
             usuarioData.put("apellidos", pedido.getUsuario().getApellidos());
             usuarioData.put("telefono", pedido.getUsuario().getTelefono());
             usuarioData.put("email", pedido.getUsuario().getUsername());
             pedidoData.put("usuario", usuarioData);
-
-            System.out.println("✅ Pedido encontrado: " + pedidoId + " - Estado: " + pedido.getEstado());
 
             return ResponseEntity.ok(pedidoData);
 
@@ -199,6 +170,7 @@ public class PedidoController {
     }
 
     @GetMapping("/todos")
+    @Transactional(readOnly = true)
     public ResponseEntity<?> obtenerTodosLosPedidos() {
         Map<String, Object> response = new HashMap<>();
 
@@ -246,7 +218,11 @@ public class PedidoController {
         }
     }
 
+    /**
+     * ✅ OBTENER MIS PEDIDOS - CORREGIDO
+     */
     @GetMapping("/mis-pedidos")
+    @Transactional(readOnly = true)
     public ResponseEntity<?> obtenerMisPedidos(Authentication authentication) {
         Map<String, Object> response = new HashMap<>();
 
@@ -267,7 +243,9 @@ public class PedidoController {
             }
 
             Usuario usuario = usuarioOpt.get();
-            List<Pedido> pedidos = pedidoService.obtenerPedidosPorUsuarioConItems(usuario.getId());
+
+            // ✅ Ahora funciona porque inyectamos PedidoRepository
+            List<Pedido> pedidos = pedidoRepository.findByUsuarioIdWithItems(usuario.getId());
 
             List<Map<String, Object>> pedidosResponse = new ArrayList<>();
 
@@ -289,24 +267,11 @@ public class PedidoController {
                         itemMap.put("cantidad", item.getCantidad());
                         itemMap.put("precio", item.getPrecio());
                         itemMap.put("subtotal", item.getSubtotal());
-
-                        // ✅ Obtener nombre del producto de forma segura
-                        String nombreProducto = item.getNombreProducto();
-                        if (nombreProducto == null || nombreProducto.isEmpty()) {
-                            try {
-                                if (item.getProductoFinal() != null) {
-                                    nombreProducto = item.getProductoFinal().getNombre();
-                                }
-                            } catch (Exception e) {
-                                nombreProducto = "Producto";
-                            }
-                        }
-                        itemMap.put("nombreProducto", nombreProducto != null ? nombreProducto : "Producto");
+                        itemMap.put("nombreProducto", item.getNombreProductoSeguro());
                         itemsList.add(itemMap);
                     }
                 }
                 pedidoMap.put("items", itemsList);
-
                 pedidosResponse.add(pedidoMap);
             }
 
@@ -327,6 +292,7 @@ public class PedidoController {
     }
 
     @GetMapping("/buscar/{numeroPedido}")
+    @Transactional(readOnly = true)
     public ResponseEntity<?> buscarPedido(@PathVariable String numeroPedido) {
         Map<String, Object> response = new HashMap<>();
 
@@ -356,17 +322,7 @@ public class PedidoController {
                 if (pedido.getItems() != null) {
                     for (ItemPedido item : pedido.getItems()) {
                         Map<String, Object> itemMap = new HashMap<>();
-                        String nombreProducto = item.getNombreProducto();
-                        if (nombreProducto == null || nombreProducto.isEmpty()) {
-                            try {
-                                if (item.getProductoFinal() != null) {
-                                    nombreProducto = item.getProductoFinal().getNombre();
-                                }
-                            } catch (Exception e) {
-                                nombreProducto = "Producto";
-                            }
-                        }
-                        itemMap.put("nombreProducto", nombreProducto != null ? nombreProducto : "Producto");
+                        itemMap.put("nombreProducto", item.getNombreProductoSeguro());
                         itemMap.put("cantidad", item.getCantidad());
                         itemMap.put("precio", item.getPrecio());
                         itemMap.put("subtotal", item.getSubtotal());
@@ -423,14 +379,12 @@ public class PedidoController {
 
             Pedido pedido = pedidoOpt.get();
 
-            // Verificar que el usuario sea el dueño del pedido
             if (!pedido.getUsuario().getId().equals(usuario.getId())) {
                 System.err.println("❌ Usuario no autorizado: " + correo);
                 response.put("error", "No autorizado");
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
             }
 
-            // Preparar respuesta
             response.put("pedidoId", pedido.getId());
             response.put("numeroPedido", pedido.getNumeroPedido());
             response.put("estado", pedido.getEstado());

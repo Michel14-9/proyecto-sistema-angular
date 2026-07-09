@@ -31,7 +31,7 @@
 
     <!-- Contenido Principal -->
     <div class="col-md-9">
-      <!-- Header de la página -->
+      <!-- Header -->
       <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h1 class="h2 page-title mb-1">Mis Pedidos</h1>
@@ -42,7 +42,7 @@
         </a>
       </div>
 
-      <!-- Estado de Sesión (solo para no autenticados) -->
+      <!-- Estado de Sesión -->
       <div *ngIf="!isAuthenticated" class="alert alert-warning-custom">
         <i class="fas fa-exclamation-triangle me-2"></i>
         Debes <a routerLink="/login" class="alert-link">iniciar sesión</a> para ver tus pedidos.
@@ -87,9 +87,13 @@
                 <select class="form-select" id="filtroEstado"
                         [(ngModel)]="filtroEstado"
                         (change)="onFiltroEstadoChange()">
-                  <option *ngFor="let estado of estadosDisponibles" [value]="estado">
-                    {{ estado === 'todos' ? '📋 Todos los estados' : estado }}
-                  </option>
+                  <option value="todos">📋 Todos los estados</option>
+                  <option value="PENDIENTE">⏳ Pendiente</option>
+                  <option value="PAGADO">✅ Pagado</option>
+                  <option value="LISTO">📋 Listo para entrega</option>
+                  <option value="EN_CAMINO">🚚 En camino</option>
+                  <option value="RECHAZADO">❌ Rechazado</option>
+                  <option value="ENTREGADO">📦 Entregado</option>
                 </select>
               </div>
             </div>
@@ -120,14 +124,17 @@
         <!-- Lista de Pedidos -->
         <div *ngIf="!isLoading && !errorMessage && pedidosFiltrados.length > 0" class="row" id="pedidosLista">
           <div *ngFor="let pedido of pedidosFiltrados" class="col-12 mb-4">
-            <div class="card pedido-card h-100">
-              <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <div class="card pedido-card h-100" [class]="getBorderClase(pedido.estado)">
+              <!-- Header con estado -->
+              <div class="card-header d-flex justify-content-between align-items-center"
+                   [class]="getHeaderClase(pedido.estado)">
                 <div>
-                  <h5 class="mb-0">
-                    <i class="fas fa-hashtag me-2 text-orange"></i>
+                  <h5 class="mb-0" [class.text-white]="pedido.estado !== 'PENDIENTE'">
+                    <i class="fas fa-hashtag me-2"></i>
                     {{ pedido.numeroPedido || pedido.id }}
                   </h5>
-                  <small class="text-muted">
+                  <small [class.text-white]="pedido.estado !== 'PENDIENTE'"
+                         [class.text-muted]="pedido.estado === 'PENDIENTE'">
                     <i class="far fa-calendar-alt me-1"></i>
                     {{ formatearFecha(pedido.fechaPedido) }}
                   </small>
@@ -138,27 +145,47 @@
                   </span>
                 </div>
               </div>
+
               <div class="card-body">
-                <div class="row">
-                  <div class="col-md-8">
+                <div class="row align-items-center">
+                  <div class="col-md-7">
                     <h6 class="text-muted">Productos</h6>
                     <p class="mb-2">{{ getResumenProductos(pedido) }}</p>
                     <div class="mt-2">
                       <span class="badge bg-light text-dark me-2">
                         <i class="fas fa-box me-1"></i>{{ pedido.items?.length || 0 }} items
                       </span>
-                      <span class="badge bg-light text-dark">
-                        <i class="fas fa-truck me-1"></i>{{ pedido.tiempoEstimado || '30-45 min' }}
+                      <span class="badge" [ngClass]="{
+                        'bg-warning text-dark': pedido.estado === 'PENDIENTE',
+                        'bg-success text-white': pedido.estado === 'PAGADO',
+                        'bg-info text-white': pedido.estado === 'LISTO',
+                        'bg-orange text-white': pedido.estado === 'EN_CAMINO',
+                        'bg-danger text-white': pedido.estado === 'RECHAZADO',
+                        'bg-purple text-white': pedido.estado === 'ENTREGADO'
+                      }">
+                        <i class="fas fa-clock me-1"></i>
+                        {{ getTiempoEstimado(pedido.estado) }}
                       </span>
                     </div>
+                    <div class="mt-2 small text-muted">
+                      <i class="fas fa-info-circle me-1"></i>
+                      {{ getMensajeAyuda(pedido.estado) }}
+                    </div>
                   </div>
-                  <div class="col-md-4 text-end">
+                  <div class="col-md-5 text-end">
                     <div class="text-success fw-bold fs-4 mb-2">
                       S/ {{ pedido.total | number:'1.2-2' }}
                     </div>
-                    <button class="btn btn-luren btn-sm" (click)="verDetalle(pedido)">
-                      <i class="fas fa-eye me-1"></i> Ver Detalle
-                    </button>
+                    <div class="d-flex flex-wrap gap-2 justify-content-end">
+                      <button class="btn btn-luren btn-sm" (click)="verDetalle(pedido)">
+                        <i class="fas fa-eye me-1"></i> Ver Detalle
+                      </button>
+                      <button *ngIf="esRechazado(pedido.estado)"
+                              class="btn btn-danger btn-sm"
+                              (click)="reintentarPago(pedido)">
+                        <i class="fas fa-redo me-1"></i> Reintentar
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -192,24 +219,36 @@
           </div>
         </div>
 
-        <!-- Información de Ayuda -->
+        <!-- Leyenda de Estados -->
         <div class="card card-custom mt-4 info-section">
           <div class="card-header card-header-custom">
-            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Información de Pedidos</h5>
+            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Estados de tus pedidos</h5>
           </div>
           <div class="card-body">
-            <div class="row">
-              <div class="col-md-4">
-                <h6><i class="fas fa-clock me-2 text-warning"></i>Tiempos de entrega</h6>
-                <p class="small text-muted-custom mb-3">Los pedidos se entregan en un promedio de 30-45 minutos.</p>
+            <div class="row g-3">
+              <div class="col-md-4 col-sm-6">
+                <span class="badge estado-pendiente me-2">⏳ Pendiente</span>
+                <small class="text-muted">Esperando confirmación de pago</small>
               </div>
-              <div class="col-md-4">
-                <h6><i class="fas fa-truck me-2 text-primary"></i>Estado del pedido</h6>
-                <p class="small text-muted-custom mb-3">Puedes ver el estado actual de tu pedido en tiempo real.</p>
+              <div class="col-md-4 col-sm-6">
+                <span class="badge estado-pagado me-2">✅ Pagado</span>
+                <small class="text-muted">Pago confirmado, en preparación</small>
               </div>
-              <div class="col-md-4">
-                <h6><i class="fas fa-headset me-2 text-success"></i>Soporte</h6>
-                <p class="small text-muted-custom mb-3">¿Problemas con tu pedido? Llámanos al 123-456-7890</p>
+              <div class="col-md-4 col-sm-6">
+                <span class="badge estado-listo me-2">📋 Listo</span>
+                <small class="text-muted">Pedido listo para entregar</small>
+              </div>
+              <div class="col-md-4 col-sm-6">
+                <span class="badge estado-en-camino me-2">🚚 En camino</span>
+                <small class="text-muted">Pedido en ruta de entrega</small>
+              </div>
+              <div class="col-md-4 col-sm-6">
+                <span class="badge estado-rechazado me-2">❌ Rechazado</span>
+                <small class="text-muted">Pago no procesado</small>
+              </div>
+              <div class="col-md-4 col-sm-6">
+                <span class="badge estado-entregado me-2">📦 Entregado</span>
+                <small class="text-muted">Pedido entregado exitosamente</small>
               </div>
             </div>
           </div>

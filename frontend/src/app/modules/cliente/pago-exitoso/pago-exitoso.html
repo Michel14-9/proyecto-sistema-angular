@@ -1,14 +1,15 @@
-<!-- src/app/modules/cliente/pago-exitoso/pago-exitoso.html -->
-
-
 <main class="pago-exitoso-page py-5">
   <div class="container">
     <!-- Loading -->
     <div *ngIf="isLoading" class="text-center py-5">
-      <div class="spinner-border text-success" role="status">
+      <div class="spinner-border" [ngClass]="{
+        'text-warning': estadoActual === 'PENDIENTE',
+        'text-success': estadoActual === 'PAGADO',
+        'text-danger': estadoActual === 'RECHAZADO'
+      }" role="status">
         <span class="visually-hidden">Cargando...</span>
       </div>
-      <p class="mt-2">Confirmando tu pedido...</p>
+      <p class="mt-2">{{ estadoTexto }}</p>
     </div>
 
     <!-- Error -->
@@ -25,43 +26,71 @@
       </div>
     </div>
 
-    <!-- Contenido de éxito -->
+    <!-- Contenido principal -->
     <div *ngIf="!isLoading && !errorMessage && pedido" class="row justify-content-center">
       <div class="col-lg-10">
-        <!-- Icono de éxito -->
+
+        <!-- Icono según estado -->
         <div class="text-center mb-4">
-          <div class="success-icon">
-            <i class="fas fa-check-circle"></i>
+          <div class="success-icon" [ngClass]="{
+            'text-success': estadoActual === 'PAGADO',
+            'text-warning': estadoActual === 'PENDIENTE',
+            'text-danger': estadoActual === 'RECHAZADO'
+          }">
+            <i [class]="'fas ' + estadoIcono"></i>
           </div>
         </div>
 
-        <!-- Mensaje principal -->
-        <h1 class="text-center text-success mb-2">¡PAGO EXITOSO!</h1>
-        <p class="text-center text-muted mb-4">
-          Tu pedido ha sido registrado correctamente.
-          <br>
-          <span class="fw-bold">¡Gracias por tu compra en Luren Chicken!</span>
-        </p>
+        <!-- Título según estado -->
+        <h1 class="text-center mb-2" [ngClass]="{
+          'text-success': estadoActual === 'PAGADO',
+          'text-warning': estadoActual === 'PENDIENTE',
+          'text-danger': estadoActual === 'RECHAZADO'
+        }">
+          {{ tituloPagina }}
+        </h1>
 
-        <!-- Progreso del pedido -->
+        <!-- Mensaje según estado -->
+        <p class="text-center text-muted mb-4" [innerHTML]="mensajePrincipal"></p>
+
+        <!-- Progreso del pedido con colores dinámicos -->
         <div class="progreso-pedido mb-4">
           <div class="d-flex justify-content-between align-items-center position-relative">
+
+            <!-- Paso 1: Carrito -->
             <div class="text-center">
               <div class="progreso-paso completado">
                 <i class="fas fa-shopping-cart"></i>
               </div>
               <span class="d-block mt-2 small fw-bold">Carrito</span>
             </div>
+
             <div class="progreso-linea completado"></div>
+
+            <!-- Paso 2: Pago -->
             <div class="text-center">
-              <div class="progreso-paso completado">
+              <div class="progreso-paso" [ngClass]="{
+                'completado': estadoActual === 'PAGADO',
+                'activo': estadoActual === 'PENDIENTE',
+                'error': estadoActual === 'RECHAZADO'
+              }">
                 <i class="fas fa-credit-card"></i>
               </div>
               <span class="d-block mt-2 small fw-bold">Pago</span>
             </div>
-            <div class="progreso-linea completado"></div>
+
+            <div class="progreso-linea" [ngClass]="{
+              'completado': estadoActual === 'PAGADO',
+              'activo': estadoActual === 'PENDIENTE'
+            }"></div>
+
+            <!-- Paso 3: Confirmación -->
             <div class="text-center">
-              <div class="progreso-paso activo">
+              <div class="progreso-paso" [ngClass]="{
+                'completado': estadoActual === 'PAGADO',
+                'activo': estadoActual === 'PENDIENTE',
+                'error': estadoActual === 'RECHAZADO'
+              }">
                 <i class="fas fa-check"></i>
               </div>
               <span class="d-block mt-2 small fw-bold">Confirmación</span>
@@ -69,21 +98,32 @@
           </div>
         </div>
 
-        <!-- Tarjeta de información -->
+        <!-- Tarjeta de información del pedido -->
         <div class="card shadow-sm mb-4">
-          <div class="card-header bg-success text-white">
-            <h5 class="mb-0"><i class="fas fa-receipt me-2"></i>DETALLES DEL PEDIDO</h5>
+          <div class="card-header" [ngClass]="{
+            'bg-success': estadoActual === 'PAGADO',
+            'bg-warning': estadoActual === 'PENDIENTE',
+            'bg-danger': estadoActual === 'RECHAZADO'
+          }" [class.text-white]="estadoActual !== 'PENDIENTE'">
+            <h5 class="mb-0">
+              <i class="fas fa-receipt me-2"></i>
+              DETALLES DEL PEDIDO
+            </h5>
           </div>
           <div class="card-body">
             <div class="row">
               <div class="col-md-6">
                 <div class="info-item mb-3">
                   <small class="text-muted d-block">Número de pedido</small>
-                  <h5 class="fw-bold text-success mb-0">{{ numeroPedido }}</h5>
+                  <h5 class="fw-bold" [class.text-success]="estadoActual === 'PAGADO'">
+                    {{ numeroPedido }}
+                  </h5>
                 </div>
                 <div class="info-item mb-3">
                   <small class="text-muted d-block">Estado</small>
-                  <span class="badge bg-success">PAGADO</span>
+                  <span class="badge" [ngClass]="estadoBadgeClass">
+                    {{ estadoTexto }}
+                  </span>
                 </div>
                 <div class="info-item mb-3">
                   <small class="text-muted d-block">Fecha</small>
@@ -92,12 +132,17 @@
               </div>
               <div class="col-md-6">
                 <div class="info-item mb-3">
-                  <small class="text-muted d-block">Total pagado</small>
-                  <h4 class="fw-bold text-success mb-0">S/ {{ total | number:'1.2-2' }}</h4>
+                  <small class="text-muted d-block">Total</small>
+                  <h4 class="fw-bold" [class.text-success]="estadoActual === 'PAGADO'">
+                    S/ {{ total | number:'1.2-2' }}
+                  </h4>
                 </div>
                 <div class="info-item mb-3">
                   <small class="text-muted d-block">Método de pago</small>
-                  <h6 class="mb-0"><i class="fab fa-cc-mercadopago me-2"></i>MercadoPago</h6>
+                  <h6 class="mb-0">
+                    <i class="fab fa-cc-mercadopago me-2"></i>
+                    MercadoPago
+                  </h6>
                 </div>
                 <div class="info-item">
                   <small class="text-muted d-block">Cantidad de productos</small>
@@ -123,19 +168,47 @@
             </div>
             <div class="d-flex justify-content-between align-items-center pt-3">
               <strong class="fs-5">Total</strong>
-              <strong class="fs-5 text-success">S/ {{ total | number:'1.2-2' }}</strong>
+              <strong class="fs-5" [class.text-success]="estadoActual === 'PAGADO'">
+                S/ {{ total | number:'1.2-2' }}
+              </strong>
             </div>
           </div>
         </div>
 
-        <!-- Botones de acción -->
+        <!-- Botones de acción dinámicos -->
         <div class="d-flex flex-wrap gap-3 justify-content-center">
-          <button class="btn btn-outline-primary btn-lg" (click)="irAMisPedidos()">
-            <i class="fas fa-list me-2"></i>Ver Mis Pedidos
-          </button>
-          <button class="btn btn-success btn-lg" (click)="irAlMenu()">
-            <i class="fas fa-utensils me-2"></i>Realizar Otro Pedido
-          </button>
+
+          <!-- Si está pagado -->
+          <ng-container *ngIf="estadoActual === 'PAGADO'">
+            <button class="btn btn-outline-primary btn-lg" (click)="irAMisPedidos()">
+              <i class="fas fa-list me-2"></i>Ver Mis Pedidos
+            </button>
+            <button class="btn btn-success btn-lg" (click)="irAlMenu()">
+              <i class="fas fa-utensils me-2"></i>Realizar Otro Pedido
+            </button>
+          </ng-container>
+
+          <!-- Si está pendiente -->
+          <ng-container *ngIf="estadoActual === 'PENDIENTE'">
+            <button class="btn btn-warning btn-lg" disabled>
+              <i class="fas fa-spinner fa-spin me-2"></i>Procesando...
+            </button>
+            <button class="btn btn-outline-secondary btn-lg" (click)="irAMisPedidos()">
+              <i class="fas fa-list me-2"></i>Ver Mis Pedidos
+            </button>
+          </ng-container>
+
+          <!-- Si está rechazado -->
+          <ng-container *ngIf="estadoActual === 'RECHAZADO'">
+            <button class="btn btn-danger btn-lg" (click)="reintentarPago()">
+              <i class="fas fa-redo me-2"></i>Reintentar Pago
+            </button>
+            <button class="btn btn-outline-secondary btn-lg" (click)="irAlMenu()">
+              <i class="fas fa-utensils me-2"></i>Ir al Menú
+            </button>
+          </ng-container>
+
+          <!-- Botón común -->
           <button class="btn btn-outline-secondary btn-lg" (click)="irAlInicio()">
             <i class="fas fa-home me-2"></i>Ir al Inicio
           </button>
@@ -171,4 +244,3 @@
     </div>
   </div>
 </main>
-

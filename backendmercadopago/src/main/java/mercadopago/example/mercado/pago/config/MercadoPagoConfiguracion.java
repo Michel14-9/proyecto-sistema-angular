@@ -1,5 +1,4 @@
-
-package com.sistemaapolloAngular.sistema_apolloAngular.config;
+package mercadopago.example.mercado.pago.config;
 
 import com.mercadopago.MercadoPagoConfig;
 import com.mercadopago.client.preference.PreferenceClient;
@@ -17,7 +16,7 @@ public class MercadoPagoConfiguracion {
     @PostConstruct
     public void init() {
         MercadoPagoConfig.setAccessToken(accessToken);
-        System.out.println(" MercadoPago configurado correctamente");
+        System.out.println("✅ MercadoPago configurado correctamente");
     }
 
     @Bean

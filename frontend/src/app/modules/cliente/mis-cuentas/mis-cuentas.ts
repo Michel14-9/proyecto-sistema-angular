@@ -1,4 +1,5 @@
 // src/app/modules/cliente/mis-cuentas/mis-cuentas.ts
+
 import { Component, OnInit, ViewEncapsulation, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
@@ -105,10 +106,14 @@ export class MisCuentasComponent implements OnInit, OnDestroy {
     this.cargarDirecciones();
   }
 
+  /**
+   * ✅ CORREGIDO: Usar /api/usuarios/perfil en lugar de /api/auth/datos-usuario
+   */
   cargarDatosUsuario(): void {
     console.log('🔄 Cargando datos del usuario...');
 
-    this.http.get(`${this.apiUrl}/api/auth/datos-usuario`, {
+    // ✅ Cambiar a /api/usuarios/perfil
+    this.http.get(`${this.apiUrl}/api/usuarios/perfil`, {
       headers: this.getHeaders(),
       withCredentials: true
     }).subscribe({
@@ -116,16 +121,20 @@ export class MisCuentasComponent implements OnInit, OnDestroy {
         console.log('📦 Datos del usuario recibidos:', response);
         this.isLoading = false;
 
-        if (response) {
+        // ✅ La respuesta viene en response.usuario
+        if (response && response.success && response.usuario) {
+          const data = response.usuario;
           this.usuario = {
-            nombre: response.nombre || response.nombres || '',
-            apellidos: response.apellidos || '',
-            email: response.email || response.username || '',
-            tipoDocumento: response.tipoDocumento || '',
-            numeroDocumento: response.numeroDocumento || '',
-            telefono: response.telefono || '',
-            fechaNacimiento: response.fechaNacimiento || ''
+            nombre: data.nombres || '',
+            apellidos: data.apellidos || '',
+            email: data.email || '',
+            tipoDocumento: data.tipoDocumento || '',
+            numeroDocumento: data.numeroDocumento || '',
+            telefono: data.telefono || '',
+            fechaNacimiento: data.fechaNacimiento || ''
           };
+        } else {
+          this.errorMessage = 'Error al cargar los datos del usuario';
         }
       },
       error: (error) => {

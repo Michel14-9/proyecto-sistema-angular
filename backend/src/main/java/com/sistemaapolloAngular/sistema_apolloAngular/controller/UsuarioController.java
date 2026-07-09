@@ -10,6 +10,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -183,4 +185,156 @@ public class UsuarioController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
+
+    // Agregar en UsuarioController.java
+
+    /**
+     * ✅ Actualiza los datos del usuario autenticado
+     */
+    @PutMapping("/actualizar-datos")
+    public ResponseEntity<Map<String, Object>> actualizarDatosUsuario(
+            @RequestBody Map<String, Object> datos,
+            Authentication authentication) {
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            if (authentication == null || !authentication.isAuthenticated()) {
+                response.put("success", false);
+                response.put("message", "Usuario no autenticado");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+
+            String username = authentication.getName();
+            Optional<Usuario> usuarioOpt = usuarioRepository.findByUsername(username);
+
+            if (usuarioOpt.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Usuario no encontrado");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+
+            Usuario usuario = usuarioOpt.get();
+
+            // Validar y actualizar campos
+            String nombre = (String) datos.get("nombre");
+            String apellidos = (String) datos.get("apellidos");
+            String tipoDocumento = (String) datos.get("tipoDocumento");
+            String numeroDocumento = (String) datos.get("numeroDocumento");
+            String telefono = (String) datos.get("telefono");
+            String fechaNacimientoStr = (String) datos.get("fechaNacimiento");
+
+            // Validaciones
+            if (nombre == null || nombre.trim().isEmpty()) {
+                response.put("success", false);
+                response.put("message", "El nombre es obligatorio");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            if (apellidos == null || apellidos.trim().isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Los apellidos son obligatorios");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            if (tipoDocumento == null || tipoDocumento.trim().isEmpty()) {
+                response.put("success", false);
+                response.put("message", "El tipo de documento es obligatorio");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            if (numeroDocumento == null || numeroDocumento.trim().isEmpty()) {
+                response.put("success", false);
+                response.put("message", "El número de documento es obligatorio");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            if (telefono == null || telefono.trim().isEmpty()) {
+                response.put("success", false);
+                response.put("message", "El teléfono es obligatorio");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Validar fecha de nacimiento
+            if (fechaNacimientoStr != null && !fechaNacimientoStr.isEmpty()) {
+                try {
+                    LocalDate fechaNac = LocalDate.parse(fechaNacimientoStr);
+                    LocalDate hoy = LocalDate.now();
+                    int edad = Period.between(fechaNac, hoy).getYears();
+
+                    if (edad < 18) {
+                        response.put("success", false);
+                        response.put("message", "Debes ser mayor de edad (18 años o más)");
+                        return ResponseEntity.badRequest().body(response);
+                    }
+                    usuario.setFechaNacimiento(fechaNac);
+                } catch (Exception e) {
+                    response.put("success", false);
+                    response.put("message", "Fecha de nacimiento inválida");
+                    return ResponseEntity.badRequest().body(response);
+                }
+            }
+
+            // Actualizar datos
+            usuario.setNombres(nombre.trim());
+            usuario.setApellidos(apellidos.trim());
+            usuario.setTipoDocumento(tipoDocumento);
+            usuario.setNumeroDocumento(numeroDocumento.trim());
+            usuario.setTelefono(telefono.trim());
+
+            // Cambiar contraseña si se proporciona
+            String passwordActual = (String) datos.get("passwordActual");
+            String nuevaPassword = (String) datos.get("nuevaPassword");
+
+            if (nuevaPassword != null && !nuevaPassword.isEmpty()) {
+                if (passwordActual == null || passwordActual.isEmpty()) {
+                    response.put("success", false);
+                    response.put("message", "Debes ingresar tu contraseña actual para cambiarla");
+                    return ResponseEntity.badRequest().body(response);
+                }
+
+                // Verificar contraseña actual
+                if (!passwordEncoder.matches(passwordActual, usuario.getPassword())) {
+                    response.put("success", false);
+                    response.put("message", "Contraseña actual incorrecta");
+                    return ResponseEntity.badRequest().body(response);
+                }
+
+                if (nuevaPassword.length() < 6) {
+                    response.put("success", false);
+                    response.put("message", "La nueva contraseña debe tener al menos 6 caracteres");
+                    return ResponseEntity.badRequest().body(response);
+                }
+
+                usuario.setPassword(passwordEncoder.encode(nuevaPassword));
+            }
+
+            usuarioRepository.save(usuario);
+
+            response.put("success", true);
+            response.put("message", "Datos actualizados correctamente");
+            response.put("usuario", Map.of(
+                    "nombres", usuario.getNombres(),
+                    "apellidos", usuario.getApellidos(),
+                    "email", usuario.getUsername()
+            ));
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("message", "Error al actualizar datos: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+
+
+
+
+
+
+
+
 }

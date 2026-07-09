@@ -5,28 +5,43 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4e10dce1-a503-4051-8fa1-2dbc492f7fbc" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/frontend/src/app/modules/delivery/delivery/delivery.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/app/modules/delivery/delivery/delivery.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/app/modules/delivery/delivery/delivery.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/service/MercadoPagoProxyService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backendmercadopago/src/main/java/mercadopago/example/mercado/pago/config/MercadoPagoConfiguracion.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backendmercadopago/src/main/java/mercadopago/example/mercado/pago/controller/MercadoPagoController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backendmercadopago/src/main/java/mercadopago/example/mercado/pago/service/MercadoPagoService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/config/SecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/config/MercadoPagoConfiguracion.java" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/AdminController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/AdminController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/CajeroController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/CajeroController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/CocineroController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/CocineroController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/DeliveryController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/DeliveryController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/MenuController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/MenuController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/PagoController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/PagoController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/PedidoController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/PedidoController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/SigueTuPedidoController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/SigueTuPedidoController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/UsuarioController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/UsuarioController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/model/ProductoFinal.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/model/ProductoFinal.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/model/Usuario.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/model/Usuario.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/repository/PagoRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/repository/PagoRepository.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/repository/PedidoRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/repository/PedidoRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/app.routes.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/app.routes.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-menu/admin-menu.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-menu/admin-menu.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-menu/admin-menu.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-menu/admin-menu.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-menu/admin-menu.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-menu/admin-menu.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cajero/cajero/cajero.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cajero/cajero/cajero.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cajero/cajero/cajero.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cajero/cajero/cajero.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cajero/cajero/cajero.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cajero/cajero/cajero.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cocinero/cocinero/cocinero.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cocinero/cocinero/cocinero.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cocinero/cocinero/cocinero.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cocinero/cocinero/cocinero.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cocinero/cocinero/cocinero.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cocinero/cocinero/cocinero.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/service/MercadoPagoService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/service/PedidoService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/service/PedidoService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cliente/mis-cuentas/mis-cuentas.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/mis-cuentas/mis-cuentas.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cliente/mis-datos/mis-datos.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/mis-datos/mis-datos.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cliente/mis-pedidos/mis-pedidos.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/mis-pedidos/mis-pedidos.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cliente/mis-pedidos/mis-pedidos.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/mis-pedidos/mis-pedidos.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cliente/mis-pedidos/mis-pedidos.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/mis-pedidos/mis-pedidos.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cliente/pago-exitoso/pago-exitoso.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/pago-exitoso/pago-exitoso.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cliente/pago-exitoso/pago-exitoso.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/pago-exitoso/pago-exitoso.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cliente/pago-exitoso/pago-exitoso.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/pago-exitoso/pago-exitoso.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cliente/sigue-tu-pedido/sigue-tu-pedido.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/sigue-tu-pedido/sigue-tu-pedido.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cliente/sigue-tu-pedido/sigue-tu-pedido.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/sigue-tu-pedido/sigue-tu-pedido.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cliente/sigue-tu-pedido/sigue-tu-pedido.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/sigue-tu-pedido/sigue-tu-pedido.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/index/index.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/publico/index/index.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/index/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/publico/index/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/index/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/publico/index/index.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -78,6 +93,7 @@
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
+    &quot;Application.MercadoPagoApplication.executor&quot;: &quot;Run&quot;,
     &quot;Application.SistemaApolloAngularApplication.executor&quot;: &quot;Run&quot;,
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,

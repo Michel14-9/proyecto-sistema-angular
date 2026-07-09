@@ -19,6 +19,7 @@ import jakarta.transaction.Transactional;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -877,7 +878,60 @@ public class AdminController {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error al generar el PDF");
         }
     }
+    @GetMapping("/api/menu/combos")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> obtenerCombosApi() {
+        Map<String, Object> response = new HashMap<>();
 
+        try {
+            // Obtener productos que son combos (tipo = "COMBO" o "combo")
+            List<ProductoFinal> todosLosProductos = productoFinalService.obtenerTodos();
+
+            // Filtrar solo los que tienen tipo "COMBO" (o "combo")
+            List<ProductoFinal> combos = todosLosProductos.stream()
+                    .filter(p -> p.getTipo() != null &&
+                            (p.getTipo().equalsIgnoreCase("COMBO") ||
+                                    p.getTipo().equalsIgnoreCase("combo")))
+                    .filter(ProductoFinal::isActivo) // Solo activos
+                    .collect(Collectors.toList());
+
+            // Si no hay combos, devolver los primeros 5 productos como destacados
+            if (combos.isEmpty()) {
+                combos = todosLosProductos.stream()
+                        .filter(ProductoFinal::isActivo)
+                        .limit(5)
+                        .collect(Collectors.toList());
+            }
+
+            // Convertir a la estructura que espera el frontend
+            List<Map<String, Object>> combosData = new ArrayList<>();
+            for (ProductoFinal producto : combos) {
+                Map<String, Object> combo = new HashMap<>();
+                combo.put("id", producto.getId());
+                combo.put("nombre", producto.getNombre());
+                combo.put("descripcion", producto.getDescripcion() != null ? producto.getDescripcion() : "");
+                combo.put("precio", producto.getPrecio());
+                combo.put("imagenUrl", producto.getImagenUrl() != null ? producto.getImagenUrl() : "/assets/images/default-combo.jpg");
+                combosData.add(combo);
+            }
+
+            response.put("success", true);
+            response.put("data", combosData);
+            response.put("total", combosData.size());
+
+            System.out.println("✅ Combos cargados: " + combosData.size());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.err.println("❌ Error cargando combos: " + e.getMessage());
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("message", "Error al cargar combos: " + e.getMessage());
+            response.put("data", new ArrayList<>());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
     // ============ EXPORTAR EXCEL ============
 
     @GetMapping("/exportar-excel")

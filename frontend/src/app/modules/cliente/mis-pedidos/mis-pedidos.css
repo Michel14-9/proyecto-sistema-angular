@@ -1,7 +1,5 @@
 /* src/app/modules/cliente/mis-pedidos/mis-pedidos.component.css */
 
-/* 🔍 DIAGNÓSTICO: Si ves este comentario en el inspector, el CSS se cargó */
-
 /* ======== PALETA DE COLORES ======== */
 :root {
   --naranja: #ffb74d;
@@ -10,6 +8,8 @@
   --rojo: #e53935;
   --gris: #6c757d;
   --blanco: #fafafa;
+  --verde: #28a745;
+  --azul: #007bff;
 }
 
 /* ======= PÁGINA DE PEDIDOS ======= */
@@ -111,57 +111,109 @@
 }
 
 .pedido-card .card-header {
-  background-color: var(--blanco);
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 0.75rem 1.25rem;
 }
 
 .pedido-card .card-body {
   background-color: white;
+  padding: 1.25rem;
 }
 
-/* ======= ESTADOS DE PEDIDOS ======= */
+/* ======= BORDES POR ESTADO ======= */
+.pedido-card.border-warning {
+  border-left: 4px solid #ffc107 !important;
+}
+
+.pedido-card.border-success {
+  border-left: 4px solid #28a745 !important;
+}
+
+.pedido-card.border-danger {
+  border-left: 4px solid #dc3545 !important;
+}
+
+.pedido-card.border-secondary {
+  border-left: 4px solid #6c757d !important;
+}
+
+.pedido-card.border-primary {
+  border-left: 4px solid #007bff !important;
+}
+
+/* ======= HEADERS POR ESTADO ======= */
+.card-header.bg-warning {
+  background-color: #ffc107 !important;
+  color: #212529 !important;
+}
+
+.card-header.bg-success {
+  background-color: #28a745 !important;
+  color: white !important;
+}
+
+.card-header.bg-danger {
+  background-color: #dc3545 !important;
+  color: white !important;
+}
+
+.card-header.bg-secondary {
+  background-color: #6c757d !important;
+  color: white !important;
+}
+
+.card-header.bg-primary {
+  background-color: #007bff !important;
+  color: white !important;
+}
+
+.card-header.bg-warning .text-white,
+.card-header.bg-success .text-white,
+.card-header.bg-danger .text-white,
+.card-header.bg-secondary .text-white,
+.card-header.bg-primary .text-white {
+  color: white !important;
+}
+
+/* ======= BADGES DE ESTADO ======= */
 .estado-badge {
-  padding: 0.3rem 0.75rem;
+  padding: 0.4rem 0.9rem;
   border-radius: 20px;
   font-size: 0.8rem;
   font-weight: 600;
   white-space: nowrap;
   display: inline-block;
+  transition: all 0.3s ease;
 }
 
 .estado-pendiente {
   background: #fff3cd;
   color: #856404;
+  border: 1px solid #ffc107;
 }
 
 .estado-pagado {
   background: #d4edda;
   color: #155724;
+  border: 1px solid #28a745;
 }
 
 .estado-entregado {
   background: #cce5ff;
   color: #004085;
+  border: 1px solid #007bff;
 }
 
 .estado-rechazado {
   background: #f8d7da;
   color: #721c24;
+  border: 1px solid #dc3545;
 }
 
 .estado-cancelado {
   background: #e2e3e5;
   color: #383d41;
-}
-
-.estado-procesando {
-  background: #d1ecf1;
-  color: #0c5460;
-}
-
-.estado-enviado {
-  background: #d6d8db;
-  color: #383d41;
+  border: 1px solid #6c757d;
 }
 
 /* ======= ALERTAS ======= */
@@ -250,15 +302,14 @@
   color: #212529 !important;
 }
 
-/* ======= LINK DE INICIO DE SESIÓN ======= */
-.alert-link {
-  color: var(--naranja-oscuro);
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.alert-link:hover {
-  text-decoration: underline;
+/* ======= LEYENDA ======= */
+.badge.estado-pendiente,
+.badge.estado-pagado,
+.badge.estado-entregado,
+.badge.estado-rechazado,
+.badge.estado-cancelado {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.8rem;
 }
 
 /* ======= ANIMACIONES ======= */
@@ -312,12 +363,16 @@
     text-align: center;
   }
 
-  .pedido-card .card-body .col-md-8 {
+  .pedido-card .card-body .col-md-7 {
     margin-bottom: 1rem;
   }
 
-  .pedido-card .card-body .col-md-4 {
+  .pedido-card .card-body .col-md-5 {
     text-align: center !important;
+  }
+
+  .pedido-card .card-body .d-flex.justify-content-end {
+    justify-content: center !important;
   }
 
   .estado-badge {
@@ -373,4 +428,71 @@
     font-size: 0.85rem;
     padding: 0.4rem 0.8rem;
   }
+}
+/* src/app/modules/cliente/mis-pedidos/mis-pedidos.component.css */
+
+/* ======= NUEVOS ESTADOS ======= */
+.estado-listo {
+  background: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #17a2b8;
+}
+
+.estado-en-camino {
+  background: #ffe5d0;
+  color: #e65c00;
+  border: 1px solid #fd7e14;
+}
+
+/* ======= BORDES NUEVOS ======= */
+.border-info {
+  border-left: 4px solid #17a2b8 !important;
+}
+
+.border-orange {
+  border-left: 4px solid #fd7e14 !important;
+}
+
+.border-purple {
+  border-left: 4px solid #6f42c1 !important;
+}
+
+/* ======= HEADERS NUEVOS ======= */
+.bg-info {
+  background-color: #17a2b8 !important;
+  color: white !important;
+}
+
+.bg-orange {
+  background-color: #fd7e14 !important;
+  color: white !important;
+}
+
+.bg-purple {
+  background-color: #6f42c1 !important;
+  color: white !important;
+}
+
+/* ======= BADGES NUEVOS ======= */
+.bg-orange {
+  background-color: #fd7e14 !important;
+  color: white !important;
+}
+
+.bg-purple {
+  background-color: #6f42c1 !important;
+  color: white !important;
+}
+
+/* ======= LEYENDA ESTADOS NUEVOS ======= */
+.badge.estado-listo {
+  background: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #17a2b8;
+}
+
+.badge.estado-en-camino {
+  background: #ffe5d0;
+  color: #e65c00;
+  border: 1px solid #fd7e14;
 }

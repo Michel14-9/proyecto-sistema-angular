@@ -12,6 +12,7 @@ import com.sistemaapolloAngular.sistema_apolloAngular.model.Pedido;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.Usuario;
 import com.sistemaapolloAngular.sistema_apolloAngular.repository.PedidoRepository;
 import com.sistemaapolloAngular.sistema_apolloAngular.repository.UsuarioRepository;
+import com.sistemaapolloAngular.sistema_apolloAngular.service.PedidoService; // ✅ NUEVO
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -43,6 +44,9 @@ public class CajeroController {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    @Autowired
+    private PedidoService pedidoService; // ✅ NUEVO
+
 
     @GetMapping("/pedidos-pendientes")
     @ResponseBody
@@ -53,6 +57,7 @@ public class CajeroController {
             List<Pedido> pedidos = pedidoRepository.findAllWithItemsAndProducts()
                     .stream()
                     .filter(p -> "PENDIENTE".equals(p.getEstado()))
+                    .filter(p -> !"WEB".equals(p.getCanal())) // ✅ excluye pedidos web (los confirma MercadoPago solo)
                     .collect(Collectors.toList());
 
             List<Map<String, Object>> pedidosDTO = new ArrayList<>();
@@ -69,7 +74,7 @@ public class CajeroController {
                 pedidoDTO.put("tipoEntrega", pedido.getTipoEntrega());
                 pedidoDTO.put("direccionEntrega", pedido.getDireccionEntrega());
                 pedidoDTO.put("observaciones", pedido.getObservaciones());
-
+                pedidoDTO.put("canal", pedido.getCanal()); // ✅ útil para el frontend distinguir
 
                 if (pedido.getUsuario() != null) {
                     Usuario usuario = pedido.getUsuario();
@@ -82,7 +87,6 @@ public class CajeroController {
                     pedidoDTO.put("cliente", null);
                 }
 
-                // Items del pedido
                 List<Map<String, Object>> itemsDTO = new ArrayList<>();
                 if (pedido.getItems() != null) {
                     for (ItemPedido item : pedido.getItems()) {
@@ -110,13 +114,78 @@ public class CajeroController {
         }
     }
 
+    // ✅ NUEVO: CREAR PEDIDO PRESENCIAL (cliente dicta su pedido en mostrador)
+    @PostMapping("/crear-pedido-presencial")
+    @ResponseBody
+    @Transactional
+    public ResponseEntity<?> crearPedidoPresencial(@RequestBody Map<String, Object> request,
+                                                   Authentication authentication) {
+        try {
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(401).body(Map.of(
+                        "status", "ERROR",
+                        "message", "No autenticado"
+                ));
+            }
+
+            boolean hasCajeroRole = authentication.getAuthorities().stream()
+                    .anyMatch(grantedAuthority ->
+                            grantedAuthority.getAuthority().equals("ROLE_CAJERO"));
+
+            if (!hasCajeroRole) {
+                return ResponseEntity.status(403).body(Map.of(
+                        "status", "ERROR",
+                        "message", "No tiene permisos de cajero"
+                ));
+            }
+
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> itemsRequest = (List<Map<String, Object>>) request.get("items");
+
+            if (itemsRequest == null || itemsRequest.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", "ERROR",
+                        "message", "El pedido debe tener al menos un producto"
+                ));
+            }
+
+            String metodoPago = (String) request.getOrDefault("metodoPago", "EFECTIVO");
+            String tipoEntrega = (String) request.getOrDefault("tipoEntrega", "LOCAL");
+            String nombreCliente = (String) request.get("nombreCliente");
+            String telefonoCliente = (String) request.get("telefonoCliente");
+            String observaciones = (String) request.get("observaciones");
+
+            Pedido pedido = pedidoService.crearPedidoPresencial(
+                    itemsRequest, metodoPago, tipoEntrega, nombreCliente, telefonoCliente, observaciones);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "SUCCESS");
+            response.put("message", "Pedido presencial creado correctamente");
+            response.put("pedidoId", pedido.getId());
+            response.put("numeroPedido", pedido.getNumeroPedido());
+            response.put("total", pedido.getTotal());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of(
+                    "status", "ERROR",
+                    "message", "Error: " + e.getMessage()
+            ));
+        }
+    }
+
     // ✅ OBTENER MÉTRICAS DEL DÍA - Con @Transactional
     @GetMapping("/metricas-hoy")
     @ResponseBody
     @Transactional
     public ResponseEntity<?> obtenerMetricasHoy() {
         try {
-            List<Pedido> pedidosPendientes = pedidoRepository.findByEstadoOrderByFechaDesc("PENDIENTE");
+            List<Pedido> pedidosPendientes = pedidoRepository.findByEstadoOrderByFechaDesc("PENDIENTE")
+                    .stream()
+                    .filter(p -> !"WEB".equals(p.getCanal())) // ✅ consistente con la bandeja
+                    .collect(Collectors.toList());
 
             LocalDate hoy = LocalDate.now();
             LocalDateTime hoyInicio = hoy.atStartOfDay();

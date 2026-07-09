@@ -6,6 +6,8 @@
       <list>
         <option value="$PROJECT_DIR$/pom.xml" />
         <option value="$PROJECT_DIR$/backend/pom.xml" />
+        <option value="$PROJECT_DIR$/backendmercadopago/backendmercadopago/pom.xml" />
+        <option value="$PROJECT_DIR$/backendmercadopago/pom.xml" />
       </list>
     </option>
   </component>

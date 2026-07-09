@@ -1,12 +1,13 @@
-// src/app/modules/cliente/sigue-tu-pedido/sigue-tu-pedido.ts
-import { Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
 
 interface ItemPedido {
+  id?: number;
+  productoId?: number;
   nombreProducto?: string;
   nombre?: string;
   cantidad: number;
@@ -34,8 +35,9 @@ interface Pedido {
   styleUrls: ['./sigue-tu-pedido.css'],
   encapsulation: ViewEncapsulation.None
 })
-export class SigueTuPedidoComponent implements OnInit {
+export class SigueTuPedidoComponent implements OnInit, OnDestroy {
   private apiUrl = 'http://localhost:8080';
+  private pollingInterval: any = null;
 
   numeroPedido: string = '';
   canalPedido: string = 'WEB';
@@ -45,10 +47,11 @@ export class SigueTuPedidoComponent implements OnInit {
   errorMessage: string = '';
   pedido: Pedido | null = null;
 
-  // Autenticación
   isAuthenticated: boolean = false;
   username: string = '';
   totalCarrito: number = 0;
+
+  estadosReales = ['PENDIENTE', 'PAGADO', 'LISTO', 'EN_CAMINO', 'RECHAZADO', 'ENTREGADO'];
 
   constructor(
     private http: HttpClient,
@@ -66,9 +69,8 @@ export class SigueTuPedidoComponent implements OnInit {
       return;
     }
 
-    // Verificar si hay número de pedido en la URL
     this.route.queryParams.subscribe(params => {
-      const numero = params['numero'];
+      const numero = params['numero'] || params['pedidoId'];
       if (numero) {
         this.numeroPedido = numero;
         setTimeout(() => {
@@ -78,10 +80,8 @@ export class SigueTuPedidoComponent implements OnInit {
     });
   }
 
-  private getHeaders(): HttpHeaders {
-    let headers = new HttpHeaders();
-    headers = headers.set('Content-Type', 'application/json');
-    return headers;
+  ngOnDestroy(): void {
+    this.detenerPolling();
   }
 
   buscarPedido(): void {
@@ -94,30 +94,29 @@ export class SigueTuPedidoComponent implements OnInit {
     this.errorMessage = '';
     this.pedidoEncontrado = false;
     this.pedido = null;
+    this.detenerPolling();
 
     console.log('🔍 Buscando pedido:', this.numeroPedido);
 
-    const body = {
-      numeroPedido: this.numeroPedido.trim().toUpperCase(),
-      canal: this.canalPedido
-    };
+    const numeroLimpio = this.numeroPedido.trim().toUpperCase();
+    const url = `${this.apiUrl}/api/sigue-tu-pedido/buscar?numeroPedido=${numeroLimpio}&canalPedido=${this.canalPedido}`;
 
-    this.http.post(`${this.apiUrl}/api/pedidos/buscar`, body, {
-      headers: this.getHeaders(),
+    this.http.get(url, {
       withCredentials: true
     }).subscribe({
       next: (response: any) => {
         console.log('📦 Respuesta del servidor:', response);
         this.buscando = false;
 
-        if (response && response.success && response.data) {
-          this.pedido = response.data;
-          this.pedidoEncontrado = true;
-          this.errorMessage = '';
-        } else if (response && response.pedido) {
+        if (response && response.success && response.pedido) {
           this.pedido = response.pedido;
           this.pedidoEncontrado = true;
           this.errorMessage = '';
+
+          const pedidoId = response.pedido.id;
+          if (pedidoId) {
+            this.iniciarPolling(pedidoId);
+          }
         } else {
           this.errorMessage = response?.message || 'No se encontró el pedido';
           this.pedidoEncontrado = false;
@@ -134,7 +133,7 @@ export class SigueTuPedidoComponent implements OnInit {
           this.errorMessage = '⚠️ Debes iniciar sesión para ver tus pedidos';
           this.isAuthenticated = false;
         } else if (error.status === 404) {
-          this.errorMessage = 'No se encontró un pedido con ese número';
+          this.errorMessage = 'No se encontró un pedido con ese número. Verifica que el número sea correcto.';
         } else {
           this.errorMessage = error.error?.message || 'Error al buscar el pedido';
         }
@@ -142,48 +141,161 @@ export class SigueTuPedidoComponent implements OnInit {
     });
   }
 
+  iniciarPolling(pedidoId: number): void {
+    this.detenerPolling();
+
+    console.log('🔄 Iniciando polling en tiempo real para pedido ID:', pedidoId);
+
+    this.pollingInterval = setInterval(() => {
+      this.actualizarEstadoPedido(pedidoId);
+    }, 5000);
+  }
+
+  actualizarEstadoPedido(pedidoId: number): void {
+    const url = `${this.apiUrl}/api/pedidos/${pedidoId}/estado`;
+
+    this.http.get(url, {
+      withCredentials: true
+    }).subscribe({
+      next: (response: any) => {
+        if (response && response.estado) {
+          const estadoAnterior = this.pedido?.estado;
+          const estadoNuevo = response.estado;
+
+          if (estadoAnterior !== estadoNuevo && this.pedido) {
+            console.log(`🔄 Estado actualizado: ${estadoAnterior} → ${estadoNuevo}`);
+            this.pedido.estado = estadoNuevo;
+            this.pedido.total = response.total || this.pedido.total;
+            this.mostrarCambioEstado(estadoAnterior, estadoNuevo);
+
+            if (estadoNuevo === 'ENTREGADO' || estadoNuevo === 'RECHAZADO') {
+              console.log('⏹️ Pedido finalizado, deteniendo polling');
+              this.detenerPolling();
+            }
+          }
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error actualizando estado:', error);
+      }
+    });
+  }
+
+  mostrarCambioEstado(estadoAnterior: string | undefined, estadoNuevo: string): void {
+    const mensajes: { [key: string]: string } = {
+      'PENDIENTE': '⏳ Pedido creado, esperando pago...',
+      'PAGADO': '✅ ¡Pago confirmado! Tu pedido está en preparación',
+      'LISTO': '📋 ¡Tu pedido está listo para entrega!',
+      'EN_CAMINO': '🚚 ¡Tu pedido está en camino!',
+      'RECHAZADO': '❌ El pago fue rechazado',
+      'ENTREGADO': '📦 ¡Tu pedido ha sido entregado! 🎉'
+    };
+
+    const iconos: { [key: string]: string } = {
+      'PENDIENTE': '⏳',
+      'PAGADO': '✅',
+      'LISTO': '📋',
+      'EN_CAMINO': '🚚',
+      'RECHAZADO': '❌',
+      'ENTREGADO': '📦'
+    };
+
+    const mensaje = mensajes[estadoNuevo] || `Estado actualizado: ${estadoNuevo}`;
+    const icono = iconos[estadoNuevo] || '📌';
+
+    this.mostrarNotificacion(`${icono} ${mensaje}`, 'info');
+
+    if (estadoNuevo === 'ENTREGADO') {
+      setTimeout(() => {
+        this.mostrarNotificacion('🎉 ¡Pedido entregado exitosamente! Gracias por tu compra', 'success');
+      }, 1000);
+    }
+  }
+
+  detenerPolling(): void {
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = null;
+      console.log('⏹️ Polling detenido');
+    }
+  }
+
+  // ========== MÉTODOS DE ESTADOS ==========
+
   getEstadoClase(estado: string): string {
     const clases: { [key: string]: string } = {
-      'PENDIENTE': 'bg-secondary',
-      'CONFIRMADO': 'bg-warning',
-      'PAGADO': 'bg-warning',
-      'PREPARACION': 'bg-primary',
-      'EN_CAMINO': 'bg-info',
-      'ENTREGADO': 'bg-success',
-      'RECHAZADO': 'bg-danger',
-      'CANCELADO': 'bg-danger'
+      'PENDIENTE': 'estado-pendiente',
+      'PAGADO': 'estado-pagado',
+      'LISTO': 'estado-listo',
+      'EN_CAMINO': 'estado-en-camino',
+      'RECHAZADO': 'estado-rechazado',
+      'ENTREGADO': 'estado-entregado'
     };
-    return clases[estado?.toUpperCase()] || 'bg-secondary';
+    return clases[estado?.toUpperCase()] || 'estado-pendiente';
   }
 
   getEstadoTexto(estado: string): string {
     const textos: { [key: string]: string } = {
-      'PENDIENTE': 'Pendiente',
-      'CONFIRMADO': 'Pagado',
+      'PENDIENTE': 'Pendiente de pago',
       'PAGADO': 'Pagado',
-      'PREPARACION': 'En Preparación',
-      'EN_CAMINO': 'En Camino',
-      'ENTREGADO': 'Entregado',
+      'LISTO': 'Listo para entrega',
+      'EN_CAMINO': 'En camino',
       'RECHAZADO': 'Rechazado',
-      'CANCELADO': 'Cancelado'
+      'ENTREGADO': 'Entregado'
     };
     return textos[estado?.toUpperCase()] || estado || 'Desconocido';
   }
 
+  getEstadoIcono(estado: string): string {
+    const iconos: { [key: string]: string } = {
+      'PENDIENTE': '⏳',
+      'PAGADO': '✅',
+      'LISTO': '📋',
+      'EN_CAMINO': '🚚',
+      'RECHAZADO': '❌',
+      'ENTREGADO': '📦'
+    };
+    return iconos[estado?.toUpperCase()] || '⏳';
+  }
+
+  getEstadoBadgeClass(estado: string): string {
+    const badges: { [key: string]: string } = {
+      'PENDIENTE': 'bg-warning text-dark',
+      'PAGADO': 'bg-success text-white',
+      'LISTO': 'bg-info text-white',
+      'EN_CAMINO': 'bg-orange text-white',
+      'RECHAZADO': 'bg-danger text-white',
+      'ENTREGADO': 'bg-purple text-white'
+    };
+    return badges[estado?.toUpperCase()] || 'bg-warning text-dark';
+  }
+
   getPorcentajeEstado(estado: string): number {
-    const estados = ['PENDIENTE', 'CONFIRMADO', 'PAGADO', 'PREPARACION', 'EN_CAMINO', 'ENTREGADO'];
+    const estados = ['PENDIENTE', 'PAGADO', 'LISTO', 'EN_CAMINO', 'ENTREGADO'];
     const index = estados.indexOf(estado?.toUpperCase());
     if (index === -1) return 0;
-    const porcentajes = [0, 20, 40, 60, 80, 100];
+    const porcentajes = [0, 25, 50, 75, 100];
     return porcentajes[index] || 0;
   }
 
   isEstadoActivo(estadoActual: string, estadoComparar: string): boolean {
-    const estados = ['PENDIENTE', 'CONFIRMADO', 'PAGADO', 'PREPARACION', 'EN_CAMINO', 'ENTREGADO'];
+    const estados = ['PENDIENTE', 'PAGADO', 'LISTO', 'EN_CAMINO', 'ENTREGADO'];
     const actualIndex = estados.indexOf(estadoActual?.toUpperCase());
     const compararIndex = estados.indexOf(estadoComparar);
     if (actualIndex === -1 || compararIndex === -1) return false;
     return actualIndex >= compararIndex;
+  }
+
+  getMensajeEstado(estado: string): string {
+    const mensajes: { [key: string]: string } = {
+      'PENDIENTE': 'Estamos esperando la confirmación de tu pago',
+      'PAGADO': 'Tu pago ha sido confirmado, estamos preparando tu pedido',
+      'LISTO': 'Tu pedido está listo y será enviado pronto',
+      'EN_CAMINO': 'Tu pedido está en camino a tu dirección',
+      'RECHAZADO': 'El pago fue rechazado, intenta nuevamente',
+      'ENTREGADO': '¡Tu pedido ha sido entregado exitosamente!'
+    };
+    return mensajes[estado?.toUpperCase()] || 'Pedido en proceso';
   }
 
   formatearFecha(fecha: string): string {
@@ -203,6 +315,8 @@ export class SigueTuPedidoComponent implements OnInit {
     }
   }
 
+  // ========== ✅ ACCIONES ==========
+
   copiarNumeroPedido(): void {
     const numero = this.pedido?.numeroPedido || this.pedido?.id?.toString() || '';
     if (!numero) {
@@ -211,43 +325,84 @@ export class SigueTuPedidoComponent implements OnInit {
     }
 
     navigator.clipboard.writeText(numero).then(() => {
-      this.mostrarNotificacion('Número de pedido copiado: ' + numero, 'success');
+      this.mostrarNotificacion('📋 Número de pedido copiado: ' + numero, 'success');
     }).catch(() => {
-      // Fallback
       const input = document.createElement('input');
       input.value = numero;
       document.body.appendChild(input);
       input.select();
       document.execCommand('copy');
       document.body.removeChild(input);
-      this.mostrarNotificacion('Número de pedido copiado: ' + numero, 'success');
+      this.mostrarNotificacion('📋 Número de pedido copiado: ' + numero, 'success');
     });
   }
 
   repetirPedido(): void {
-    if (!this.pedido) {
-      this.mostrarNotificacion('No hay pedido para repetir', 'error');
+    if (!this.pedido || !this.pedido.items || this.pedido.items.length === 0) {
+      this.mostrarNotificacion('No hay productos para repetir', 'error');
       return;
     }
 
-    this.mostrarNotificacion('Preparando para repetir pedido...', 'info');
-    setTimeout(() => {
-      this.router.navigate(['/menu'], {
-        queryParams: { repetir: this.pedido?.id }
-      });
-    }, 1000);
+    this.mostrarNotificacion('🔄 Agregando productos al carrito...', 'info');
+
+    const productos = this.pedido.items.map(item => ({
+      productoId: item.productoId || item.id,
+      cantidad: item.cantidad
+    }));
+
+    const idsValidos = productos.filter(p => p.productoId);
+    if (idsValidos.length === 0) {
+      this.mostrarNotificacion('No se pudieron identificar los productos', 'error');
+      return;
+    }
+
+    this.http.post(`${this.apiUrl}/api/carrito/agregar-multiples`, { items: idsValidos }, {
+      withCredentials: true
+    }).subscribe({
+      next: () => {
+        this.mostrarNotificacion('✅ Productos agregados al carrito. ¡Ve a pagar!', 'success');
+        setTimeout(() => {
+          this.router.navigate(['/carrito']);
+        }, 1500);
+      },
+      error: (error) => {
+        console.error('❌ Error al repetir pedido:', error);
+        this.mostrarNotificacion('Redirigiendo al menú...', 'info');
+        setTimeout(() => {
+          this.router.navigate(['/menu'], {
+            queryParams: { repetir: this.pedido?.id }
+          });
+        }, 1000);
+      }
+    });
   }
 
+  /**
+   * ✅ Descargar comprobante en PDF
+   */
   descargarComprobante(): void {
     if (!this.pedido) {
       this.mostrarNotificacion('No hay pedido para descargar', 'error');
       return;
     }
 
-    this.mostrarNotificacion('Generando comprobante...', 'info');
-    setTimeout(() => {
-      window.open(`${this.apiUrl}/api/pedidos/${this.pedido?.id}/comprobante`, '_blank');
-    }, 1000);
+    this.mostrarNotificacion('📄 Generando comprobante PDF...', 'info');
+
+    // ✅ Abrir el PDF en nueva pestaña para descargar
+    const url = `${this.apiUrl}/api/sigue-tu-pedido/${this.pedido.id}/comprobante`;
+    window.open(url, '_blank');
+  }
+
+  contactarSoporte(): void {
+    if (!this.pedido) {
+      this.mostrarNotificacion('No hay pedido para consultar', 'error');
+      return;
+    }
+
+    const numeroPedido = this.pedido.numeroPedido || this.pedido.id;
+    const mensaje = `Hola, necesito ayuda con mi pedido #${numeroPedido}`;
+    const url = `https://wa.me/51123456789?text=${encodeURIComponent(mensaje)}`;
+    window.open(url, '_blank');
   }
 
   mostrarNotificacion(mensaje: string, tipo: string = 'info'): void {
@@ -297,6 +452,7 @@ export class SigueTuPedidoComponent implements OnInit {
   }
 
   logout(): void {
+    this.detenerPolling();
     this.authService.logout();
     this.router.navigate(['/login']);
   }
