@@ -5,6 +5,7 @@ import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
+import { LayoutService } from '../../../core/services/layout.service';
 
 interface Pedido {
   id: number;
@@ -17,6 +18,28 @@ interface Pedido {
   direccionEntrega: string;
   cliente: any;
   items: any[];
+  origen?: string;  // ✅ 'PRESENCIAL' | 'WEB' | 'ONLINE' — viene del backend
+  canal?: string;   // ✅ 'CAJA' | 'WEB'
+}
+
+// ✅ Helper: true si el pedido fue creado en caja (no pasa por cocina ni delivery)
+function esPedidoPresencial(pedido: Pedido | null): boolean {
+  return !!pedido && pedido.origen === 'PRESENCIAL';
+}
+
+interface Producto {
+  id: number;
+  nombre: string;
+  precio: number;
+  tipo: string;
+}
+
+interface ProductoSeleccionado {
+  productoId: number;
+  nombre: string;
+  precio: number;
+  cantidad: number;
+  subtotal: number;
 }
 
 @Component({
@@ -30,8 +53,11 @@ interface Pedido {
 export class CajeroComponent implements OnInit, OnDestroy {
   private apiUrl = 'http://localhost:8080';
 
+  // Pedidos
   pedidosPendientes: Pedido[] = [];
   pedidoSeleccionado: Pedido | null = null;
+
+  // Estadísticas
   estadisticas: any = {
     pendientes: 0,
     pagadosHoy: 0,
@@ -54,6 +80,17 @@ export class CajeroComponent implements OnInit, OnDestroy {
   tipoToast: string = 'info';
   mostrarToast: boolean = false;
 
+  // Pedido Presencial
+  productosDisponibles: Producto[] = [];
+  productosSeleccionados: ProductoSeleccionado[] = [];
+  nuevoProducto: any = { productoId: null, cantidad: 1 };
+  nombreCliente: string = '';
+  telefonoCliente: string = '';
+  metodoPago: string = 'EFECTIVO';
+  tipoEntrega: string = 'LOCAL';
+  mostrarFormularioProducto: boolean = false;
+  creandoPedido: boolean = false;
+
   // Intervalos
   private intervalId: any;
   private recargaId: any;
@@ -61,7 +98,8 @@ export class CajeroComponent implements OnInit, OnDestroy {
   constructor(
     private http: HttpClient,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private layoutService: LayoutService
   ) {}
 
   ngOnInit(): void {
@@ -73,6 +111,11 @@ export class CajeroComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Ocultar header y footer global
+    this.layoutService.hideHeaderAndFooter();
+
+    // Cargar datos
+    this.cargarProductos();
     this.cargarPedidosPendientes();
     this.actualizarHoraYFecha();
 
@@ -88,6 +131,9 @@ export class CajeroComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    // Restaurar header y footer global
+    this.layoutService.showHeaderAndFooter();
+
     if (this.intervalId) {
       clearInterval(this.intervalId);
     }
@@ -117,6 +163,43 @@ export class CajeroComponent implements OnInit, OnDestroy {
     return headers;
   }
 
+  // ==================== CARGAR PRODUCTOS ====================
+  cargarProductos(): void {
+    console.log('🔄 Cargando productos...');
+
+    // ✅ Usar /cajero/productos
+    this.http.get(`${this.apiUrl}/cajero/productos`, {
+      headers: this.getHeaders(),
+      withCredentials: true
+    }).subscribe({
+      next: (response: any) => {
+        console.log('📦 Productos cargados:', response);
+        if (Array.isArray(response)) {
+          this.productosDisponibles = response;
+        } else if (response && response.success) {
+          this.productosDisponibles = response.data || [];
+        } else {
+          this.productosDisponibles = [];
+        }
+        if (this.productosDisponibles.length === 0) {
+          console.warn('⚠️ No hay productos disponibles');
+          this.mostrarToastInfo('No hay productos disponibles para crear pedidos');
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error cargando productos:', error);
+        this.productosDisponibles = [];
+        if (error.status === 401 || error.status === 403) {
+          this.mostrarToastError('Sesión expirada. Redirigiendo al login...');
+          setTimeout(() => this.router.navigate(['/login']), 2000);
+        } else {
+          this.mostrarToastError('Error al cargar productos. Verifica que tengas productos creados.');
+        }
+      }
+    });
+  }
+
+  // ==================== PEDIDOS PENDIENTES ====================
   cargarPedidosPendientes(): void {
     console.log('🔄 Cargando pedidos pendientes...');
 
@@ -169,12 +252,12 @@ export class CajeroComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('❌ Error cargando métricas:', error);
-        // Calcular localmente
         this.estadisticas.pendientes = this.pedidosPendientes.length;
       }
     });
   }
 
+  // ==================== DETALLE PEDIDO ====================
   mostrarDetallePedido(pedido: Pedido): void {
     this.pedidoSeleccionado = pedido;
   }
@@ -192,7 +275,144 @@ export class CajeroComponent implements OnInit, OnDestroy {
     return actualIndex >= compararIndex;
   }
 
-  // === MODAL PAGO ===
+  // ✅ Los pedidos presenciales (origen === 'PRESENCIAL') no pasan por cocina
+  // ni tienen delivery: el cliente pide y retira en el mismo mostrador.
+  // Se usa en el HTML para ocultar la barra de 4 estados y el bloque
+  // Delivery/Recojo cuando corresponde a un pedido de caja.
+  esPresencial(pedido: Pedido | null): boolean {
+    return !!pedido && pedido.origen === 'PRESENCIAL';
+  }
+
+  // ==================== PEDIDO PRESENCIAL - VALIDACIONES ====================
+  agregarProductoSeleccionado(): void {
+    // ✅ Validar producto seleccionado
+    if (!this.nuevoProducto.productoId) {
+      this.mostrarToastError('⚠️ Selecciona un producto de la lista');
+      return;
+    }
+
+    // ✅ Validar cantidad
+    if (!this.nuevoProducto.cantidad || this.nuevoProducto.cantidad < 1) {
+      this.mostrarToastError('⚠️ La cantidad debe ser mayor a 0');
+      return;
+    }
+
+    // ✅ Validar que el producto exista
+    // Gracias a [ngValue] en el HTML, nuevoProducto.productoId ahora es un number real,
+    // por lo que esta comparación estricta funciona correctamente.
+    const producto = this.productosDisponibles.find(p => p.id === this.nuevoProducto.productoId);
+    if (!producto) {
+      this.mostrarToastError('⚠️ Producto no encontrado');
+      return;
+    }
+
+    // ✅ Agregar o actualizar producto
+    const existente = this.productosSeleccionados.find(p => p.productoId === producto.id);
+    if (existente) {
+      existente.cantidad += this.nuevoProducto.cantidad;
+      existente.subtotal = existente.precio * existente.cantidad;
+      this.mostrarToastExito(`✅ Cantidad actualizada: ${existente.nombre} x${existente.cantidad}`);
+    } else {
+      this.productosSeleccionados.push({
+        productoId: producto.id,
+        nombre: producto.nombre,
+        precio: producto.precio,
+        cantidad: this.nuevoProducto.cantidad,
+        subtotal: producto.precio * this.nuevoProducto.cantidad
+      });
+      this.mostrarToastExito(`✅ ${producto.nombre} agregado al pedido`);
+    }
+
+    // ✅ Limpiar selección
+    this.nuevoProducto = { productoId: null, cantidad: 1 };
+  }
+
+  eliminarProductoSeleccionado(index: number): void {
+    const producto = this.productosSeleccionados[index];
+    if (producto) {
+      this.productosSeleccionados.splice(index, 1);
+      this.mostrarToastInfo(`❌ ${producto.nombre} eliminado del pedido`);
+    }
+  }
+
+  calcularTotalPresencial(): number {
+    return this.productosSeleccionados.reduce((sum, item) => sum + item.subtotal, 0);
+  }
+
+  // ✅ Crear Pedido Presencial con validaciones (SIN observaciones)
+  crearPedidoPresencial(): void {
+    // ✅ Validar que haya productos
+    if (this.productosSeleccionados.length === 0) {
+      this.mostrarToastError('⚠️ Agrega al menos un producto');
+      return;
+    }
+
+    // ✅ Validar nombre del cliente
+    if (!this.nombreCliente || this.nombreCliente.trim() === '') {
+      this.mostrarToastError('⚠️ Ingresa el nombre del cliente');
+      return;
+    }
+
+    // ✅ Validar teléfono (opcional pero sugerido)
+    if (this.telefonoCliente && this.telefonoCliente.trim() !== '' && !/^\d{9}$/.test(this.telefonoCliente.trim())) {
+      this.mostrarToastError('⚠️ El teléfono debe tener 9 dígitos');
+      return;
+    }
+
+    // ✅ Evitar doble envío
+    if (this.creandoPedido) {
+      return;
+    }
+
+    this.creandoPedido = true;
+
+    const pedidoData = {
+      items: this.productosSeleccionados.map(item => ({
+        productoId: item.productoId,
+        cantidad: item.cantidad
+      })),
+      metodoPago: this.metodoPago,
+      tipoEntrega: this.tipoEntrega,
+      nombreCliente: this.nombreCliente.trim(),
+      telefonoCliente: this.telefonoCliente?.trim() || ''
+    };
+
+    console.log('📤 Creando pedido presencial:', pedidoData);
+
+    this.http.post(`${this.apiUrl}/cajero/crear-pedido-presencial`, pedidoData, {
+      headers: this.getHeaders(),
+      withCredentials: true
+    }).subscribe({
+      next: (response: any) => {
+        console.log('✅ Pedido creado:', response);
+        this.creandoPedido = false;
+        this.mostrarToastExito(`✅ Pedido #${response.numeroPedido} creado exitosamente`);
+
+        // ✅ Limpiar formulario
+        this.productosSeleccionados = [];
+        this.nombreCliente = '';
+        this.telefonoCliente = '';
+        this.metodoPago = 'EFECTIVO';
+        this.tipoEntrega = 'LOCAL';
+
+        // ✅ Recargar pedidos pendientes
+        this.cargarPedidosPendientes();
+      },
+      error: (error) => {
+        console.error('❌ Error creando pedido:', error);
+        this.creandoPedido = false;
+        let mensaje = 'Error al crear pedido';
+        if (error.error && error.error.message) {
+          mensaje = error.error.message;
+        } else if (error.error && typeof error.error === 'string') {
+          mensaje = error.error;
+        }
+        this.mostrarToastError('❌ ' + mensaje);
+      }
+    });
+  }
+
+  // ==================== MODAL PAGO ====================
   abrirModalPago(): void {
     if (!this.pedidoSeleccionado) return;
     const modal = document.getElementById('modalConfirmarPago');
@@ -226,23 +446,38 @@ export class CajeroComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (response: any) => {
         console.log('✅ Respuesta:', response);
-        this.mostrarToastExito('Pedido marcado como PAGADO exitosamente');
+        this.mostrarToastExito('✅ Pedido marcado como PAGADO. Abriendo boleta...');
+
+        // ✅ FIX: responseType es 'text', así que la respuesta llega como
+        // string JSON crudo. Hay que parsearla para leer boletaPath.
+        try {
+          const data = JSON.parse(response);
+          if (data.boletaPath) {
+            // ✅ Abre la boleta PDF en una pestaña nueva, lista para imprimir.
+            // Reutiliza el endpoint GET /cajero/boletas/{filename} que ya
+            // expone el backend (servirBoleta en CajeroController).
+            window.open(`${this.apiUrl}/cajero/boletas/${data.boletaPath}`, '_blank');
+          }
+        } catch (parseError) {
+          console.error('⚠️ No se pudo parsear la respuesta para abrir la boleta:', parseError);
+        }
+
         this.cargarPedidosPendientes();
         this.ocultarDetalle();
       },
       error: (error) => {
         console.error('❌ Error marcando como pagado:', error);
         if (error.status === 401 || error.status === 403) {
-          this.mostrarToastError('Sesión expirada. Redirigiendo...');
+          this.mostrarToastError('⚠️ Sesión expirada. Redirigiendo...');
           setTimeout(() => this.router.navigate(['/login']), 2000);
         } else {
-          this.mostrarToastError(error.error || 'Error al marcar como pagado');
+          this.mostrarToastError('❌ ' + (error.error || 'Error al marcar como pagado'));
         }
       }
     });
   }
 
-  // === MODAL CANCELAR ===
+  // ==================== MODAL CANCELAR ====================
   abrirModalCancelar(): void {
     if (!this.pedidoSeleccionado) return;
     this.motivoCancelacion = '';
@@ -286,23 +521,23 @@ export class CajeroComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (response: any) => {
         console.log('✅ Respuesta:', response);
-        this.mostrarToastExito('Pedido cancelado exitosamente');
+        this.mostrarToastExito('✅ Pedido cancelado exitosamente');
         this.cargarPedidosPendientes();
         this.ocultarDetalle();
       },
       error: (error) => {
         console.error('❌ Error cancelando pedido:', error);
         if (error.status === 401 || error.status === 403) {
-          this.mostrarToastError('Sesión expirada. Redirigiendo...');
+          this.mostrarToastError('⚠️ Sesión expirada. Redirigiendo...');
           setTimeout(() => this.router.navigate(['/login']), 2000);
         } else {
-          this.mostrarToastError(error.error || 'Error al cancelar el pedido');
+          this.mostrarToastError('❌ ' + (error.error || 'Error al cancelar el pedido'));
         }
       }
     });
   }
 
-  // === UTILIDADES ===
+  // ==================== UTILIDADES ====================
   obtenerNombreCliente(pedido: Pedido): string {
     if (pedido.cliente) {
       return `${pedido.cliente.nombres || ''} ${pedido.cliente.apellidos || ''}`.trim() || 'Cliente no especificado';
@@ -341,7 +576,26 @@ export class CajeroComponent implements OnInit, OnDestroy {
     });
   }
 
-  // === TOAST ===
+  // ==================== LOGOUT ====================
+  // ✅ FIX: authService.logout() devuelve un Observable, así que hay que suscribirse
+  // para que realmente se ejecute la petición HTTP y se limpie la sesión.
+  // Antes se llamaba sin .subscribe() y nunca se ejecutaba nada dentro del método.
+  cerrarSesion(): void {
+    if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+      this.authService.logout().subscribe({
+        next: () => {
+          this.router.navigate(['/login']);
+        },
+        error: () => {
+          // El AuthService ya limpia localStorage y el estado interno
+          // aunque la petición HTTP falle, así que igual navegamos al login.
+          this.router.navigate(['/login']);
+        }
+      });
+    }
+  }
+
+  // ==================== TOAST ====================
   mostrarToastExito(mensaje: string): void {
     this.mensajeToast = mensaje;
     this.tipoToast = 'success';
@@ -366,10 +620,5 @@ export class CajeroComponent implements OnInit, OnDestroy {
   cerrarToast(): void {
     this.mostrarToast = false;
     this.mensajeToast = '';
-  }
-
-  logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
   }
 }

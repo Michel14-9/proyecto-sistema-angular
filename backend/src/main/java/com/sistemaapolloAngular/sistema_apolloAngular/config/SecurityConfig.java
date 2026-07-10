@@ -1,6 +1,10 @@
 package com.sistemaapolloAngular.sistema_apolloAngular.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,14 +18,18 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.OncePerRequestFilter;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,6 +46,29 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
+    }
+
+    // ✅ FIX 403 EN PRIMER POST: Spring Security 6 genera el token CSRF de forma
+    // "perezosa" (lazy) — solo escribe la cookie XSRF-TOKEN cuando algo lee
+    // explícitamente csrfToken.getToken(). Si el primer POST del cajero llega
+    // antes de que esa cookie exista, el frontend manda X-XSRF-TOKEN vacío/nulo
+    // y el backend responde 403. Este filtro fuerza la lectura del token en
+    // cada petición para que la cookie siempre esté disponible desde el
+    // primer request.
+    @Bean
+    public OncePerRequestFilter csrfCookieFilter() {
+        return new OncePerRequestFilter() {
+            @Override
+            protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+                    throws ServletException, IOException {
+                CsrfToken csrfToken = (CsrfToken) request.getAttribute("_csrf");
+                if (csrfToken != null) {
+                    // Fuerza la evaluación del token, lo que dispara la escritura de la cookie
+                    csrfToken.getToken();
+                }
+                filterChain.doFilter(request, response);
+            }
+        };
     }
 
     @Bean
@@ -89,6 +120,9 @@ public class SecurityConfig {
 
                         )
                 )
+
+                // ✅ FIX: registrar el filtro que fuerza la escritura de la cookie CSRF
+                .addFilterAfter(csrfCookieFilter(), BasicAuthenticationFilter.class)
 
                 .sessionManagement(session -> session
                         .sessionFixation().migrateSession()

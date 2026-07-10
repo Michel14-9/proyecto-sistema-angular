@@ -10,6 +10,49 @@
   --blanco: #fafafa;
 }
 
+/* ======= HEADER ======= */
+.cajero-header {
+  background-color: var(--naranja-oscuro);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  position: sticky;
+  top: 0;
+  z-index: 1040;
+}
+
+.bg-luren {
+  background-color: var(--naranja-oscuro) !important;
+}
+
+.navbar-brand {
+  font-size: 1.25rem;
+  letter-spacing: 0.5px;
+}
+
+.navbar-brand i {
+  font-size: 1.3rem;
+}
+
+.nav-link {
+  padding: 0.5rem 0.75rem;
+}
+
+/* ======= MAIN ======= */
+.cajero-main {
+  min-height: calc(100vh - 160px);
+  background-color: #f8f9fa;
+}
+
+/* ======= FOOTER ======= */
+.cajero-footer {
+  background-color: #1a1a2e;
+  padding: 1rem 0;
+  border-top: 3px solid var(--naranja-oscuro);
+}
+
+.cajero-footer p {
+  margin-bottom: 0;
+}
+
 /* ======= TARJETAS ESTADÍSTICAS ======= */
 .stat-card {
   border: none;
@@ -187,6 +230,14 @@
   .toast {
     min-width: 250px;
   }
+
+  .cajero-header .navbar-brand {
+    font-size: 1rem;
+  }
+
+  .cajero-footer {
+    text-align: center;
+  }
 }
 
 @media (max-width: 576px) {
@@ -208,5 +259,10 @@
 
   .status-item {
     flex: 0 0 100%;
+  }
+
+  .cajero-header .nav-link {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.9rem;
   }
 }

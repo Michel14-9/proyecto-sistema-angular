@@ -21,13 +21,13 @@ import java.util.Map;
 public class PedidoService {
 
     private final PedidoRepository pedidoRepository;
-    private final ProductoFinalRepository productoFinalRepository; // ✅ NUEVO
+    private final ProductoFinalRepository productoFinalRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
 
     public PedidoService(PedidoRepository pedidoRepository,
-                         ProductoFinalRepository productoFinalRepository) { // ✅ NUEVO parámetro
+                         ProductoFinalRepository productoFinalRepository) {
         this.pedidoRepository = pedidoRepository;
         this.productoFinalRepository = productoFinalRepository;
     }
@@ -48,8 +48,6 @@ public class PedidoService {
                     "LEFT JOIN FETCH i.producto " +
                     "WHERE p.usuario.id = :usuarioId " +
                     "ORDER BY p.fecha DESC";
-
-            System.out.println("📝 Ejecutando JPQL: " + jpql);
 
             List<Pedido> pedidos = entityManager.createQuery(jpql, Pedido.class)
                     .setParameter("usuarioId", usuarioId)
@@ -111,6 +109,9 @@ public class PedidoService {
         return pedidoRepository.findAllWithItemsAndProducts();
     }
 
+    /**
+     * ✅ CREAR PEDIDO WEB (Online - MercadoPago)
+     */
     @Transactional
     public Pedido crearPedido(Usuario usuario, List<CarritoItem> carrito, Map<String, Object> datosPedido) {
         try {
@@ -122,6 +123,11 @@ public class PedidoService {
             pedido.setDireccionEntrega((String) datosPedido.get("direccion"));
             pedido.setInstrucciones((String) datosPedido.get("instrucciones"));
             pedido.setObservaciones((String) datosPedido.get("observaciones"));
+
+            // ✅ Configurar como pedido WEB
+            pedido.setCanal("WEB");
+            pedido.setOrigen("ONLINE");
+            pedido.setListoParaCocina(false);
 
             for (CarritoItem carritoItem : carrito) {
                 ItemPedido itemPedido = new ItemPedido();
@@ -140,7 +146,6 @@ public class PedidoService {
             String numeroGenerado = "LR" + String.format("%06d", pedidoGuardado.getId());
             pedidoGuardado.setNumero(numeroGenerado);
             pedidoGuardado.setNumeroPedido(numeroGenerado);
-            pedidoGuardado.setCanal("WEB");
 
             return pedidoRepository.save(pedidoGuardado);
 
@@ -149,7 +154,9 @@ public class PedidoService {
         }
     }
 
-    // ✅ NUEVO: Crear pedido presencial (registrado por el cajero en mostrador)
+    /**
+     * ✅ CREAR PEDIDO PRESENCIAL (Cajero - Cliente en local)
+     */
     @Transactional
     public Pedido crearPedidoPresencial(List<Map<String, Object>> itemsRequest,
                                         String metodoPago,
@@ -163,13 +170,22 @@ public class PedidoService {
             }
 
             Pedido pedido = new Pedido();
-            pedido.setEstado("PENDIENTE"); // el cajero lo marca PAGADO al cobrar
-            pedido.setCanal("PRESENCIAL"); // ✅ clave: distingue de los pedidos WEB
+            pedido.setEstado("PENDIENTE"); // Inicia pendiente, el cajero lo marca PAGADO
+            pedido.setCanal("CAJA"); // ✅ Distingue de pedidos WEB
+            pedido.setOrigen("PRESENCIAL"); // ✅ Origen presencial
+            pedido.setListoParaCocina(false); // ✅ NO va a cocina
             pedido.setMetodoPago(metodoPago != null ? metodoPago : "EFECTIVO");
             pedido.setTipoEntrega(tipoEntrega != null ? tipoEntrega : "LOCAL");
 
-            // Como el cliente presencial puede no tener cuenta (Usuario), guardamos
-            // su nombre/teléfono en observaciones para que salgan en la boleta.
+            // ✅ Guardar datos del cliente presencial
+            if (nombreCliente != null && !nombreCliente.isBlank()) {
+                pedido.setNombreCliente(nombreCliente.trim());
+            }
+            if (telefonoCliente != null && !telefonoCliente.isBlank()) {
+                pedido.setTelefonoCliente(telefonoCliente.trim());
+            }
+
+            // Observaciones
             StringBuilder obs = new StringBuilder();
             if (nombreCliente != null && !nombreCliente.isBlank()) {
                 obs.append("Cliente: ").append(nombreCliente.trim());
