@@ -86,8 +86,14 @@ public class SecurityConfig {
                                 "/api/locales/**",
                                 "/api/pago/**",
                                 "/login",
+<<<<<<< HEAD
                                 "/error",
                                 "/api/tracking/**"
+=======
+                                "/admin-menu/**",
+                                "/error"
+
+>>>>>>> main
                         )
                 )
 

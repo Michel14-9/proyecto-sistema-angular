@@ -1,1 +1,304 @@
-<p>cocinero works!</p>
+<!-- src/app/modules/cocinero/cocinero/cocinero.html -->
+<div class="container-fluid my-4">
+  <!-- Métricas Rápidas -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card stat-card text-warning">
+        <i class="fas fa-clock"></i>
+        <div class="number" id="total-pendientes">{{ estadisticas.porPreparar || 0 }}</div>
+        <div class="label">Por Preparar</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card text-primary">
+        <i class="fas fa-egg-fried"></i>
+        <div class="number" id="total-preparando">{{ estadisticas.enPreparacion || 0 }}</div>
+        <div class="label">En Preparación</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card text-success">
+        <i class="fas fa-check-circle"></i>
+        <div class="number" id="total-listos">{{ estadisticas.listos || 0 }}</div>
+        <div class="label">Listos Hoy</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card text-info">
+        <i class="fas fa-speedometer"></i>
+        <div class="number" id="tiempo-promedio">{{ estadisticas.tiempoPromedio || 0 }}min</div>
+        <div class="label">Tiempo Promedio</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Columna: Pedidos por Preparar (PAGADOS) -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-warning text-dark">
+          <h5 class="mb-0">
+            <i class="fas fa-clock me-2"></i>Por Preparar
+            <span class="badge bg-dark float-end" id="badge-pendientes">{{ pedidosPorPreparar.length }}</span>
+          </h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush" id="lista-por-preparar">
+            <div *ngFor="let pedido of pedidosPorPreparar"
+                 class="list-group-item list-group-item-action pedido-item-cocina estado-por-preparar"
+                 (click)="mostrarDetallePedido(pedido, 'por-preparar')">
+              <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                  <h6 class="mb-1">{{ pedido.numeroPedido || '#' + pedido.id }}</h6>
+                  <p class="mb-1 text-muted small">{{ obtenerNombreCliente(pedido) }}</p>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">{{ formatearFechaCorta(pedido.fecha) }}</small>
+                    <span class="badge" [class.bg-danger]="getTiempoTranscurrido(pedido.fecha).minutosTotales > 30"
+                          [class.bg-warning]="getTiempoTranscurrido(pedido.fecha).minutosTotales > 15 && getTiempoTranscurrido(pedido.fecha).minutosTotales <= 30"
+                          [class.bg-info]="getTiempoTranscurrido(pedido.fecha).minutosTotales <= 15">
+                      {{ getTiempoTranscurrido(pedido.fecha).texto }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="pedidosPorPreparar.length === 0" class="text-center py-5">
+            <i class="fas fa-check-circle text-muted fs-1"></i>
+            <p class="text-muted mt-2">No hay pedidos por preparar</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Columna: En Preparación (PREPARACION) -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-egg-fried me-2"></i>En Preparación
+            <span class="badge bg-light text-dark float-end" id="badge-preparando">{{ pedidosEnPreparacion.length }}</span>
+          </h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush" id="lista-en-preparacion">
+            <div *ngFor="let pedido of pedidosEnPreparacion"
+                 class="list-group-item list-group-item-action pedido-item-cocina estado-en-preparacion"
+                 (click)="mostrarDetallePedido(pedido, 'en-preparacion')">
+              <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                  <h6 class="mb-1">{{ pedido.numeroPedido || '#' + pedido.id }}</h6>
+                  <p class="mb-1 text-muted small">{{ obtenerNombreCliente(pedido) }}</p>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">{{ formatearFechaCorta(pedido.fecha) }}</small>
+                    <span class="badge" [class.bg-danger]="getTiempoTranscurrido(pedido.fecha).minutosTotales > 30"
+                          [class.bg-warning]="getTiempoTranscurrido(pedido.fecha).minutosTotales > 15 && getTiempoTranscurrido(pedido.fecha).minutosTotales <= 30"
+                          [class.bg-info]="getTiempoTranscurrido(pedido.fecha).minutosTotales <= 15">
+                      {{ getTiempoTranscurrido(pedido.fecha).texto }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="pedidosEnPreparacion.length === 0" class="text-center py-5">
+            <i class="fas fa-egg text-muted fs-1"></i>
+            <p class="text-muted mt-2">No hay pedidos en preparación</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Columna: Listos para Entrega (LISTO) -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-check-circle me-2"></i>Listos para Entrega
+            <span class="badge bg-light text-dark float-end" id="badge-listos">{{ pedidosListos.length }}</span>
+          </h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush" id="lista-listos">
+            <div *ngFor="let pedido of pedidosListos"
+                 class="list-group-item list-group-item-action pedido-item-cocina estado-listos"
+                 (click)="mostrarDetallePedido(pedido, 'listos')">
+              <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                  <h6 class="mb-1">{{ pedido.numeroPedido || '#' + pedido.id }}</h6>
+                  <p class="mb-1 text-muted small">{{ obtenerNombreCliente(pedido) }}</p>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">{{ formatearFechaCorta(pedido.fecha) }}</small>
+                    <span class="badge bg-success">✅ Listo</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="pedidosListos.length === 0" class="text-center py-5">
+            <i class="fas fa-truck text-muted fs-1"></i>
+            <p class="text-muted mt-2">No hay pedidos listos</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pedido Seleccionado (Detalle) -->
+  <div class="row mt-4" *ngIf="pedidoSeleccionado">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h5 class="mb-0">
+            Detalle del Pedido
+            <span class="badge bg-primary">{{ pedidoSeleccionado.numeroPedido || '#' + pedidoSeleccionado.id }}</span>
+            <button class="btn btn-sm btn-outline-secondary float-end" (click)="ocultarDetalle()">
+              <i class="fas fa-times"></i> Cerrar
+            </button>
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-8">
+              <h6>Items del Pedido:</h6>
+              <div id="detalle-items-pedido">
+                <div *ngFor="let item of pedidoSeleccionado.items"
+                     class="d-flex justify-content-between border-bottom pb-2 mb-2">
+                  <div class="d-flex align-items-center">
+                    <span class="badge bg-secondary me-2">{{ item.cantidad || 1 }}</span>
+                    <span>{{ item.nombreProducto || 'Producto' }}</span>
+                  </div>
+                  <div class="text-end">
+                    <div>S/ {{ ((item.precio || 0) * (item.cantidad || 1)) | number:'1.2-2' }}</div>
+                    <small class="text-muted">S/ {{ (item.precio || 0) | number:'1.2-2' }} c/u</small>
+                  </div>
+                </div>
+              </div>
+              <div class="mt-3">
+                <strong>Total: </strong><span class="fw-bold text-success">S/ {{ (pedidoSeleccionado.total || 0) | number:'1.2-2' }}</span>
+              </div>
+
+              <div class="mt-3" *ngIf="pedidoSeleccionado.observaciones">
+                <h6>Observaciones:</h6>
+                <div class="alert alert-info">
+                  {{ pedidoSeleccionado.observaciones }}
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <h6>Información:</h6>
+              <p><strong>Cliente:</strong> <span>{{ obtenerNombreCliente(pedidoSeleccionado) }}</span></p>
+              <p><strong>Tipo de Entrega:</strong> <span>{{ pedidoSeleccionado.tipoEntrega || 'DELIVERY' }}</span></p>
+              <p><strong>Hora del Pedido:</strong> <span>{{ formatearFecha(pedidoSeleccionado.fecha) }}</span></p>
+              <p><strong>Tiempo Transcurrido:</strong>
+                <span class="badge" [class.bg-danger]="getTiempoTranscurrido(pedidoSeleccionado.fecha).minutosTotales > 30"
+                      [class.bg-warning]="getTiempoTranscurrido(pedidoSeleccionado.fecha).minutosTotales > 15 && getTiempoTranscurrido(pedidoSeleccionado.fecha).minutosTotales <= 30"
+                      [class.bg-info]="getTiempoTranscurrido(pedidoSeleccionado.fecha).minutosTotales <= 15">
+                  {{ getTiempoTranscurrido(pedidoSeleccionado.fecha).texto }}
+                </span>
+              </p>
+
+              <div class="mt-3" id="acciones-cocinero">
+                <!-- Acciones según estado -->
+                <div *ngIf="estadoSeleccionado === 'por-preparar'">
+                  <button class="btn btn-primary btn-lg w-100 mb-2" (click)="abrirModalIniciarPreparacion()">
+                    <i class="fas fa-play-circle me-2"></i>Iniciar Preparación
+                  </button>
+                  <small class="text-muted d-block text-center">El pedido pasará a "En Preparación"</small>
+                </div>
+
+                <div *ngIf="estadoSeleccionado === 'en-preparacion'">
+                  <button class="btn btn-success btn-lg w-100 mb-2" (click)="abrirModalMarcarListo()">
+                    <i class="fas fa-check-circle me-2"></i>Marcar como Listo
+                  </button>
+                  <small class="text-muted d-block text-center">El pedido estará listo para entrega</small>
+                </div>
+
+                <div *ngIf="estadoSeleccionado === 'listos'">
+                  <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>Pedido listo para entrega</strong>
+                    <br>
+                    <small>Esperando al repartidor</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Iniciar Preparación -->
+<div class="modal fade" id="modalIniciarPreparacion" tabindex="-1" aria-labelledby="modalIniciarPreparacionLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="modalIniciarPreparacionLabel">
+          <i class="fas fa-egg-fried me-2"></i>Iniciar Preparación
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="cerrarModalIniciar()"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Está seguro de que desea iniciar la preparación del pedido?</p>
+        <div class="mb-3">
+          <strong>Pedido:</strong> <span class="badge bg-primary">{{ pedidoSeleccionado?.numeroPedido || '#' + pedidoSeleccionado?.id }}</span>
+        </div>
+        <div class="alert alert-warning">
+          <i class="fas fa-exclamation-triangle"></i>
+          Una vez iniciada la preparación, el pedido pasará al estado "En Preparación".
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalIniciar()">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="confirmarIniciarPreparacion()">
+          <i class="fas fa-egg-fried"></i> Iniciar Preparación
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Marcar como Listo -->
+<div class="modal fade" id="modalMarcarListo" tabindex="-1" aria-labelledby="modalMarcarListoLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="modalMarcarListoLabel">
+          <i class="fas fa-check-circle me-2"></i>Marcar como Listo
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="cerrarModalListo()"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Está seguro de que el pedido está listo para entrega?</p>
+        <div class="mb-3">
+          <strong>Pedido:</strong> <span class="badge bg-success">{{ pedidoSeleccionado?.numeroPedido || '#' + pedidoSeleccionado?.id }}</span>
+        </div>
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle"></i>
+          El pedido pasará al estado "Listo" y estará disponible para el delivery.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalListo()">Cancelar</button>
+        <button type="button" class="btn btn-success" (click)="confirmarMarcarListo()">
+          <i class="fas fa-check-circle"></i> Marcar como Listo
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast para Alertas -->
+<div class="position-fixed top-0 end-0 p-3 toast-container">
+  <div *ngIf="mensajeToast" class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="toast-header" [class]="tipoToast === 'success' ? 'bg-success text-white' : tipoToast === 'error' ? 'bg-danger text-white' : 'bg-info text-white'">
+      <i class="fas me-2" [class.fa-check-circle]="tipoToast === 'success'" [class.fa-exclamation-triangle]="tipoToast === 'error'" [class.fa-info-circle]="tipoToast === 'info'"></i>
+      <strong class="me-auto">{{ tipoToast === 'success' ? 'Éxito' : tipoToast === 'error' ? 'Error' : 'Información' }}</strong>
+      <button type="button" class="btn-close btn-close-white" (click)="cerrarToast()"></button>
+    </div>
+    <div class="toast-body">{{ mensajeToast }}</div>
+  </div>
+</div>

@@ -1,0 +1,212 @@
+/* src/app/modules/cajero/cajero/cajero.css */
+
+/* ======== PALETA DE COLORES ======== */
+:root {
+  --naranja: #ffb74d;
+  --naranja-oscuro: #f57c00;
+  --amarillo: #fff9c4;
+  --rojo: #e53935;
+  --gris: #6c757d;
+  --blanco: #fafafa;
+}
+
+/* ======= TARJETAS ESTADÍSTICAS ======= */
+.stat-card {
+  border: none;
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  cursor: default;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  background: white;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+.stat-card i {
+  font-size: 2rem;
+  opacity: 0.3;
+  margin-bottom: 0.5rem;
+}
+
+.stat-card .number {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.stat-card .label {
+  color: var(--gris);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.stat-card.text-warning .number,
+.stat-card.text-warning i {
+  color: #ffc107;
+}
+.stat-card.text-success .number,
+.stat-card.text-success i {
+  color: #28a745;
+}
+.stat-card.text-info .number,
+.stat-card.text-info i {
+  color: #17a2b8;
+}
+
+/* ======= PEDIDOS ======= */
+.pedido-item {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pedido-item:hover {
+  background-color: #f8f9fa;
+}
+
+.pedido-item.selected {
+  background-color: #e3f2fd !important;
+  border-left: 4px solid var(--naranja-oscuro);
+}
+
+.badge-pendiente {
+  background-color: #ffc107;
+  color: #212529;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* ======= DELIVERY OPTION ======= */
+.delivery-option {
+  cursor: default;
+  transition: all 0.3s ease;
+}
+
+.delivery-option.selected {
+  border-color: var(--naranja-oscuro) !important;
+  background-color: var(--amarillo);
+}
+
+.delivery-option i {
+  color: var(--naranja-oscuro);
+}
+
+/* ======= STATUS BAR ======= */
+.order-status-bar {
+  position: relative;
+  padding: 0.5rem 0;
+}
+
+.status-item {
+  flex: 1;
+  opacity: 0.5;
+  transition: all 0.3s ease;
+}
+
+.status-item.active {
+  opacity: 1;
+}
+
+.status-item.active .step-circle {
+  background-color: var(--naranja-oscuro);
+  color: white;
+  border-color: var(--naranja-oscuro);
+}
+
+.step-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background-color: #e9ecef;
+  color: var(--gris);
+  font-weight: 700;
+  font-size: 0.9rem;
+  border: 2px solid #dee2e6;
+  transition: all 0.3s ease;
+}
+
+.status-item.active .step-circle {
+  background-color: var(--naranja-oscuro);
+  color: white;
+  border-color: var(--naranja-oscuro);
+  transform: scale(1.1);
+}
+
+/* ======= TOAST ======= */
+.toast-container {
+  z-index: 1050;
+}
+
+.toast {
+  min-width: 300px;
+  max-width: 450px;
+}
+
+/* ======= MODAL ======= */
+.modal-content {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  border-bottom: 1px solid #e9ecef;
+}
+
+.modal-footer {
+  border-top: 1px solid #e9ecef;
+}
+
+/* ======= RESPONSIVE ======= */
+@media (max-width: 768px) {
+  .stat-card .number {
+    font-size: 1.5rem;
+  }
+
+  .stat-card {
+    padding: 1rem;
+  }
+
+  .order-status-bar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .status-item {
+    flex: 0 0 45%;
+  }
+
+  .toast {
+    min-width: 250px;
+  }
+}
+
+@media (max-width: 576px) {
+  .stat-card .number {
+    font-size: 1.2rem;
+  }
+
+  .stat-card .label {
+    font-size: 0.75rem;
+  }
+
+  .delivery-option {
+    padding: 0.75rem !important;
+  }
+
+  .delivery-option i {
+    font-size: 1.5rem;
+  }
+
+  .status-item {
+    flex: 0 0 100%;
+  }
+}
