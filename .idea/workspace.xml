@@ -6,17 +6,18 @@
   <component name="ChangeListManager">
     <list default="true" id="4e10dce1-a503-4051-8fa1-2dbc492f7fbc" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/config/SecurityConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/CajeroController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/CajeroController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/CocineroController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/CocineroController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/model/Pedido.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/model/Pedido.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/service/PedidoService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/service/PedidoService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/app.component.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/app.component.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/app.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/app.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/core/services/layout.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/core/services/layout.service.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cajero/cajero/cajero.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cajero/cajero/cajero.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cajero/cajero/cajero.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cajero/cajero/cajero.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cajero/cajero/cajero.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cajero/cajero/cajero.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backendmercadopago/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/backendmercadopago/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backendmercadopago/src/main/java/mercadopago/example/mercado/pago/config/MercadoPagoConfiguracion.java" beforeDir="false" afterPath="$PROJECT_DIR$/backendmercadopago/src/main/java/mercadopago/example/mercado/pago/config/MercadoPagoConfiguracion.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backendmercadopago/src/main/java/mercadopago/example/mercado/pago/controller/MercadoPagoController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backendmercadopago/src/main/java/mercadopago/example/mercado/pago/controller/MercadoPagoController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-menu/admin-menu.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-menu/admin-menu.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-menu/admin-menu.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-menu/admin-menu.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-menu/admin-menu.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-menu/admin-menu.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cocinero/cocinero/cocinero.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cocinero/cocinero/cocinero.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cocinero/cocinero/cocinero.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cocinero/cocinero/cocinero.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cocinero/cocinero/cocinero.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cocinero/cocinero/cocinero.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/delivery/delivery/delivery.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/delivery/delivery/delivery.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/delivery/delivery/delivery.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/delivery/delivery/delivery.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/delivery/delivery/delivery.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/delivery/delivery/delivery.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -33,7 +34,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="frontend" />
+        <entry key="$PROJECT_DIR$" value="main" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />

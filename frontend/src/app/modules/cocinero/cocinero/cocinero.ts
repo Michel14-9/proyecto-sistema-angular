@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
+import { LayoutService } from '../../../core/services/layout.service'; // ✅ Importar LayoutService
 
 interface Pedido {
   id: number;
@@ -16,7 +17,7 @@ interface Pedido {
   observaciones: string;
   cliente: any;
   items: any[];
-  fechaPreparacionCompleta?: string; // ✅ Agregado como opcional
+  fechaPreparacionCompleta?: string;
 }
 
 @Component({
@@ -47,17 +48,24 @@ export class CocineroComponent implements OnInit, OnDestroy {
   isAuthenticated: boolean = false;
   username: string = '';
 
+  // Fecha y hora
+  fechaActual: string = '';
+  horaActual: string = '';
+
   // Toast
   mensajeToast: string = '';
   tipoToast: string = 'info';
+  mostrarToast: boolean = false;
 
   // Intervalos
+  private intervalId: any;
   private recargaId: any;
 
   constructor(
     private http: HttpClient,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private layoutService: LayoutService // ✅ Inyectar LayoutService
   ) {}
 
   ngOnInit(): void {
@@ -69,7 +77,16 @@ export class CocineroComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // ✅ Ocultar header y footer global
+    this.layoutService.hideHeaderAndFooter();
+
     this.cargarPedidosCocina();
+    this.actualizarHoraYFecha();
+
+    // ✅ Actualizar hora cada segundo
+    this.intervalId = setInterval(() => {
+      this.actualizarHoraYFecha();
+    }, 1000);
 
     // Recargar pedidos cada 30 segundos
     this.recargaId = setInterval(() => {
@@ -78,6 +95,12 @@ export class CocineroComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    // ✅ Restaurar header y footer global
+    this.layoutService.showHeaderAndFooter();
+
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+    }
     if (this.recargaId) {
       clearInterval(this.recargaId);
     }
@@ -154,7 +177,6 @@ export class CocineroComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ✅ CORREGIDO: Con verificación de propiedad
   calcularTiempoPromedio(): void {
     if (this.pedidosListos.length === 0) {
       this.estadisticas.tiempoPromedio = 0;
@@ -165,7 +187,6 @@ export class CocineroComponent implements OnInit, OnDestroy {
     let pedidosConTiempo = 0;
 
     this.pedidosListos.forEach(pedido => {
-      // ✅ Verificar si existe la propiedad antes de usarla
       if (pedido.fecha && pedido.fechaPreparacionCompleta) {
         try {
           const fechaInicio = new Date(pedido.fecha);
@@ -369,25 +390,52 @@ export class CocineroComponent implements OnInit, OnDestroy {
     }
   }
 
+  actualizarHoraYFecha(): void {
+    const ahora = new Date();
+    this.fechaActual = ahora.toLocaleDateString('es-ES', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    this.horaActual = ahora.toLocaleTimeString('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  }
+
+  // === LOGOUT ===
+  cerrarSesion(): void {
+    if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+      this.authService.logout().subscribe({
+        next: () => {
+          this.router.navigate(['/login']);
+        },
+        error: () => {
+          this.router.navigate(['/login']);
+        }
+      });
+    }
+  }
+
   // === TOAST ===
   mostrarToastExito(mensaje: string): void {
     this.mensajeToast = mensaje;
     this.tipoToast = 'success';
+    this.mostrarToast = true;
     setTimeout(() => this.cerrarToast(), 5000);
   }
 
   mostrarToastError(mensaje: string): void {
     this.mensajeToast = mensaje;
     this.tipoToast = 'error';
+    this.mostrarToast = true;
     setTimeout(() => this.cerrarToast(), 5000);
   }
 
   cerrarToast(): void {
+    this.mostrarToast = false;
     this.mensajeToast = '';
-  }
-
-  logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
   }
 }

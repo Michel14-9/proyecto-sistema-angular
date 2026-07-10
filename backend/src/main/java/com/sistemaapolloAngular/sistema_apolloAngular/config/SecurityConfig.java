@@ -48,13 +48,7 @@ public class SecurityConfig {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
-    // ✅ FIX 403 EN PRIMER POST: Spring Security 6 genera el token CSRF de forma
-    // "perezosa" (lazy) — solo escribe la cookie XSRF-TOKEN cuando algo lee
-    // explícitamente csrfToken.getToken(). Si el primer POST del cajero llega
-    // antes de que esa cookie exista, el frontend manda X-XSRF-TOKEN vacío/nulo
-    // y el backend responde 403. Este filtro fuerza la lectura del token en
-    // cada petición para que la cookie siempre esté disponible desde el
-    // primer request.
+
     @Bean
     public OncePerRequestFilter csrfCookieFilter() {
         return new OncePerRequestFilter() {
@@ -121,7 +115,7 @@ public class SecurityConfig {
                         )
                 )
 
-                // ✅ FIX: registrar el filtro que fuerza la escritura de la cookie CSRF
+
                 .addFilterAfter(csrfCookieFilter(), BasicAuthenticationFilter.class)
 
                 .sessionManagement(session -> session
@@ -184,17 +178,17 @@ public class SecurityConfig {
                         .passwordParameter("password")
 
                         .successHandler((request, response, authentication) -> {
-                            // ✅ Crear sesión explícitamente
+                            //  Crear sesión explícitamente
                             HttpSession session = request.getSession(true);
 
-                            // ✅ FORZAR LA COOKIE DE SESIÓN MANUALMENTE
+                            //  FORZAR LA COOKIE DE SESIÓN MANUALMENTE
                             response.setHeader("Set-Cookie",
                                     "JSESSIONID=" + session.getId() +
                                             "; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400");
 
-                            // ✅ LOG PARA VERIFICAR
-                            System.out.println("🔑 Sesión creada: " + session.getId());
-                            System.out.println("🍪 Cookie enviada: JSESSIONID=" + session.getId());
+                            //  LOG PARA VERIFICAR
+                            System.out.println(" Sesión creada: " + session.getId());
+                            System.out.println(" Cookie enviada: JSESSIONID=" + session.getId());
 
                             response.setStatus(HttpStatus.OK.value());
                             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -217,7 +211,7 @@ public class SecurityConfig {
                         .permitAll()
                 )
 
-                // ── LOGOUT CON RESPUESTA JSON ──
+
                 .logout(logout -> logout
                         .logoutRequestMatcher(new AntPathRequestMatcher("/api/auth/logout", "POST"))
                         .invalidateHttpSession(true)

@@ -33,7 +33,7 @@ public class MercadoPagoController {
     @PostMapping("/crear-preferencia")
     public ResponseEntity<?> crearPreferencia(@RequestBody Map<String, Object> request) {
         try {
-            System.out.println("📝 Creando preferencia - Inicio");
+            System.out.println(" Creando preferencia - Inicio");
 
             Long pedidoId = ((Number) request.get("pedidoId")).longValue();
             Map<String, Object> pedidoData = (Map<String, Object>) request.get("pedido");
@@ -53,7 +53,7 @@ public class MercadoPagoController {
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            System.err.println("❌ Error creando preferencia: " + e.getMessage());
+            System.err.println(" Error creando preferencia: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error al crear la preferencia: " + e.getMessage()));
@@ -63,13 +63,13 @@ public class MercadoPagoController {
     @PostMapping("/webhook")
     public ResponseEntity<?> webhook(@RequestBody Map<String, Object> payload) {
         try {
-            System.out.println("📥 Webhook recibido: " + payload);
+            System.out.println(" Webhook recibido: " + payload);
 
             String paymentId = null;
             String type = (String) payload.get("type");
             String topic = (String) payload.get("topic");
 
-            // ✅ Caso 1: Formato con type=payment y data.id
+
             if (type != null && "payment".equals(type)) {
                 Map<String, Object> data = (Map<String, Object>) payload.get("data");
                 if (data != null) {
@@ -77,7 +77,7 @@ public class MercadoPagoController {
                 }
             }
 
-            // ✅ Caso 2: Formato con topic=payment y resource
+
             if (paymentId == null && "payment".equals(topic)) {
                 String resource = (String) payload.get("resource");
                 if (resource != null) {
@@ -86,7 +86,7 @@ public class MercadoPagoController {
                 }
             }
 
-            // ✅ Caso 3: topic=merchant_order (formato viejo, con resource=URL)
+
             if (paymentId == null && "merchant_order".equals(topic)) {
                 String resource = (String) payload.get("resource");
                 if (resource != null) {
@@ -95,7 +95,7 @@ public class MercadoPagoController {
                 }
             }
 
-            // ✅ Caso 3b: NUEVO - type=topic_merchant_order_wh (id directo en el payload)
+
             if (paymentId == null && type != null && type.contains("merchant_order")) {
                 Object idObj = payload.get("id");
                 if (idObj != null) {
@@ -105,37 +105,37 @@ public class MercadoPagoController {
                 }
             }
 
-            // ✅ Caso 4: Si tiene id directamente (fallback final, SOLO si es tipo payment o no tiene type reconocido)
+
             if (paymentId == null && payload.containsKey("id")
                     && (type == null || "payment".equals(type))) {
                 paymentId = String.valueOf(payload.get("id"));
             }
 
-            // ⚠️ Solo procesar si es un paymentId válido
+
             if (paymentId != null) {
                 try {
                     Payment payment = mercadoPagoService.obtenerPago(paymentId);
-                    System.out.println("💰 Pago obtenido: " + payment.getId() + " - Status: " + payment.getStatus());
+                    System.out.println(" Pago obtenido: " + payment.getId() + " - Status: " + payment.getStatus());
 
                     String externalReference = payment.getExternalReference();
                     if (externalReference != null) {
                         mercadoPagoService.notificarBackendPrincipal(payment, externalReference);
                     } else {
-                        System.out.println("⚠️ Pago sin externalReference: " + paymentId);
+                        System.out.println(" Pago sin externalReference: " + paymentId);
                     }
 
                 } catch (Exception e) {
-                    System.err.println("❌ Error procesando pago: " + e.getMessage());
+                    System.err.println(" Error procesando pago: " + e.getMessage());
                     e.printStackTrace();
                 }
             } else {
-                System.out.println("ℹ️ Webhook ignorado (no se pudo extraer paymentId): " + payload);
+                System.out.println(" Webhook ignorado (no se pudo extraer paymentId): " + payload);
             }
 
             return ResponseEntity.ok(Map.of("status", "success"));
 
         } catch (Exception e) {
-            System.err.println("❌ Error en webhook: " + e.getMessage());
+            System.err.println(" Error en webhook: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", e.getMessage()));
@@ -164,19 +164,19 @@ public class MercadoPagoController {
                 java.util.List<Map<String, Object>> payments = (java.util.List<Map<String, Object>>) paymentsObj;
                 if (!payments.isEmpty()) {
                     String pid = String.valueOf(payments.get(0).get("id"));
-                    System.out.println("🔍 PaymentId extraído de merchant_order: " + pid);
+                    System.out.println(" PaymentId extraído de merchant_order: " + pid);
                     return pid;
                 } else {
-                    System.out.println("ℹ️ Merchant_order sin pagos asociados aún (id=" + merchantOrderId + ")");
+                    System.out.println(" Merchant_order sin pagos asociados aún (id=" + merchantOrderId + ")");
                 }
             } else if (paymentsObj instanceof Map) {
                 Map<String, Object> paymentMap = (Map<String, Object>) paymentsObj;
                 String pid = String.valueOf(paymentMap.get("id"));
-                System.out.println("🔍 PaymentId extraído de merchant_order: " + pid);
+                System.out.println(" PaymentId extraído de merchant_order: " + pid);
                 return pid;
             }
         } catch (Exception e) {
-            System.err.println("❌ Error obteniendo merchant_order: " + e.getMessage());
+            System.err.println(" Error obteniendo merchant_order: " + e.getMessage());
         }
         return null;
     }
