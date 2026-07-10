@@ -1,7 +1,9 @@
 package com.sistemaapolloAngular.sistema_apolloAngular.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.HttpSession;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -22,9 +24,9 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import jakarta.servlet.http.HttpSession;
 
 @Configuration
 @EnableWebSecurity
@@ -84,7 +86,8 @@ public class SecurityConfig {
                                 "/api/locales/**",
                                 "/api/pago/**",
                                 "/login",
-                                "/error"
+                                "/error",
+                                "/api/tracking/**"
                         )
                 )
 
@@ -107,7 +110,8 @@ public class SecurityConfig {
                                 "/api/locales/**",
                                 "/api/pago/**",
                                 "/login",
-                                "/error"
+                                "/error",
+                                "/api/tracking/**"
                         ).permitAll()
 
                         // ── ADMIN ────────────────────────────────────────
