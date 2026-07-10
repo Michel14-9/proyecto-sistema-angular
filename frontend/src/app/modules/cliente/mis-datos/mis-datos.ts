@@ -1,4 +1,5 @@
 // src/app/modules/cliente/mis-datos/mis-datos.ts
+
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
@@ -94,13 +95,17 @@ export class MisDatosComponent implements OnInit {
     return headers;
   }
 
+  /**
+   * ✅ Carga los datos del usuario desde /api/usuarios/perfil
+   */
   cargarDatosUsuario(): void {
     this.isLoading = true;
     this.errorMessage = '';
 
     console.log('🔄 Cargando datos del usuario...');
 
-    this.http.get(`${this.apiUrl}/api/auth/datos-usuario`, {
+    // ✅ Usar el endpoint correcto /api/usuarios/perfil
+    this.http.get(`${this.apiUrl}/api/usuarios/perfil`, {
       headers: this.getHeaders(),
       withCredentials: true
     }).subscribe({
@@ -108,16 +113,19 @@ export class MisDatosComponent implements OnInit {
         console.log('📦 Datos del usuario:', response);
         this.isLoading = false;
 
-        if (response) {
+        if (response && response.success && response.usuario) {
+          const usuarioData = response.usuario;
           this.usuario = {
-            nombre: response.nombre || '',
-            apellidos: response.apellidos || '',
-            email: response.email || '',
-            tipoDocumento: response.tipoDocumento || '',
-            numeroDocumento: response.numeroDocumento || '',
-            telefono: response.telefono || '',
-            fechaNacimiento: response.fechaNacimiento || ''
+            nombre: usuarioData.nombres || '',
+            apellidos: usuarioData.apellidos || '',
+            email: usuarioData.email || '',
+            tipoDocumento: usuarioData.tipoDocumento || '',
+            numeroDocumento: usuarioData.numeroDocumento || '',
+            telefono: usuarioData.telefono || '',
+            fechaNacimiento: usuarioData.fechaNacimiento || ''
           };
+        } else {
+          this.errorMessage = 'Error al cargar los datos del usuario';
         }
       },
       error: (error) => {
@@ -163,6 +171,9 @@ export class MisDatosComponent implements OnInit {
     this.passwordStrengthColor = '';
   }
 
+  /**
+   * ✅ Guardar cambios - Usa /api/usuarios/actualizar-datos
+   */
   guardarCambios(): void {
     // Validaciones
     if (!this.formData.nombre.trim()) {
@@ -234,7 +245,8 @@ export class MisDatosComponent implements OnInit {
 
     console.log('📤 Enviando datos actualizados:', datosActualizados);
 
-    this.http.put(`${this.apiUrl}/api/auth/actualizar-datos`, datosActualizados, {
+    // ✅ Usar el endpoint correcto
+    this.http.put(`${this.apiUrl}/api/usuarios/actualizar-datos`, datosActualizados, {
       headers: this.getHeaders(),
       withCredentials: true
     }).subscribe({

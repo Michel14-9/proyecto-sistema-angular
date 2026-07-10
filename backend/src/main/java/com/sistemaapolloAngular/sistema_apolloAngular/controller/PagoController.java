@@ -1,23 +1,23 @@
 package com.sistemaapolloAngular.sistema_apolloAngular.controller;
 
-import com.mercadopago.resources.payment.Payment;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.CarritoItem;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.Usuario;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.Direccion;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.Pedido;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.Pago;
+import com.sistemaapolloAngular.sistema_apolloAngular.repository.PagoRepository;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.CarritoService;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.UsuarioService;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.DireccionService;
-import com.sistemaapolloAngular.sistema_apolloAngular.service.MercadoPagoService;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.PedidoService;
-import com.sistemaapolloAngular.sistema_apolloAngular.repository.PagoRepository;
+import com.sistemaapolloAngular.sistema_apolloAngular.service.MercadoPagoProxyService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @RestController
@@ -27,22 +27,22 @@ public class PagoController {
     private final CarritoService carritoService;
     private final UsuarioService usuarioService;
     private final DireccionService direccionService;
-    private final MercadoPagoService mercadoPagoService;
     private final PedidoService pedidoService;
-    private final PagoRepository pagoRepository;
+    private final MercadoPagoProxyService mercadoPagoProxyService;
+
+    @Autowired
+    private PagoRepository pagoRepository;
 
     public PagoController(CarritoService carritoService,
                           UsuarioService usuarioService,
                           DireccionService direccionService,
-                          MercadoPagoService mercadoPagoService,
                           PedidoService pedidoService,
-                          PagoRepository pagoRepository) {
+                          MercadoPagoProxyService mercadoPagoProxyService) {
         this.carritoService = carritoService;
         this.usuarioService = usuarioService;
         this.direccionService = direccionService;
-        this.mercadoPagoService = mercadoPagoService;
         this.pedidoService = pedidoService;
-        this.pagoRepository = pagoRepository;
+        this.mercadoPagoProxyService = mercadoPagoProxyService;
     }
 
     @GetMapping
@@ -176,8 +176,10 @@ public class PagoController {
         }
     }
 
+    /**
+     * ✅ Crear preferencia llamando al MICROSERVICIO
+     */
     @PostMapping("/crear-preferencia")
-    @Transactional
     public ResponseEntity<?> crearPreferencia(@RequestBody Map<String, Long> request, Authentication auth) {
         try {
             System.out.println("📝 Creando preferencia - Inicio");
@@ -194,34 +196,43 @@ public class PagoController {
                 return ResponseEntity.badRequest().body(Map.of("error", "pedidoId es requerido"));
             }
 
-            Optional<Pedido> pedidoOpt = pedidoService.obtenerPedidoConItems(pedidoId);
-
+            // Obtener el pedido con sus items
+            var pedidoOpt = pedidoService.obtenerPedidoConItems(pedidoId);
             if (pedidoOpt.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(Map.of("error", "Pedido no encontrado"));
             }
 
-            Pedido pedido = pedidoOpt.get();
+            var pedido = pedidoOpt.get();
 
-            Map<String, Object> preference = mercadoPagoService.crearPreferencia(pedido);
+            // Preparar los datos para el microservicio
+            Map<String, Object> requestData = new HashMap<>();
+            requestData.put("pedidoId", pedidoId);
 
-            String preferenceId = (String) preference.get("id");
-            System.out.println("✅ Preferencia creada: " + preferenceId);
+            Map<String, Object> pedidoData = new HashMap<>();
+            List<Map<String, Object>> itemsData = new ArrayList<>();
 
-            pedido.setPreferenceId(preferenceId);
-            pedidoService.actualizarPedido(pedido);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("preferenceId", preferenceId);
-            response.put("publicKey", mercadoPagoService.getPublicKey());
-
-            String initPoint = (String) preference.get("sandbox_init_point");
-            if (initPoint == null || initPoint.isEmpty()) {
-                initPoint = (String) preference.get("init_point");
+            for (var item : pedido.getItems()) {
+                Map<String, Object> itemData = new HashMap<>();
+                itemData.put("id", item.getId());
+                itemData.put("nombre", item.getNombreProducto());
+                itemData.put("cantidad", item.getCantidad());
+                itemData.put("precio", item.getPrecio());
+                itemsData.add(itemData);
             }
-            response.put("initPoint", initPoint);
 
-            System.out.println("🔗 InitPoint: " + initPoint);
+            pedidoData.put("items", itemsData);
+            requestData.put("pedido", pedidoData);
+
+            // 🔥 Llamar al microservicio
+            Map<String, Object> response = mercadoPagoProxyService.crearPreferencia(requestData);
+
+            // Guardar preferenceId en el pedido
+            String preferenceId = (String) response.get("preferenceId");
+            if (preferenceId != null) {
+                pedido.setPreferenceId(preferenceId);
+                pedidoService.actualizarPedido(pedido);
+            }
 
             return ResponseEntity.ok(response);
 
@@ -233,85 +244,47 @@ public class PagoController {
         }
     }
 
+    /**
+     * ✅ Webhook que recibe del microservicio
+     */
     @PostMapping("/webhook")
     public ResponseEntity<?> webhook(@RequestBody Map<String, Object> payload) {
         try {
-            System.out.println("📥 Webhook recibido: " + payload);
+            System.out.println("📥 Webhook recibido del microservicio: " + payload);
 
-            String type = (String) payload.get("type");
-            Map<String, Object> data = (Map<String, Object>) payload.get("data");
-            String paymentId = data != null ? (String) data.get("id") : null;
+            String paymentId = (String) payload.get("paymentId");
+            String status = (String) payload.get("status");
+            String externalReference = (String) payload.get("externalReference");
 
-            System.out.println("🔍 Type: " + type + ", PaymentId: " + paymentId);
-
-            // ✅ También manejar cuando el webhook viene como merchant_order
-            if (paymentId == null && payload.containsKey("resource")) {
-                String resource = (String) payload.get("resource");
-                if (resource != null && resource.contains("/payments/")) {
-                    paymentId = resource.substring(resource.lastIndexOf("/") + 1);
-                    System.out.println("🔍 PaymentId extraído de resource: " + paymentId);
-                }
+            if (paymentId == null || externalReference == null) {
+                System.err.println("❌ Datos incompletos en webhook");
+                return ResponseEntity.badRequest().body(Map.of("error", "Datos incompletos"));
             }
 
-            if (paymentId != null) {
-                try {
-                    Payment payment = mercadoPagoService.obtenerPago(paymentId);
-                    System.out.println("💰 Pago obtenido: " + payment.getId() + " - Status: " + payment.getStatus());
+            Long pedidoId = Long.parseLong(externalReference);
+            var pedidoOpt = pedidoService.obtenerPedidoPorId(pedidoId);
 
-                    String externalReference = payment.getExternalReference();
-                    if (externalReference == null) {
-                        System.err.println("❌ External reference no encontrada");
-                        return ResponseEntity.ok(Map.of("status", "ignored"));
-                    }
+            if (pedidoOpt.isEmpty()) {
+                System.err.println("❌ Pedido no encontrado: " + pedidoId);
+                return ResponseEntity.ok(Map.of("status", "pedido_no_encontrado"));
+            }
 
-                    Long pedidoId = Long.parseLong(externalReference);
-                    Optional<Pedido> pedidoOpt = pedidoService.obtenerPedidoPorId(pedidoId);
+            var pedido = pedidoOpt.get();
+            pedido.setPaymentId(paymentId);
 
-                    if (pedidoOpt.isEmpty()) {
-                        System.err.println("❌ Pedido no encontrado: " + pedidoId);
-                        return ResponseEntity.ok(Map.of("status", "pedido_no_encontrado"));
-                    }
-
-                    Pedido pedido = pedidoOpt.get();
-
-                    // ✅ Guardar paymentId en el pedido SIEMPRE
-                    pedido.setPaymentId(payment.getId().toString());
-                    System.out.println("💳 PaymentId guardado: " + payment.getId());
-
-                    // ✅ Actualizar estado según el pago
-                    if ("approved".equals(payment.getStatus())) {
-                        pedido.setEstado("PAGADO");
-                        System.out.println("✅ Pedido " + pedidoId + " pagado exitosamente");
-
-                        // Crear registro de pago
-                        Pago pago = new Pago();
-                        pago.setPedido(pedido);
-                        pago.setPaymentId(payment.getId().toString());
-                        pago.setStatus(payment.getStatus());
-                        pago.setMetodoPago(payment.getPaymentMethodId());
-                        pago.setMonto(payment.getTransactionAmount().doubleValue());
-                        pago.setFechaPago(java.time.LocalDateTime.now());
-                        pago.setResponseJson(payment.toString());
-                        pagoRepository.save(pago);
-
-                    } else if ("rejected".equals(payment.getStatus())) {
-                        pedido.setEstado("RECHAZADO");
-                        System.out.println("❌ Pedido " + pedidoId + " rechazado");
-                    } else {
-                        pedido.setEstado("PENDIENTE");
-                        System.out.println("⏳ Pedido " + pedidoId + " pendiente");
-                    }
-
-                    pedidoService.actualizarPedido(pedido);
-                    System.out.println("✅ Webhook procesado correctamente para pedido: " + pedidoId);
-
-                } catch (Exception e) {
-                    System.err.println("❌ Error procesando pago: " + e.getMessage());
-                    e.printStackTrace();
-                }
+            if ("approved".equals(status)) {
+                pedido.setEstado("PAGADO");
+                System.out.println("✅ Pedido " + pedidoId + " pagado exitosamente");
+            } else if ("rejected".equals(status)) {
+                pedido.setEstado("RECHAZADO");
+                System.out.println("❌ Pedido " + pedidoId + " rechazado");
             } else {
-                System.out.println("ℹ️ Webhook ignorado (no es payment o no tiene paymentId)");
+                pedido.setEstado("PENDIENTE");
+                System.out.println("⏳ Pedido " + pedidoId + " pendiente");
             }
+
+            pedidoService.actualizarPedido(pedido);
+            System.out.println("✅ Webhook procesado correctamente para pedido: " + pedidoId);
 
             return ResponseEntity.ok(Map.of("status", "success"));
 
@@ -323,84 +296,91 @@ public class PagoController {
         }
     }
 
-    // ✅ NUEVO: Verificar pago manualmente consultando a MercadoPago
-    @GetMapping("/verificar-pedido/{pedidoId}")
-    public ResponseEntity<?> verificarPagoPedido(@PathVariable Long pedidoId, Authentication authentication) {
+    /**
+     * ✅ Endpoint para confirmar pago desde el microservicio (IDEMPOTENTE)
+     */
+    @PostMapping("/confirmar")
+    public ResponseEntity<?> confirmarPago(@RequestBody Map<String, Object> payload) {
         try {
-            System.out.println("🔍 Verificando pago para pedido: " + pedidoId);
+            System.out.println("📥 Confirmación de pago desde microservicio: " + payload);
 
-            if (authentication == null || !authentication.isAuthenticated()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("error", "Usuario no autenticado"));
+            String paymentId = payload.get("paymentId") != null
+                    ? String.valueOf(payload.get("paymentId")) : null;
+            String status = (String) payload.get("status");
+            String externalReference = payload.get("externalReference") != null
+                    ? String.valueOf(payload.get("externalReference")) : null;
+
+            if (externalReference == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "externalReference es requerido"));
             }
 
-            String correo = authentication.getName();
-            Usuario usuario = usuarioService.buscarPorCorreo(correo)
-                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-            Optional<Pedido> pedidoOpt = pedidoService.obtenerPedidoConItems(pedidoId);
+            Long pedidoId = Long.parseLong(externalReference);
+            Optional<Pedido> pedidoOpt = pedidoService.obtenerPedidoPorId(pedidoId);
 
             if (pedidoOpt.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("error", "Pedido no encontrado"));
+                System.err.println("❌ Pedido no encontrado: " + pedidoId);
+                return ResponseEntity.ok(Map.of("status", "pedido_no_encontrado"));
             }
 
             Pedido pedido = pedidoOpt.get();
 
-            // Verificar que el usuario sea el dueño
-            if (!pedido.getUsuario().getId().equals(usuario.getId())) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of("error", "No autorizado"));
+            // ✅ Atajo rápido: si ya está PAGADO, no hay nada más que hacer
+            if ("PAGADO".equals(pedido.getEstado())) {
+                System.out.println("ℹ️ Pedido " + pedidoId + " ya estaba PAGADO, ignorando confirmación duplicada");
+                return ResponseEntity.ok(Map.of("status", "ya_procesado"));
             }
 
-            // Preparar respuesta base
-            Map<String, Object> response = new HashMap<>();
-            response.put("pedidoId", pedido.getId());
-            response.put("estado", pedido.getEstado());
-            response.put("paymentId", pedido.getPaymentId());
-            response.put("fecha", pedido.getFechaPedido());
+            pedido.setPaymentId(paymentId);
 
-            // Si tiene paymentId, verificar con MercadoPago
-            if (pedido.getPaymentId() != null && !pedido.getPaymentId().isEmpty()) {
+            if ("approved".equals(status)) {
+                pedido.setEstado("PAGADO");
+                System.out.println("✅ Pedido " + pedidoId + " pagado exitosamente");
+
+                // ✅ Intentar guardar el pago; si otro hilo concurrente ya lo insertó,
+                // la BD rechaza con violación de restricción única -> lo tratamos como éxito
                 try {
-                    Payment payment = mercadoPagoService.obtenerPago(pedido.getPaymentId());
+                    boolean pagoYaExiste = pagoRepository.existsByPedidoId(pedidoId);
+                    if (!pagoYaExiste) {
+                        Pago pago = new Pago();
+                        pago.setPedido(pedido);
+                        pago.setPaymentId(paymentId);
+                        pago.setStatus(status);
+                        pago.setMetodoPago((String) payload.get("paymentMethodId"));
 
-                    response.put("paymentStatus", payment.getStatus());
-                    response.put("paymentStatusDetail", payment.getStatusDetail());
-                    response.put("transactionAmount", payment.getTransactionAmount());
-                    response.put("paymentMethodId", payment.getPaymentMethodId());
+                        Object amountObj = payload.get("amount");
+                        Double amount = amountObj instanceof Number ? ((Number) amountObj).doubleValue() : null;
+                        pago.setMonto(amount);
 
-                    // ✅ Si el pago está aprobado pero el pedido no, actualizarlo
-                    if ("approved".equals(payment.getStatus()) && !"PAGADO".equals(pedido.getEstado())) {
-                        pedido.setEstado("PAGADO");
-                        pedidoService.actualizarPedido(pedido);
-                        response.put("estado", "PAGADO");
-                        System.out.println("✅ Pedido " + pedidoId + " actualizado a PAGADO manualmente");
+                        pago.setFechaPago(LocalDateTime.now());
+                        pagoRepository.save(pago);
+                    } else {
+                        System.out.println("ℹ️ Ya existe un registro de pago para el pedido " + pedidoId + ", se omite duplicado");
                     }
-
-                    return ResponseEntity.ok(response);
-
-                } catch (Exception e) {
-                    System.err.println("❌ Error obteniendo pago de MercadoPago: " + e.getMessage());
-                    response.put("message", "No se pudo verificar el pago en MercadoPago");
-                    return ResponseEntity.ok(response);
+                } catch (org.springframework.dao.DataIntegrityViolationException dive) {
+                    // ✅ CLAVE: otra petición concurrente ganó la carrera e insertó primero.
+                    // El pago YA está guardado en la BD, así que no es un error real.
+                    System.out.println("ℹ️ Pago para pedido " + pedidoId + " ya fue insertado por una petición concurrente (condición de carrera). Continuando normalmente.");
                 }
+
+            } else if ("rejected".equals(status)) {
+                pedido.setEstado("RECHAZADO");
+                System.out.println("❌ Pedido " + pedidoId + " rechazado");
             } else {
-                response.put("message", "El pago aún no ha sido procesado");
-                return ResponseEntity.ok(response);
+                pedido.setEstado("PENDIENTE");
+                System.out.println("⏳ Pedido " + pedidoId + " pendiente");
             }
+
+            pedidoService.actualizarPedido(pedido);
+            System.out.println("✅ Confirmación procesada correctamente para pedido: " + pedidoId);
+
+            return ResponseEntity.ok(Map.of("status", "success"));
 
         } catch (Exception e) {
-            System.err.println("❌ Error verificando pago: " + e.getMessage());
+            System.err.println("❌ Error confirmando pago: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error al verificar el pago: " + e.getMessage()));
+                    .body(Map.of("error", e.getMessage()));
         }
-    }
-
-    @GetMapping("/public-key")
-    public ResponseEntity<?> getPublicKey() {
-        return ResponseEntity.ok(Map.of("publicKey", mercadoPagoService.getPublicKey()));
     }
 
     @PostMapping("/calcular")

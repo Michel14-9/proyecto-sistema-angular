@@ -31,15 +31,27 @@ public class Pedido {
 
     private String numeroPedido;
 
-    // ✅ NUEVOS CAMPOS PARA MERCADOPAGO
+    // ✅ NUEVOS CAMPOS
     @Column(name = "preference_id")
-    private String preferenceId;  // ID de la preferencia en MercadoPago
+    private String preferenceId;
 
     @Column(name = "payment_id")
-    private String paymentId;     // ID del pago en MercadoPago
+    private String paymentId;
 
     @Column(name = "fecha_actualizacion")
-    private LocalDateTime fechaActualizacion;  // Última actualización del pedido
+    private LocalDateTime fechaActualizacion;
+
+    @Column(name = "origen")
+    private String origen; // ONLINE, PRESENCIAL
+
+    @Column(name = "listo_para_cocina")
+    private boolean listoParaCocina = false;
+
+    @Column(name = "nombre_cliente")
+    private String nombreCliente; // Para pedidos presenciales sin usuario
+
+    @Column(name = "telefono_cliente")
+    private String telefonoCliente; // Para pedidos presenciales sin usuario
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id")
@@ -54,6 +66,8 @@ public class Pedido {
         this.fechaActualizacion = LocalDateTime.now();
         this.estado = "PENDIENTE";
         this.items = new ArrayList<>();
+        this.origen = "ONLINE";
+        this.listoParaCocina = false;
     }
 
     public String getCodigo() {
@@ -146,7 +160,7 @@ public class Pedido {
     public Usuario getUsuario() { return usuario; }
     public void setUsuario(Usuario usuario) { this.usuario = usuario; }
 
-    // ✅ GETTERS Y SETTERS PARA MERCADOPAGO
+    // ✅ GETTERS Y SETTERS NUEVOS
     public String getPreferenceId() { return preferenceId; }
     public void setPreferenceId(String preferenceId) { this.preferenceId = preferenceId; }
 
@@ -155,4 +169,16 @@ public class Pedido {
 
     public LocalDateTime getFechaActualizacion() { return fechaActualizacion; }
     public void setFechaActualizacion(LocalDateTime fechaActualizacion) { this.fechaActualizacion = fechaActualizacion; }
+
+    public String getOrigen() { return origen; }
+    public void setOrigen(String origen) { this.origen = origen; }
+
+    public boolean isListoParaCocina() { return listoParaCocina; }
+    public void setListoParaCocina(boolean listoParaCocina) { this.listoParaCocina = listoParaCocina; }
+
+    public String getNombreCliente() { return nombreCliente; }
+    public void setNombreCliente(String nombreCliente) { this.nombreCliente = nombreCliente; }
+
+    public String getTelefonoCliente() { return telefonoCliente; }
+    public void setTelefonoCliente(String telefonoCliente) { this.telefonoCliente = telefonoCliente; }
 }

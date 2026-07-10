@@ -1,209 +1,466 @@
 <!-- src/app/modules/cajero/cajero/cajero.html -->
-<div class="container my-4">
-  <!-- Sección de Métricas -->
-  <div class="row mb-4">
-    <div class="col-md-4">
-      <div class="card stat-card text-warning">
-        <i class="fas fa-clock-history"></i>
-        <div class="number" id="total-pendientes">{{ estadisticas.pendientes || 0 }}</div>
-        <div class="label">Pendientes</div>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card stat-card text-success">
-        <i class="fas fa-cash-coin"></i>
-        <div class="number" id="total-pagados-hoy">{{ estadisticas.pagadosHoy || 0 }}</div>
-        <div class="label">Pagados Hoy</div>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card stat-card text-info">
-        <i class="fas fa-chart-line"></i>
-        <div class="number" id="ingresos-hoy">S/ {{ (estadisticas.ingresosHoy || 0) | number:'1.2-2' }}</div>
-        <div class="label">Ingresos Hoy</div>
-      </div>
-    </div>
-  </div>
 
-  <div class="row">
-    <div class="col-lg-8">
-      <!-- Lista de Pedidos Pendientes -->
-      <div class="card shadow-sm mb-4">
-        <div class="card-header bg-warning text-dark">
-          <h5 class="mb-0">
-            <i class="fas fa-clock me-2"></i>Pedidos Pendientes
-            <span class="badge bg-dark float-end" id="badge-pendientes">{{ pedidosPendientes.length }}</span>
-          </h5>
+<!-- ====== HEADER ====== -->
+<header class="cajero-header">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-luren">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="#">
+        <i class="fas fa-cash-register me-2"></i>Luren Chicken - Cajero
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCajero">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarCajero">
+        <ul class="navbar-nav ms-auto align-items-lg-center">
+          <li class="nav-item">
+            <span class="nav-link text-white-50">
+              <i class="fas fa-user me-1"></i>{{ username }}
+            </span>
+          </li>
+          <li class="nav-item">
+            <span class="nav-link text-white-50">
+              <i class="fas fa-clock me-1"></i>{{ horaActual }}
+            </span>
+          </li>
+          <li class="nav-item">
+            <button class="btn btn-outline-light btn-sm ms-2" (click)="cerrarSesion()">
+              <i class="fas fa-sign-out-alt me-1"></i>Salir
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<!-- ====== CONTENIDO PRINCIPAL ====== -->
+<main class="cajero-main py-4">
+  <div class="container">
+
+    <!-- Sección de Métricas -->
+    <div class="row mb-4">
+      <div class="col-md-4">
+        <div class="card stat-card text-warning">
+          <i class="fas fa-clock-history"></i>
+          <div class="number">{{ estadisticas.pendientes || 0 }}</div>
+          <div class="label">Pendientes</div>
         </div>
-        <div class="card-body p-0">
-          <div class="list-group list-group-flush" id="lista-pedidos-pendientes">
-            <div *ngFor="let pedido of pedidosPendientes"
-                 class="list-group-item list-group-item-action pedido-item"
-                 [class.selected]="pedidoSeleccionado?.id === pedido.id"
-                 (click)="mostrarDetallePedido(pedido)">
-              <div class="d-flex justify-content-between align-items-center">
-                <div>
-                  <h6 class="mb-1">{{ pedido.numeroPedido || '#' + pedido.id }}</h6>
-                  <p class="mb-1">{{ obtenerNombreCliente(pedido) }}</p>
-                  <small class="text-muted">{{ formatearFecha(pedido.fechaPedido || pedido.fecha) }}</small>
+      </div>
+      <div class="col-md-4">
+        <div class="card stat-card text-success">
+          <i class="fas fa-cash-coin"></i>
+          <div class="number">{{ estadisticas.pagadosHoy || 0 }}</div>
+          <div class="label">Pagados Hoy</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card stat-card text-info">
+          <i class="fas fa-chart-line"></i>
+          <div class="number">S/ {{ (estadisticas.ingresosHoy || 0) | number:'1.2-2' }}</div>
+          <div class="label">Ingresos Hoy</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-lg-8">
+        <!-- ====== CREAR PEDIDO PRESENCIAL ====== -->
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+              <i class="fas fa-plus-circle me-2"></i>Crear Pedido Presencial
+              <button class="btn btn-sm btn-light float-end" type="button" data-bs-toggle="collapse" data-bs-target="#formPedidoPresencial">
+                <i class="fas fa-chevron-down"></i>
+              </button>
+            </h5>
+          </div>
+          <div class="collapse show" id="formPedidoPresencial">
+            <div class="card-body">
+              <!-- ====== DATOS DEL CLIENTE ====== -->
+              <div class="row mb-3">
+                <div class="col-md-5">
+                  <label class="form-label fw-bold">Nombre del Cliente <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" [(ngModel)]="nombreCliente" placeholder="Ej: Juan Pérez"
+                         [class.is-invalid]="nombreCliente && nombreCliente.trim() === ''">
+                  <div class="invalid-feedback">El nombre del cliente es obligatorio</div>
                 </div>
-                <div class="text-end">
-                  <strong class="text-success">S/ {{ (pedido.total || 0) | number:'1.2-2' }}</strong>
-                  <br>
-                  <span class="badge badge-pendiente">PENDIENTE</span>
+                <div class="col-md-3">
+                  <label class="form-label fw-bold">Teléfono</label>
+                  <input type="text" class="form-control" [(ngModel)]="telefonoCliente" placeholder="Ej: 987654321"
+                         [class.is-invalid]="telefonoCliente && telefonoCliente.length > 0 && telefonoCliente.length !== 9">
+                  <div class="invalid-feedback">El teléfono debe tener 9 dígitos</div>
                 </div>
+                <div class="col-md-2">
+                  <label class="form-label fw-bold">Pago</label>
+                  <select class="form-select" [(ngModel)]="metodoPago">
+                    <option value="EFECTIVO">Efectivo</option>
+                    <option value="TARJETA">Tarjeta</option>
+                    <option value="YAPE">Yape</option>
+                    <option value="PLIN">Plin</option>
+                  </select>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label fw-bold">Entrega</label>
+                  <select class="form-select" [(ngModel)]="tipoEntrega">
+                    <option value="LOCAL">Local</option>
+                    <option value="PARA LLEVAR">Para Llevar</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- ====== AGREGAR PRODUCTOS ====== -->
+              <div class="row mb-3">
+                <div class="col-md-4">
+                  <label class="form-label fw-bold">Producto <span class="text-danger">*</span></label>
+                  <!-- ✅ FIX: [ngValue] en vez de [value] para preservar el tipo number del id -->
+                  <select class="form-select" [(ngModel)]="nuevoProducto.productoId"
+                          [class.is-invalid]="nuevoProducto.productoId === null && productosDisponibles.length > 0">
+                    <option [ngValue]="null" disabled>Seleccionar producto...</option>
+                    <option *ngFor="let producto of productosDisponibles" [ngValue]="producto.id">
+                      {{ producto.nombre }} - S/ {{ producto.precio }}
+                    </option>
+                  </select>
+                  <small *ngIf="productosDisponibles.length === 0" class="text-danger">
+                    <i class="fas fa-exclamation-circle me-1"></i>No hay productos disponibles
+                  </small>
+                  <small *ngIf="nuevoProducto.productoId === null && productosDisponibles.length > 0" class="text-danger">
+                    <i class="fas fa-exclamation-circle me-1"></i>Selecciona un producto
+                  </small>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label fw-bold">Cantidad</label>
+                  <input type="number" class="form-control" [(ngModel)]="nuevoProducto.cantidad" min="1"
+                         [class.is-invalid]="nuevoProducto.cantidad < 1">
+                  <div class="invalid-feedback">Cantidad mínima 1</div>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                  <button class="btn btn-success w-100" (click)="agregarProductoSeleccionado()"
+                          [disabled]="!nuevoProducto.productoId || productosDisponibles.length === 0">
+                    <i class="fas fa-plus me-1"></i>Agregar
+                  </button>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                  <div class="fw-bold fs-5 text-end w-100">
+                    Total: S/ {{ calcularTotalPresencial() | number:'1.2-2' }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- ====== LISTA DE PRODUCTOS SELECCIONADOS ====== -->
+              <div *ngIf="productosSeleccionados.length > 0" class="mb-3">
+                <h6>Productos del Pedido <span class="badge bg-primary">{{ productosSeleccionados.length }}</span></h6>
+                <div class="table-responsive">
+                  <table class="table table-sm table-bordered">
+                    <thead class="table-light">
+                    <tr>
+                      <th>Producto</th>
+                      <th class="text-center">Cantidad</th>
+                      <th class="text-end">Precio</th>
+                      <th class="text-end">Subtotal</th>
+                      <th class="text-center">Acción</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr *ngFor="let item of productosSeleccionados; let i = index">
+                      <td><i class="fas fa-utensils text-primary me-1"></i>{{ item.nombre }}</td>
+                      <td class="text-center">{{ item.cantidad }}</td>
+                      <td class="text-end">S/ {{ item.precio | number:'1.2-2' }}</td>
+                      <td class="text-end">S/ {{ item.subtotal | number:'1.2-2' }}</td>
+                      <td class="text-center">
+                        <button class="btn btn-danger btn-sm" (click)="eliminarProductoSeleccionado(i)" title="Eliminar producto">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                    </tbody>
+                    <tfoot>
+                    <tr class="table-active fw-bold">
+                      <td colspan="3" class="text-end">TOTAL</td>
+                      <td class="text-end text-success">S/ {{ calcularTotalPresencial() | number:'1.2-2' }}</td>
+                      <td></td>
+                    </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+
+              <!-- ====== CREAR PEDIDO (SIN OBSERVACIONES) ====== -->
+              <div class="row">
+                <div class="col-md-8">
+                  <!-- ❌ ELIMINADO: Campo de observaciones -->
+                </div>
+                <div class="col-md-4 d-flex align-items-end justify-content-end">
+                  <button class="btn btn-primary btn-lg w-100" (click)="crearPedidoPresencial()"
+                          [disabled]="productosSeleccionados.length === 0 || !nombreCliente || creandoPedido">
+                    <span *ngIf="!creandoPedido">
+                      <i class="fas fa-save me-2"></i>Crear Pedido
+                    </span>
+                    <span *ngIf="creandoPedido">
+                      <span class="spinner-border spinner-border-sm me-2"></span>Creando...
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- ====== MENSAJES DE VALIDACIÓN ====== -->
+              <div *ngIf="productosSeleccionados.length === 0 && nombreCliente" class="text-warning small mt-2">
+                <i class="fas fa-info-circle me-1"></i>Agrega productos para crear el pedido
+              </div>
+              <div *ngIf="productosSeleccionados.length > 0 && !nombreCliente" class="text-warning small mt-2">
+                <i class="fas fa-info-circle me-1"></i>Ingresa el nombre del cliente
               </div>
             </div>
           </div>
-          <div *ngIf="pedidosPendientes.length === 0" class="text-center py-5">
-            <i class="fas fa-check-circle text-muted fs-1"></i>
-            <p class="text-muted mt-2">No hay pedidos pendientes</p>
+        </div>
+
+        <!-- ====== LISTA DE PEDIDOS PENDIENTES ====== -->
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">
+              <i class="fas fa-clock me-2"></i>Pedidos Pendientes
+              <span class="badge bg-dark float-end">{{ pedidosPendientes.length }}</span>
+            </h5>
+          </div>
+          <div class="card-body p-0">
+            <div class="list-group list-group-flush">
+              <div *ngFor="let pedido of pedidosPendientes"
+                   class="list-group-item list-group-item-action pedido-item"
+                   [class.selected]="pedidoSeleccionado?.id === pedido.id"
+                   (click)="mostrarDetallePedido(pedido)">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h6 class="mb-1"><i class="fas fa-hashtag text-muted me-1"></i>{{ pedido.numeroPedido || '#' + pedido.id }}</h6>
+                    <p class="mb-1"><i class="fas fa-user text-muted me-1"></i>{{ obtenerNombreCliente(pedido) }}</p>
+                    <small class="text-muted"><i class="far fa-calendar-alt me-1"></i>{{ formatearFecha(pedido.fechaPedido || pedido.fecha) }}</small>
+                  </div>
+                  <div class="text-end">
+                    <strong class="text-success">S/ {{ (pedido.total || 0) | number:'1.2-2' }}</strong>
+                    <br>
+                    <span class="badge badge-pendiente">PENDIENTE</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="pedidosPendientes.length === 0" class="text-center py-5">
+              <i class="fas fa-check-circle text-muted fs-1"></i>
+              <p class="text-muted mt-2">No hay pedidos pendientes</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Detalle del Pedido Seleccionado -->
-      <div class="card shadow-sm mb-4 p-3" *ngIf="pedidoSeleccionado">
-        <h5 class="mb-3">
-          Información del Pedido
-          <span class="badge bg-primary">{{ pedidoSeleccionado.numeroPedido || '#' + pedidoSeleccionado.id }}</span>
-          <button class="btn btn-sm btn-outline-secondary float-end" (click)="ocultarDetalle()">
-            <i class="fas fa-times"></i>
-          </button>
-        </h5>
+        <!-- ====== DETALLE DEL PEDIDO SELECCIONADO ====== -->
+        <div class="card shadow-sm mb-4 p-3" *ngIf="pedidoSeleccionado">
+          <h5 class="mb-3">
+            <i class="fas fa-info-circle me-2"></i>Información del Pedido
+            <span class="badge bg-primary">{{ pedidoSeleccionado.numeroPedido || '#' + pedidoSeleccionado.id }}</span>
+            <button class="btn btn-sm btn-outline-secondary float-end" (click)="ocultarDetalle()">
+              <i class="fas fa-times"></i> Cerrar
+            </button>
+          </h5>
 
-        <div class="d-flex justify-content-between mb-2">
-          <span>Número de Orden:</span>
-          <span class="fw-bold text-primary">{{ pedidoSeleccionado.numeroPedido || '#' + pedidoSeleccionado.id }}</span>
-        </div>
-        <hr>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="info-item">
+                <label class="text-muted">Número de Orden</label>
+                <div class="fw-bold text-primary">{{ pedidoSeleccionado.numeroPedido || '#' + pedidoSeleccionado.id }}</div>
+              </div>
+              <div class="info-item mt-2">
+                <label class="text-muted">Cliente</label>
+                <div class="fw-bold">{{ obtenerNombreCliente(pedidoSeleccionado) }}</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-item">
+                <label class="text-muted">Total</label>
+                <div class="fw-bold text-success fs-4">S/ {{ (pedidoSeleccionado.total || 0) | number:'1.2-2' }}</div>
+              </div>
+              <div class="info-item mt-2">
+                <label class="text-muted">Fecha</label>
+                <div class="fw-bold">{{ formatearFecha(pedidoSeleccionado.fechaPedido || pedidoSeleccionado.fecha) }}</div>
+              </div>
+            </div>
+          </div>
 
-        <div id="order-items-container">
-          <div id="order-items-list">
+          <hr>
+
+          <h6 class="mb-2"><i class="fas fa-list me-2"></i>Productos</h6>
+          <div id="order-items-container">
             <div *ngFor="let item of pedidoSeleccionado.items"
                  class="d-flex justify-content-between border-bottom pb-2 mb-2 order-item">
               <span>{{ item.nombreProductoSeguro || item.nombreProducto || 'Producto' }} x {{ item.cantidad || 1 }}</span>
-              <span>S/ {{ ((item.precio || 0) * (item.cantidad || 1)) | number:'1.2-2' }}</span>
+              <span class="text-success">S/ {{ ((item.precio || 0) * (item.cantidad || 1)) | number:'1.2-2' }}</span>
+            </div>
+            <div class="d-flex justify-content-between fw-bold fs-5 text-info border-top pt-2 mt-2">
+              <span>TOTAL</span>
+              <span>S/ {{ (pedidoSeleccionado.total || 0) | number:'1.2-2' }}</span>
             </div>
           </div>
-          <div class="d-flex justify-content-between fw-bold fs-5 text-info">
-            <span>Total:</span>
-            <span>S/ {{ (pedidoSeleccionado.total || 0) | number:'1.2-2' }}</span>
-          </div>
-        </div>
 
-        <div class="card shadow-sm mb-4 p-3 mt-3">
-          <h5 class="mb-3">Tipo de Entrega</h5>
-          <div class="row g-3">
-            <div class="col-6">
-              <div class="delivery-option p-3 text-center border rounded-3"
-                   [class.selected]="(pedidoSeleccionado.tipoEntrega || 'DELIVERY') === 'DELIVERY'">
-                <i class="fas fa-truck fs-3"></i>
-                <div>Delivery</div>
+          <!-- ✅ Tipo de Entrega (Delivery/Recojo) — SOLO aplica a pedidos WEB.
+               Un pedido PRESENCIAL se pide y se retira en el mismo mostrador,
+               no tiene delivery ni "recojo en tienda" como concepto separado. -->
+          <div class="mt-3" *ngIf="!esPresencial(pedidoSeleccionado)">
+            <h6><i class="fas fa-truck me-2"></i>Tipo de Entrega</h6>
+            <div class="row g-2">
+              <div class="col-6">
+                <div class="delivery-option p-2 text-center border rounded-3"
+                     [class.selected]="(pedidoSeleccionado.tipoEntrega || 'DELIVERY') === 'DELIVERY'">
+                  <i class="fas fa-truck fs-3"></i>
+                  <div>Delivery</div>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="delivery-option p-2 text-center border rounded-3"
+                     [class.selected]="(pedidoSeleccionado.tipoEntrega || 'DELIVERY') === 'RECOJO'">
+                  <i class="fas fa-box fs-3"></i>
+                  <div>Recojo en Tienda</div>
+                </div>
               </div>
             </div>
-            <div class="col-6">
-              <div class="delivery-option p-3 text-center border rounded-3"
-                   [class.selected]="(pedidoSeleccionado.tipoEntrega || 'DELIVERY') === 'RECOJO'">
-                <i class="fas fa-box fs-3"></i>
-                <div>Recojo en Tienda</div>
+          </div>
+
+          <!-- Información de Delivery -->
+          <div *ngIf="!esPresencial(pedidoSeleccionado) && (pedidoSeleccionado.tipoEntrega || 'DELIVERY') === 'DELIVERY'" class="mt-3">
+            <h6><i class="fas fa-map-marker-alt me-2"></i>Información de Entrega</h6>
+            <p><strong>Dirección:</strong> {{ pedidoSeleccionado.direccionEntrega || 'No especificada' }}</p>
+            <p><strong>Teléfono:</strong> {{ pedidoSeleccionado.cliente?.telefono || 'No especificado' }}</p>
+          </div>
+
+          <!-- Información de Recojo -->
+          <div *ngIf="!esPresencial(pedidoSeleccionado) && (pedidoSeleccionado.tipoEntrega || 'DELIVERY') === 'RECOJO'" class="card bg-light p-3 mt-3">
+            <h6><i class="fas fa-store me-2"></i>Información de la Tienda</h6>
+            <p class="mb-1"><i class="fas fa-map-marker-alt me-2"></i> Calle Principal 123</p>
+            <p class="mb-1"><i class="fas fa-clock me-2"></i> Lun-Dom: 11:00 - 23:00</p>
+            <p class="mb-0"><i class="fas fa-phone me-2"></i> +51 123 456 789</p>
+          </div>
+
+          <!-- ✅ Barra de 4 estados — SOLO para pedidos WEB (pasan por cocina y delivery) -->
+          <div class="mt-3" *ngIf="!esPresencial(pedidoSeleccionado)">
+            <h6><i class="fas fa-chart-simple me-2"></i>Estado del Pedido</h6>
+            <div class="order-status-bar d-flex justify-content-between align-items-center">
+              <div class="status-item text-center" [class.active]="isEstadoActivo('PENDIENTE')">
+                <span class="step-circle">1</span>
+                <div class="mt-1 small">Pendiente</div>
+              </div>
+              <div class="status-item text-center" [class.active]="isEstadoActivo('PAGADO')">
+                <span class="step-circle">2</span>
+                <div class="mt-1 small">Pagado</div>
+              </div>
+              <div class="status-item text-center" [class.active]="isEstadoActivo('PREPARACION')">
+                <span class="step-circle">3</span>
+                <div class="mt-1 small">Preparando</div>
+              </div>
+              <div class="status-item text-center" [class.active]="isEstadoActivo('ENTREGADO')">
+                <span class="step-circle">4</span>
+                <div class="mt-1 small">Entregado</div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Información de Delivery -->
-        <div *ngIf="(pedidoSeleccionado.tipoEntrega || 'DELIVERY') === 'DELIVERY'" class="mb-4">
-          <h5 class="mt-4 mb-2">Información de Entrega</h5>
-          <p><strong>Dirección:</strong> {{ pedidoSeleccionado.direccionEntrega || 'No especificada' }}</p>
-          <p><strong>Teléfono:</strong> {{ pedidoSeleccionado.cliente?.telefono || 'No especificado' }}</p>
-        </div>
+          <!-- ✅ Barra simplificada de 2 estados — SOLO para pedidos PRESENCIALES
+               (el cliente pide en mostrador y retira ahí mismo al pagar, no hay
+               preparación en cocina ni entrega/delivery que rastrear) -->
+          <div class="mt-3" *ngIf="esPresencial(pedidoSeleccionado)">
+            <h6><i class="fas fa-chart-simple me-2"></i>Estado del Pedido</h6>
+            <div class="order-status-bar d-flex justify-content-between align-items-center">
+              <div class="status-item text-center" [class.active]="isEstadoActivo('PENDIENTE')">
+                <span class="step-circle">1</span>
+                <div class="mt-1 small">Pendiente</div>
+              </div>
+              <div class="status-item text-center" [class.active]="isEstadoActivo('PAGADO')">
+                <span class="step-circle">2</span>
+                <div class="mt-1 small">Pagado / Retirado</div>
+              </div>
+            </div>
+          </div>
 
-        <!-- Información de Recojo -->
-        <div *ngIf="(pedidoSeleccionado.tipoEntrega || 'DELIVERY') === 'RECOJO'" class="card shadow-sm mb-4 p-3">
-          <h5 class="mb-3">Información de la Tienda</h5>
-          <p class="mb-1 text-muted"><i class="fas fa-map-marker-alt me-2"></i> Calle Principal 123</p>
-          <p class="mb-1 text-muted"><i class="fas fa-clock me-2"></i> Lun-Dom: 11:00 - 23:00</p>
-          <p class="mb-0 text-muted"><i class="fas fa-phone me-2"></i> +51 123 456 789</p>
-        </div>
-
-        <div class="card shadow-sm mb-4 p-3">
-          <h5 class="mb-3">Estado del Pedido</h5>
-          <div class="order-status-bar d-flex justify-content-between align-items-center">
-            <div class="status-item text-center" [class.active]="isEstadoActivo('PENDIENTE')">
-              <span class="step-circle">1</span>
-              <div class="mt-1">Pendiente</div>
-            </div>
-            <div class="status-item text-center" [class.active]="isEstadoActivo('PAGADO')">
-              <span class="step-circle">2</span>
-              <div class="mt-1">Pagado</div>
-            </div>
-            <div class="status-item text-center" [class.active]="isEstadoActivo('PREPARACION')">
-              <span class="step-circle">3</span>
-              <div class="mt-1">Preparando</div>
-            </div>
-            <div class="status-item text-center" [class.active]="isEstadoActivo('ENTREGADO')">
-              <span class="step-circle">4</span>
-              <div class="mt-1">Entregado</div>
-            </div>
+          <!-- ====== ACCIONES ====== -->
+          <div class="d-grid gap-2 mt-3">
+            <button class="btn btn-success btn-lg" (click)="abrirModalPago()">
+              <i class="fas fa-check-circle me-2"></i>Marcar como Pagado
+            </button>
+            <button class="btn btn-danger btn-lg" (click)="abrirModalCancelar()">
+              <i class="fas fa-times-circle me-2"></i>Cancelar Pedido
+            </button>
           </div>
         </div>
 
-        <!-- Acciones -->
-        <div class="d-grid gap-2">
-          <button class="btn btn-success btn-lg" (click)="abrirModalPago()">
-            <i class="fas fa-check-circle me-2"></i>Marcar como Pagado
-          </button>
-          <button class="btn btn-danger btn-lg" (click)="abrirModalCancelar()">
-            <i class="fas fa-times-circle me-2"></i>Cancelar Pedido
-          </button>
+        <!-- ====== SIN PEDIDO SELECCIONADO ====== -->
+        <div *ngIf="!pedidoSeleccionado" class="text-center text-muted py-4">
+          <i class="fas fa-cart fs-1 mb-2 d-block"></i>
+          <p class="mt-2">Selecciona un pedido para ver las acciones</p>
         </div>
       </div>
 
-      <!-- Sin pedido seleccionado -->
-      <div *ngIf="!pedidoSeleccionado" class="text-center text-muted py-4">
-        <i class="fas fa-cart fs-1"></i>
-        <p class="mt-2">Selecciona un pedido para ver las acciones</p>
-      </div>
-    </div>
-
-    <div class="col-lg-4">
-      <div class="card p-3 shadow-sm">
-        <h5>Información del Sistema</h5>
-        <p class="mb-1">
-          <i class="fas fa-calendar me-2"></i>
-          {{ fechaActual }}
-        </p>
-        <p class="mb-1">
-          <i class="fas fa-clock me-2"></i>
-          {{ horaActual }}
-        </p>
-        <p class="mb-0">
-          <i class="fas fa-user me-2"></i>
-          {{ username }}
-        </p>
-
-        <div class="mt-3 pt-3 border-top">
-          <button class="btn btn-outline-danger btn-sm w-100" (click)="logout()">
-            <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
-          </button>
+      <!-- ====== INFORMACIÓN DEL SISTEMA ====== -->
+      <div class="col-lg-4">
+        <div class="card p-3 shadow-sm">
+          <h5><i class="fas fa-info-circle me-2"></i>Información del Sistema</h5>
+          <hr>
+          <p class="mb-1">
+            <i class="fas fa-calendar me-2 text-primary"></i>
+            {{ fechaActual }}
+          </p>
+          <p class="mb-1">
+            <i class="fas fa-clock me-2 text-primary"></i>
+            {{ horaActual }}
+          </p>
+          <p class="mb-0">
+            <i class="fas fa-user me-2 text-primary"></i>
+            {{ username }}
+          </p>
+          <p class="mb-0 mt-2">
+            <i class="fas fa-box me-2 text-primary"></i>
+            Productos disponibles: {{ productosDisponibles.length }}
+          </p>
         </div>
       </div>
     </div>
   </div>
-</div>
+</main>
+
+<!-- ====== FOOTER ====== -->
+<footer class="cajero-footer">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-6 text-center text-md-start">
+        <p class="mb-0 text-white-50 small">
+          &copy; {{ fechaActual.split(' ').pop() || '2026' }} Luren Chicken - Todos los derechos reservados
+        </p>
+      </div>
+      <div class="col-md-6 text-center text-md-end">
+        <p class="mb-0 text-white-50 small">
+          <i class="fas fa-cash-register me-1"></i> Módulo de Cajero v2.0
+          <span class="mx-2">|</span>
+          <i class="fas fa-shield-alt me-1"></i> Seguro y Confiable
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ====== MODALS ====== -->
 
 <!-- Modal Confirmación Pago -->
 <div class="modal fade" id="modalConfirmarPago" tabindex="-1" aria-labelledby="modalConfirmarPagoLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="modalConfirmarPagoLabel">Confirmar Pago</h5>
+        <h5 class="modal-title" id="modalConfirmarPagoLabel">
+          <i class="fas fa-check-circle text-success me-2"></i>Confirmar Pago
+        </h5>
         <button type="button" class="btn-close" (click)="cerrarModalPago()"></button>
       </div>
       <div class="modal-body">
-        <p>¿Confirmar que el pedido <strong>{{ pedidoSeleccionado?.numeroPedido || '#' + pedidoSeleccionado?.id }}</strong> ha sido pagado?</p>
-        <p class="text-muted">El pedido pasará a estado "PAGADO" y será enviado a cocina.</p>
+        <p>¿Confirmar que el pedido <strong class="text-primary">{{ pedidoSeleccionado?.numeroPedido || '#' + pedidoSeleccionado?.id }}</strong> ha sido pagado?</p>
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle me-2"></i>
+          El pedido pasará a estado <strong>"PAGADO"</strong> y el cliente retirará su pedido en el local.
+        </div>
+        <div class="alert alert-warning">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          Esta acción <strong>no se puede deshacer</strong>.
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" (click)="cerrarModalPago()">Cancelar</button>
@@ -220,15 +477,21 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="modalCancelarLabel">Cancelar Pedido</h5>
+        <h5 class="modal-title" id="modalCancelarLabel">
+          <i class="fas fa-times-circle text-danger me-2"></i>Cancelar Pedido
+        </h5>
         <button type="button" class="btn-close" (click)="cerrarModalCancelar()"></button>
       </div>
       <div class="modal-body">
-        <p>¿Está seguro de que desea cancelar el pedido <strong>{{ pedidoSeleccionado?.numeroPedido || '#' + pedidoSeleccionado?.id }}</strong>?</p>
+        <p>¿Está seguro de que desea cancelar el pedido <strong class="text-danger">{{ pedidoSeleccionado?.numeroPedido || '#' + pedidoSeleccionado?.id }}</strong>?</p>
         <div class="mb-3">
           <label class="form-label">Motivo de cancelación (opcional):</label>
           <textarea class="form-control" [(ngModel)]="motivoCancelacion" rows="3"
                     placeholder="Ej: Cliente no contestó, producto no disponible..."></textarea>
+        </div>
+        <div class="alert alert-danger">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          Esta acción <strong>no se puede deshacer</strong>.
         </div>
       </div>
       <div class="modal-footer">
@@ -242,8 +505,8 @@
 </div>
 
 <!-- Alertas Toast -->
-<div class="position-fixed top-0 end-0 p-3 toast-container">
-  <div *ngIf="mensajeToast" class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+<div class="position-fixed top-0 end-0 p-3 toast-container" style="z-index: 1060;">
+  <div *ngIf="mostrarToast" class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
     <div class="toast-header" [class]="tipoToast === 'success' ? 'bg-success text-white' : tipoToast === 'error' ? 'bg-danger text-white' : 'bg-info text-white'">
       <i class="fas me-2" [class.fa-check-circle]="tipoToast === 'success'" [class.fa-exclamation-triangle]="tipoToast === 'error'" [class.fa-info-circle]="tipoToast === 'info'"></i>
       <strong class="me-auto">{{ tipoToast === 'success' ? 'Éxito' : tipoToast === 'error' ? 'Error' : 'Información' }}</strong>

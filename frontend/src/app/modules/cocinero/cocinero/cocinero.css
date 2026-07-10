@@ -10,6 +10,49 @@
   --blanco: #fafafa;
 }
 
+/* ======= HEADER ======= */
+.cocinero-header {
+  background-color: var(--naranja-oscuro);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  position: sticky;
+  top: 0;
+  z-index: 1040;
+}
+
+.bg-luren {
+  background-color: var(--naranja-oscuro) !important;
+}
+
+.navbar-brand {
+  font-size: 1.25rem;
+  letter-spacing: 0.5px;
+}
+
+.navbar-brand i {
+  font-size: 1.3rem;
+}
+
+.nav-link {
+  padding: 0.5rem 0.75rem;
+}
+
+/* ======= MAIN ======= */
+.cocinero-main {
+  min-height: calc(100vh - 160px);
+  background-color: #f8f9fa;
+}
+
+/* ======= FOOTER ======= */
+.cocinero-footer {
+  background-color: #1a1a2e;
+  padding: 1rem 0;
+  border-top: 3px solid var(--naranja-oscuro);
+}
+
+.cocinero-footer p {
+  margin-bottom: 0;
+}
+
 /* ======= TARJETAS ESTADÍSTICAS ======= */
 .stat-card {
   border: none;
@@ -137,6 +180,14 @@
   .toast {
     min-width: 250px;
   }
+
+  .cocinero-header .navbar-brand {
+    font-size: 1rem;
+  }
+
+  .cocinero-footer {
+    text-align: center;
+  }
 }
 
 @media (max-width: 576px) {
@@ -146,5 +197,10 @@
 
   .stat-card .label {
     font-size: 0.75rem;
+  }
+
+  .cocinero-header .nav-link {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.9rem;
   }
 }

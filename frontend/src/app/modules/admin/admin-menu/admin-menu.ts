@@ -5,6 +5,7 @@ import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
+import { LayoutService } from '../../../core/services/layout.service'; // ✅ Importar LayoutService
 import {
   Chart,
   LinearScale,
@@ -93,6 +94,10 @@ export class AdminMenuComponent implements OnInit, AfterViewInit, OnDestroy {
   seccionActual: string = 'dashboard';
   tituloSeccion: string = 'Dashboard';
 
+  // Fecha y hora
+  fechaActual: string = '';
+  horaActual: string = '';
+
   // Alertas
   mensajeAlerta: string = '';
   tipoAlerta: string = '';
@@ -173,6 +178,9 @@ export class AdminMenuComponent implements OnInit, AfterViewInit, OnDestroy {
   reportChartInstance: any = null;
   categoryChartInstance: any = null;
 
+  // Intervalos
+  private intervalId: any;
+
   // Modales Bootstrap
   private productModal: any = null;
   private userModal: any = null;
@@ -181,7 +189,8 @@ export class AdminMenuComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     private http: HttpClient,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private layoutService: LayoutService // ✅ Inyectar LayoutService
   ) {}
 
   ngOnInit(): void {
@@ -193,10 +202,19 @@ export class AdminMenuComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    // ✅ Ocultar header y footer global
+    this.layoutService.hideHeaderAndFooter();
+
     this.inicializarFechas();
     this.cargarDashboard();
     this.cargarProductos();
     this.cargarUsuarios();
+    this.actualizarHoraYFecha();
+
+    // ✅ Actualizar hora cada segundo
+    this.intervalId = setInterval(() => {
+      this.actualizarHoraYFecha();
+    }, 1000);
   }
 
   ngAfterViewInit(): void {
@@ -216,6 +234,12 @@ export class AdminMenuComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    // ✅ Restaurar header y footer global
+    this.layoutService.showHeaderAndFooter();
+
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+    }
     if (this.salesChartInstance) {
       this.salesChartInstance.destroy();
       this.salesChartInstance = null;
@@ -234,6 +258,21 @@ export class AdminMenuComponent implements OnInit, AfterViewInit, OnDestroy {
     let headers = new HttpHeaders();
     headers = headers.set('Content-Type', 'application/json');
     return headers;
+  }
+
+  actualizarHoraYFecha(): void {
+    const ahora = new Date();
+    this.fechaActual = ahora.toLocaleDateString('es-ES', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    this.horaActual = ahora.toLocaleTimeString('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
   }
 
   // ============ SECCIONES ============
@@ -974,8 +1013,17 @@ export class AdminMenuComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  // ============ LOGOUT ============
   logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
+    if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+      this.authService.logout().subscribe({
+        next: () => {
+          this.router.navigate(['/login']);
+        },
+        error: () => {
+          this.router.navigate(['/login']);
+        }
+      });
+    }
   }
 }

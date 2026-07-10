@@ -1,5 +1,4 @@
-// src/app/modules/cliente/mis-pedidos/mis-pedidos.ts
-import { Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -14,8 +13,9 @@ import { AuthService } from '../../../core/services/auth.service';
   styleUrls: ['./mis-pedidos.css'],
   encapsulation: ViewEncapsulation.None
 })
-export class MisPedidosComponent implements OnInit {
+export class MisPedidosComponent implements OnInit, OnDestroy {
   private apiUrl = 'http://localhost:8080';
+  private pollingInterval: any = null;
 
   pedidos: any[] = [];
   pedidosFiltrados: any[] = [];
@@ -25,10 +25,18 @@ export class MisPedidosComponent implements OnInit {
   username: string = '';
   totalCarrito: number = 0;
 
-  // Filtros
+  // ✅ FILTROS - SOLO ESTADOS QUE EXISTEN EN EL BACKEND
   terminoBusqueda: string = '';
   filtroEstado: string = 'todos';
-  estadosDisponibles: string[] = ['todos', 'PENDIENTE', 'PAGADO', 'CONFIRMADO', 'RECHAZADO', 'CANCELADO', 'ENTREGADO'];
+  estadosDisponibles: string[] = [
+    'todos',
+    'PENDIENTE',
+    'PAGADO',
+    'LISTO',      // ✅ Nuevo
+    'EN_CAMINO',  // ✅ Nuevo
+    'RECHAZADO',
+    'ENTREGADO'
+  ];
 
   constructor(
     private http: HttpClient,
@@ -46,6 +54,11 @@ export class MisPedidosComponent implements OnInit {
     }
 
     this.cargarPedidos();
+    this.iniciarPolling();
+  }
+
+  ngOnDestroy(): void {
+    this.detenerPolling();
   }
 
   cargarPedidos(): void {
@@ -75,6 +88,12 @@ export class MisPedidosComponent implements OnInit {
           this.pedidos = [];
         }
 
+        this.pedidos.sort((a, b) => {
+          const fechaA = new Date(a.fechaPedido || a.fecha || 0);
+          const fechaB = new Date(b.fechaPedido || b.fecha || 0);
+          return fechaB.getTime() - fechaA.getTime();
+        });
+
         this.aplicarFiltros();
       },
       error: (error) => {
@@ -93,8 +112,57 @@ export class MisPedidosComponent implements OnInit {
     });
   }
 
+  iniciarPolling(): void {
+    this.detenerPolling();
+
+    this.pollingInterval = setInterval(() => {
+      const tienePendientes = this.pedidos.some(p =>
+        p.estado === 'PENDIENTE' || p.estado === 'PAGADO' || p.estado === 'LISTO'
+      );
+      if (tienePendientes) {
+        console.log('🔄 Actualizando estados de pedidos...');
+        this.actualizarEstados();
+      }
+    }, 10000);
+  }
+
+  actualizarEstados(): void {
+    this.http.get(`${this.apiUrl}/api/pedidos/mis-pedidos`, {
+      withCredentials: true
+    }).subscribe({
+      next: (response: any) => {
+        const nuevosPedidos = response?.data || response || [];
+
+        let huboCambios = false;
+        nuevosPedidos.forEach((nuevo: any) => {
+          const existente = this.pedidos.find(p => p.id === nuevo.id);
+          if (existente && existente.estado !== nuevo.estado) {
+            console.log(`🔄 Pedido ${nuevo.numeroPedido}: ${existente.estado} → ${nuevo.estado}`);
+            existente.estado = nuevo.estado;
+            existente.fechaPedido = nuevo.fechaPedido;
+            huboCambios = true;
+          }
+        });
+
+        if (huboCambios) {
+          this.aplicarFiltros();
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error actualizando estados:', error);
+      }
+    });
+  }
+
+  detenerPolling(): void {
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = null;
+    }
+  }
+
   aplicarFiltros(): void {
-    let filtrados = this.pedidos;
+    let filtrados = [...this.pedidos];
 
     if (this.filtroEstado !== 'todos') {
       filtrados = filtrados.filter(p => p.estado === this.filtroEstado);
@@ -110,6 +178,12 @@ export class MisPedidosComponent implements OnInit {
         return codigo.includes(term) || itemsMatch;
       });
     }
+
+    filtrados.sort((a, b) => {
+      const fechaA = new Date(a.fechaPedido || a.fecha || 0);
+      const fechaB = new Date(b.fechaPedido || b.fecha || 0);
+      return fechaB.getTime() - fechaA.getTime();
+    });
 
     this.pedidosFiltrados = filtrados;
     console.log(`📊 Filtrados: ${this.pedidosFiltrados.length} pedidos`);
@@ -130,28 +204,54 @@ export class MisPedidosComponent implements OnInit {
   }
 
   verDetalle(pedido: any): void {
-    this.router.navigate(['/pedido', pedido.id]);
+    this.router.navigate(['/sigue-tu-pedido', pedido.id]);
   }
+
+  // ========== MÉTODOS DE ESTADOS ==========
 
   getEstadoClase(estado: string): string {
     const clases: { [key: string]: string } = {
       'PENDIENTE': 'estado-pendiente',
       'PAGADO': 'estado-pagado',
-      'CONFIRMADO': 'estado-pagado',
+      'LISTO': 'estado-listo',
+      'EN_CAMINO': 'estado-en-camino',
       'RECHAZADO': 'estado-rechazado',
-      'CANCELADO': 'estado-cancelado',
       'ENTREGADO': 'estado-entregado'
     };
     return clases[estado] || 'estado-pendiente';
+  }
+
+  getBorderClase(estado: string): string {
+    const clases: { [key: string]: string } = {
+      'PENDIENTE': 'border-warning',
+      'PAGADO': 'border-success',
+      'LISTO': 'border-info',
+      'EN_CAMINO': 'border-orange',
+      'RECHAZADO': 'border-danger',
+      'ENTREGADO': 'border-purple'
+    };
+    return clases[estado] || 'border-warning';
+  }
+
+  getHeaderClase(estado: string): string {
+    const clases: { [key: string]: string } = {
+      'PENDIENTE': 'bg-warning',
+      'PAGADO': 'bg-success text-white',
+      'LISTO': 'bg-info text-white',
+      'EN_CAMINO': 'bg-orange text-white',
+      'RECHAZADO': 'bg-danger text-white',
+      'ENTREGADO': 'bg-purple text-white'
+    };
+    return clases[estado] || 'bg-warning';
   }
 
   getEstadoIcono(estado: string): string {
     const iconos: { [key: string]: string } = {
       'PENDIENTE': '⏳',
       'PAGADO': '✅',
-      'CONFIRMADO': '✅',
+      'LISTO': '📋',
+      'EN_CAMINO': '🚚',
       'RECHAZADO': '❌',
-      'CANCELADO': '🚫',
       'ENTREGADO': '📦'
     };
     return iconos[estado] || '⏳';
@@ -159,22 +259,58 @@ export class MisPedidosComponent implements OnInit {
 
   getEstadoTexto(estado: string): string {
     const textos: { [key: string]: string } = {
-      'PENDIENTE': 'Pendiente',
+      'PENDIENTE': 'Pendiente de pago',
       'PAGADO': 'Pagado',
-      'CONFIRMADO': 'Confirmado',
+      'LISTO': 'Listo para entrega',
+      'EN_CAMINO': 'En camino',
       'RECHAZADO': 'Rechazado',
-      'CANCELADO': 'Cancelado',
       'ENTREGADO': 'Entregado'
     };
     return textos[estado] || estado;
   }
 
+  getEstadoBadge(estado: string): string {
+    const badges: { [key: string]: string } = {
+      'PENDIENTE': 'bg-warning text-dark',
+      'PAGADO': 'bg-success text-white',
+      'LISTO': 'bg-info text-white',
+      'EN_CAMINO': 'bg-orange text-white',
+      'RECHAZADO': 'bg-danger text-white',
+      'ENTREGADO': 'bg-purple text-white'
+    };
+    return badges[estado] || 'bg-warning text-dark';
+  }
+
+  getTiempoEstimado(estado: string): string {
+    const tiempos: { [key: string]: string } = {
+      'PENDIENTE': 'Esperando pago',
+      'PAGADO': '30-45 min',
+      'LISTO': 'Listo para recoger',
+      'EN_CAMINO': '15-20 min',
+      'RECHAZADO': 'Pago no exitoso',
+      'ENTREGADO': '¡Entregado! 🎉'
+    };
+    return tiempos[estado] || 'En proceso';
+  }
+
+  getMensajeAyuda(estado: string): string {
+    const mensajes: { [key: string]: string } = {
+      'PENDIENTE': 'Estamos esperando la confirmación de tu pago',
+      'PAGADO': 'Tu pago ha sido confirmado, estamos preparando tu pedido',
+      'LISTO': 'Tu pedido está listo y será enviado pronto',
+      'EN_CAMINO': 'Tu pedido está en camino a tu dirección',
+      'RECHAZADO': 'El pago fue rechazado, intenta nuevamente',
+      'ENTREGADO': '¡Tu pedido ha sido entregado exitosamente!'
+    };
+    return mensajes[estado] || 'Pedido en proceso';
+  }
+
   getResumenProductos(pedido: any): string {
     if (!pedido.items || pedido.items.length === 0) return 'Sin productos';
-    const nombres = pedido.items.slice(0, 2).map((item: any) =>
+    const nombres = pedido.items.slice(0, 3).map((item: any) =>
       item.nombreProducto || item.nombre || 'Producto'
     );
-    const restante = pedido.items.length > 2 ? ` y ${pedido.items.length - 2} más` : '';
+    const restante = pedido.items.length > 3 ? ` y ${pedido.items.length - 3} más` : '';
     return nombres.join(', ') + restante;
   }
 
@@ -195,7 +331,33 @@ export class MisPedidosComponent implements OnInit {
     }
   }
 
+  esPendiente(estado: string): boolean {
+    return estado === 'PENDIENTE';
+  }
+
+  esPagado(estado: string): boolean {
+    return estado === 'PAGADO';
+  }
+
+  esRechazado(estado: string): boolean {
+    return estado === 'RECHAZADO';
+  }
+
+  esEntregado(estado: string): boolean {
+    return estado === 'ENTREGADO';
+  }
+
+  reintentarPago(pedido: any): void {
+    this.router.navigate(['/pago'], {
+      queryParams: {
+        pedidoId: pedido.id,
+        reintentar: true
+      }
+    });
+  }
+
   logout(): void {
+    this.detenerPolling();
     this.authService.logout();
     this.router.navigate(['/login']);
   }

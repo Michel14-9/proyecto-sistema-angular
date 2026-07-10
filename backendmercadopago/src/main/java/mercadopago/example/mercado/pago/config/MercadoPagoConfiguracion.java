@@ -1,5 +1,4 @@
-
-package com.sistemaapolloAngular.sistema_apolloAngular.config;
+package mercadopago.example.mercado.pago.config;
 
 import com.mercadopago.MercadoPagoConfig;
 import com.mercadopago.client.preference.PreferenceClient;

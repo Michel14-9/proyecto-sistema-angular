@@ -6,6 +6,7 @@ import com.sistemaapolloAngular.sistema_apolloAngular.model.CarritoItem;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.Usuario;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.ProductoFinal;
 import com.sistemaapolloAngular.sistema_apolloAngular.repository.PedidoRepository;
+import com.sistemaapolloAngular.sistema_apolloAngular.repository.ProductoFinalRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
@@ -20,12 +21,15 @@ import java.util.Map;
 public class PedidoService {
 
     private final PedidoRepository pedidoRepository;
+    private final ProductoFinalRepository productoFinalRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
 
-    public PedidoService(PedidoRepository pedidoRepository) {
+    public PedidoService(PedidoRepository pedidoRepository,
+                         ProductoFinalRepository productoFinalRepository) {
         this.pedidoRepository = pedidoRepository;
+        this.productoFinalRepository = productoFinalRepository;
     }
 
     @Transactional
@@ -45,8 +49,6 @@ public class PedidoService {
                     "WHERE p.usuario.id = :usuarioId " +
                     "ORDER BY p.fecha DESC";
 
-            System.out.println("📝 Ejecutando JPQL: " + jpql);
-
             List<Pedido> pedidos = entityManager.createQuery(jpql, Pedido.class)
                     .setParameter("usuarioId", usuarioId)
                     .getResultList();
@@ -60,7 +62,6 @@ public class PedidoService {
                         ", Items: " + pedido.getItems().size());
 
                 for (ItemPedido item : pedido.getItems()) {
-                    // ✅ USAR getProductoFinal()
                     String nombreProducto = item.getProductoFinal() != null ?
                             item.getProductoFinal().getNombre() : item.getNombreProducto();
                     System.out.println("   🛒 Item: " + nombreProducto + " x" + item.getCantidad());
@@ -84,7 +85,6 @@ public class PedidoService {
             for (Pedido pedido : pedidos) {
                 pedido.getItems().size();
                 for (ItemPedido item : pedido.getItems()) {
-                    // ✅ USAR getProductoFinal()
                     if (item.getProductoFinal() != null) {
                         item.getProductoFinal().getNombre();
                     }
@@ -109,6 +109,9 @@ public class PedidoService {
         return pedidoRepository.findAllWithItemsAndProducts();
     }
 
+    /**
+     * ✅ CREAR PEDIDO WEB (Online - MercadoPago)
+     */
     @Transactional
     public Pedido crearPedido(Usuario usuario, List<CarritoItem> carrito, Map<String, Object> datosPedido) {
         try {
@@ -121,13 +124,17 @@ public class PedidoService {
             pedido.setInstrucciones((String) datosPedido.get("instrucciones"));
             pedido.setObservaciones((String) datosPedido.get("observaciones"));
 
+            // ✅ Configurar como pedido WEB
+            pedido.setCanal("WEB");
+            pedido.setOrigen("ONLINE");
+            pedido.setListoParaCocina(false);
+
             for (CarritoItem carritoItem : carrito) {
                 ItemPedido itemPedido = new ItemPedido();
                 itemPedido.setNombreProducto(carritoItem.getProducto().getNombre());
                 itemPedido.setCantidad(carritoItem.getCantidad());
                 itemPedido.setPrecio(carritoItem.getPrecioUnitario());
                 itemPedido.setSubtotal(carritoItem.getPrecioUnitario() * carritoItem.getCantidad());
-                // ✅ USAR setProductoFinal()
                 itemPedido.setProductoFinal(carritoItem.getProducto());
                 pedido.agregarItem(itemPedido);
             }
@@ -139,7 +146,6 @@ public class PedidoService {
             String numeroGenerado = "LR" + String.format("%06d", pedidoGuardado.getId());
             pedidoGuardado.setNumero(numeroGenerado);
             pedidoGuardado.setNumeroPedido(numeroGenerado);
-            pedidoGuardado.setCanal("WEB");
 
             return pedidoRepository.save(pedidoGuardado);
 
@@ -148,16 +154,105 @@ public class PedidoService {
         }
     }
 
+    /**
+     * ✅ CREAR PEDIDO PRESENCIAL (Cajero - Cliente en local)
+     */
+    @Transactional
+    public Pedido crearPedidoPresencial(List<Map<String, Object>> itemsRequest,
+                                        String metodoPago,
+                                        String tipoEntrega,
+                                        String nombreCliente,
+                                        String telefonoCliente,
+                                        String observacionesExtra) {
+        try {
+            if (itemsRequest == null || itemsRequest.isEmpty()) {
+                throw new RuntimeException("El pedido debe tener al menos un producto");
+            }
+
+            Pedido pedido = new Pedido();
+            pedido.setEstado("PENDIENTE"); // Inicia pendiente, el cajero lo marca PAGADO
+            pedido.setCanal("CAJA"); // ✅ Distingue de pedidos WEB
+            pedido.setOrigen("PRESENCIAL"); // ✅ Origen presencial
+            pedido.setListoParaCocina(false); // ✅ NO va a cocina
+            pedido.setMetodoPago(metodoPago != null ? metodoPago : "EFECTIVO");
+            pedido.setTipoEntrega(tipoEntrega != null ? tipoEntrega : "LOCAL");
+
+            // ✅ Guardar datos del cliente presencial
+            if (nombreCliente != null && !nombreCliente.isBlank()) {
+                pedido.setNombreCliente(nombreCliente.trim());
+            }
+            if (telefonoCliente != null && !telefonoCliente.isBlank()) {
+                pedido.setTelefonoCliente(telefonoCliente.trim());
+            }
+
+            // Observaciones
+            StringBuilder obs = new StringBuilder();
+            if (nombreCliente != null && !nombreCliente.isBlank()) {
+                obs.append("Cliente: ").append(nombreCliente.trim());
+            }
+            if (telefonoCliente != null && !telefonoCliente.isBlank()) {
+                if (obs.length() > 0) obs.append(" | ");
+                obs.append("Tel: ").append(telefonoCliente.trim());
+            }
+            if (observacionesExtra != null && !observacionesExtra.isBlank()) {
+                if (obs.length() > 0) obs.append(" | ");
+                obs.append(observacionesExtra.trim());
+            }
+            pedido.setObservaciones(obs.length() > 0 ? obs.toString() : null);
+
+            for (Map<String, Object> itemReq : itemsRequest) {
+                Object productoIdObj = itemReq.get("productoId");
+                Object cantidadObj = itemReq.get("cantidad");
+
+                if (productoIdObj == null || cantidadObj == null) {
+                    throw new RuntimeException("Cada item requiere 'productoId' y 'cantidad'");
+                }
+
+                Long productoId = Long.valueOf(String.valueOf(productoIdObj));
+                Integer cantidad = Integer.valueOf(String.valueOf(cantidadObj));
+
+                if (cantidad <= 0) {
+                    throw new RuntimeException("La cantidad debe ser mayor a 0 (producto " + productoId + ")");
+                }
+
+                ProductoFinal producto = productoFinalRepository.findById(productoId)
+                        .orElseThrow(() -> new RuntimeException("Producto no encontrado: " + productoId));
+
+                ItemPedido itemPedido = new ItemPedido();
+                itemPedido.setNombreProducto(producto.getNombre());
+                itemPedido.setCantidad(cantidad);
+                itemPedido.setPrecio(producto.getPrecio());
+                itemPedido.setSubtotal(producto.getPrecio() * cantidad);
+                itemPedido.setProductoFinal(producto);
+                pedido.agregarItem(itemPedido);
+            }
+
+            pedido.calcularTotales();
+
+            Pedido pedidoGuardado = pedidoRepository.save(pedido);
+
+            String numeroGenerado = "LR" + String.format("%06d", pedidoGuardado.getId());
+            pedidoGuardado.setNumero(numeroGenerado);
+            pedidoGuardado.setNumeroPedido(numeroGenerado);
+
+            return pedidoRepository.save(pedidoGuardado);
+
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Error al crear el pedido presencial: " + e.getMessage(), e);
+        }
+    }
+
     public Optional<Pedido> obtenerPedidoPorId(Long pedidoId) {
         return pedidoRepository.findById(pedidoId);
     }
 
-
-    // ✅ NUEVO MÉTODO: Obtener pedido con items usando JOIN FETCH
     @Transactional(readOnly = true)
     public Optional<Pedido> obtenerPedidoConItems(Long pedidoId) {
         return pedidoRepository.findByIdWithItems(pedidoId);
     }
+
     public List<Pedido> obtenerPedidosPorUsuario(Long usuarioId) {
         return pedidoRepository.findByUsuarioIdOrderByFechaDesc(usuarioId);
     }

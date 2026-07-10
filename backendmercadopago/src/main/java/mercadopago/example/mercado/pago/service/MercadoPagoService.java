@@ -1,16 +1,12 @@
-package com.sistemaapolloAngular.sistema_apolloAngular.service;
+package mercadopago.example.mercado.pago.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mercadopago.MercadoPagoConfig;
 import com.mercadopago.client.payment.PaymentClient;
 import com.mercadopago.resources.payment.Payment;
-import com.sistemaapolloAngular.sistema_apolloAngular.model.Pedido;
-import com.sistemaapolloAngular.sistema_apolloAngular.model.ItemPedido;
-import com.sistemaapolloAngular.sistema_apolloAngular.model.ProductoFinal;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
@@ -27,45 +23,44 @@ public class MercadoPagoService {
     @Value("${frontend.url:http://localhost:4200}")
     private String frontendUrl;
 
-    // ✅ CAMBIAR: Usar la URL de ngrok (o la variable backend.url)
+    // URL pública (ngrok) de ESTE microservicio -> se usa SOLO para el notification_url que le damos a MercadoPago
     @Value("${backend.url:http://localhost:8080}")
     private String backendUrl;
+
+    // URL del backend principal (sistema-apolloAngular) -> se usa para notificarle el resultado del pago
+    @Value("${sistema.backend.url:http://localhost:8080}")
+    private String sistemaBackendUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final PaymentClient paymentClient = new PaymentClient();
 
-    @Transactional
-    public Map<String, Object> crearPreferencia(Pedido pedido) {
+    public Map<String, Object> crearPreferencia(Map<String, Object> pedidoData, Long pedidoId) {
         try {
-            System.out.println("📝 Creando preferencia para pedido: " + pedido.getId());
+            System.out.println("📝 Creando preferencia para pedido: " + pedidoId);
+
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> itemsData = (List<Map<String, Object>>) pedidoData.get("items");
 
             List<Map<String, Object>> items = new ArrayList<>();
-
-            for (ItemPedido item : pedido.getItems()) {
-                ProductoFinal producto = item.getProductoFinal();
-                String titulo = producto != null ? producto.getNombre() : item.getNombreProducto();
-                Double precio = item.getPrecio() != null ? item.getPrecio() : 0.0;
-                Integer cantidad = item.getCantidad() != null ? item.getCantidad() : 1;
-
+            for (Map<String, Object> item : itemsData) {
                 Map<String, Object> itemMap = new HashMap<>();
-                itemMap.put("id", producto != null ? producto.getId().toString() : "prod_" + System.currentTimeMillis());
-                itemMap.put("title", titulo);
+                itemMap.put("id", item.get("id").toString());
+                itemMap.put("title", item.get("nombre"));
                 itemMap.put("description", "Producto de Luren Chicken");
-                itemMap.put("quantity", cantidad);
+                itemMap.put("quantity", item.get("cantidad"));
                 itemMap.put("currency_id", "PEN");
-                itemMap.put("unit_price", precio);
+                itemMap.put("unit_price", item.get("precio"));
                 items.add(itemMap);
             }
 
             Map<String, Object> body = new HashMap<>();
             body.put("items", items);
-            body.put("external_reference", pedido.getId().toString());
+            body.put("external_reference", pedidoId.toString());
 
-            // ✅ CORREGIDO: Usar backendUrl (que ahora es la URL de ngrok)
+            // ✅ Este SÍ debe apuntar al microservicio público (ngrok), porque quien llama es MercadoPago desde internet
             String webhookUrl = backendUrl + "/api/pago/webhook";
             body.put("notification_url", webhookUrl);
-            System.out.println("📡 Webhook URL: " + webhookUrl);
 
             Map<String, String> backUrls = new HashMap<>();
             backUrls.put("success", frontendUrl + "/pago-exitoso");
@@ -74,7 +69,6 @@ public class MercadoPagoService {
             body.put("back_urls", backUrls);
 
             String jsonBody = objectMapper.writeValueAsString(body);
-            System.out.println("📤 JSON enviado a MercadoPago: " + jsonBody);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -91,15 +85,8 @@ public class MercadoPagoService {
                     String.class
             );
 
-            System.out.println("📥 Respuesta de MercadoPago: " + response.getStatusCode());
-
             if (response.getStatusCode() == HttpStatus.CREATED || response.getStatusCode() == HttpStatus.OK) {
                 Map<String, Object> responseMap = objectMapper.readValue(response.getBody(), Map.class);
-                System.out.println("✅ Preferencia creada: " + responseMap.get("id"));
-
-                responseMap.put("init_point", responseMap.get("init_point"));
-                responseMap.put("sandbox_init_point", responseMap.get("sandbox_init_point"));
-
                 return responseMap;
             } else {
                 throw new RuntimeException("Error al crear preferencia: " + response.getBody());
@@ -114,26 +101,40 @@ public class MercadoPagoService {
 
     public Payment obtenerPago(String paymentId) {
         try {
-            System.out.println("🔍 Buscando pago con ID: " + paymentId);
-
-            // ✅ Limpiar el paymentId (solo números)
             String cleanPaymentId = paymentId.replaceAll("[^0-9]", "");
-            System.out.println("🔍 PaymentId limpio: " + cleanPaymentId);
-
             MercadoPagoConfig.setAccessToken(accessToken);
-
             Long id = Long.parseLong(cleanPaymentId);
-            Payment payment = paymentClient.get(id);
-            System.out.println("✅ Pago encontrado: " + payment.getId() + " - Status: " + payment.getStatus());
-            return payment;
-
-        } catch (NumberFormatException e) {
-            System.err.println("❌ Error al convertir paymentId: " + paymentId);
-            throw new RuntimeException("ID de pago inválido: " + paymentId, e);
+            return paymentClient.get(id);
         } catch (Exception e) {
-            System.err.println("❌ Error al obtener pago: " + e.getMessage());
-            e.printStackTrace();
             throw new RuntimeException("Error al obtener pago: " + e.getMessage(), e);
+        }
+    }
+
+    public void notificarBackendPrincipal(Payment payment, String externalReference) {
+        try {
+            String url = sistemaBackendUrl + "/api/pago/confirmar";
+
+            Map<String, Object> body = new HashMap<>();
+            // ✅ CORREGIDO: convertir explícitamente Long -> String para que el backend principal
+            // pueda castearlo con (String) sin lanzar ClassCastException
+            body.put("paymentId", payment.getId() != null ? String.valueOf(payment.getId()) : null);
+            body.put("status", payment.getStatus());
+            body.put("externalReference", externalReference);
+            // ✅ CORREGIDO: convertir explícitamente BigDecimal -> Double
+            body.put("amount", payment.getTransactionAmount() != null
+                    ? payment.getTransactionAmount().doubleValue() : null);
+            body.put("paymentMethodId", payment.getPaymentMethodId());
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+
+            ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
+            System.out.println("✅ Notificado al backend principal: " + response.getStatusCode());
+
+        } catch (Exception e) {
+            System.err.println("❌ Error notificando al backend: " + e.getMessage());
         }
     }
 

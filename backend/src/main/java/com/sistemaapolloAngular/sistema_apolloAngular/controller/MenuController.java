@@ -67,6 +67,8 @@ public class MenuController {
     }
 
 
+    // En MenuController.java - método obtenerCombos()
+
     @GetMapping("/combos")
     public ResponseEntity<Map<String, Object>> obtenerCombos() {
         Map<String, Object> response = new HashMap<>();
@@ -74,9 +76,23 @@ public class MenuController {
         try {
             List<ProductoFinal> todosProductos = productoFinalService.obtenerTodos();
 
+            // ✅ Aceptar "COMBO", "Combo", "combos", "combo"
             List<ProductoFinal> combos = todosProductos.stream()
-                    .filter(p -> "combos".equalsIgnoreCase(p.getTipo()))
+                    .filter(p -> p.getTipo() != null)
+                    .filter(p -> p.getTipo().matches("(?i)^combo(s?)$")) // Regex: combo o combos (insensible a mayúsculas)
+                    .filter(p -> p.isActivo()) // Solo activos
                     .collect(Collectors.toList());
+
+            // Si no hay combos, mostrar productos destacados
+            if (combos.isEmpty()) {
+                System.out.println("⚠️ No hay combos, mostrando productos destacados...");
+                combos = todosProductos.stream()
+                        .filter(p -> p.isActivo())
+                        .limit(5)
+                        .collect(Collectors.toList());
+            }
+
+            System.out.println("✅ Combos encontrados: " + combos.size());
 
             response.put("success", true);
             response.put("data", combos);

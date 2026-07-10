@@ -5,14 +5,14 @@
       <div class="col-lg-8 col-md-10">
         <!-- Banner superior -->
         <div class="pedido-banner text-center mb-5">
-          <h1 class="pedido-title">¡Sigue tu pedido!</h1>
+          <h1 class="pedido-title">🚚 ¡Sigue tu pedido!</h1>
           <p class="pedido-subtitle">
             Para saber el estado de tu pedido, ingresa el número de pedido que te enviamos al correo en
             el momento de realizar tu compra
           </p>
         </div>
 
-        <!-- Estado de Sesión (solo para no autenticados) -->
+        <!-- Estado de Sesión -->
         <div *ngIf="!isAuthenticated" class="alert alert-warning-custom">
           <i class="fas fa-exclamation-triangle me-2"></i>
           Debes <a routerLink="/login" class="alert-link">iniciar sesión</a> para ver el estado de tus pedidos.
@@ -76,22 +76,75 @@
           <div *ngIf="pedidoEncontrado && pedido" class="pedido-resultado mt-5">
             <div class="card shadow-sm border-0">
               <div class="card-header bg-luren text-white">
-                <h4 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Estado de tu Pedido</h4>
+                <h4 class="mb-0">
+                  <i class="fas fa-clipboard-list me-2"></i>
+                  Estado de tu Pedido
+                  <span class="ms-2 badge" [class]="getEstadoBadgeClass(pedido.estado)">
+                    {{ getEstadoIcono(pedido.estado) }} {{ getEstadoTexto(pedido.estado) }}
+                  </span>
+                </h4>
               </div>
               <div class="card-body">
+                <!-- Estado actual con mensaje -->
+                <div class="estado-actual mb-4 p-3 rounded" [ngClass]="{
+                  'bg-warning': pedido.estado === 'PENDIENTE',
+                  'bg-success': pedido.estado === 'PAGADO',
+                  'bg-info': pedido.estado === 'LISTO',
+                  'bg-orange': pedido.estado === 'EN_CAMINO',
+                  'bg-danger': pedido.estado === 'RECHAZADO',
+                  'bg-purple': pedido.estado === 'ENTREGADO'
+                }">
+                  <div class="d-flex align-items-center">
+                    <span class="estado-icono-grande me-3">{{ getEstadoIcono(pedido.estado) }}</span>
+                    <div>
+                      <h5 class="mb-0" [class.text-white]="pedido.estado !== 'PENDIENTE'">
+                        {{ getEstadoTexto(pedido.estado) }}
+                      </h5>
+                      <small [class.text-white]="pedido.estado !== 'PENDIENTE'"
+                             [class.text-muted]="pedido.estado === 'PENDIENTE'">
+                        {{ getMensajeEstado(pedido.estado) }}
+                      </small>
+                    </div>
+                    <div class="ms-auto" *ngIf="pedido.estado !== 'ENTREGADO' && pedido.estado !== 'RECHAZADO'">
+                      <span class="badge bg-light text-dark">
+                        <i class="fas fa-sync fa-spin me-1"></i> Actualizando...
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Timeline del estado -->
                 <div class="timeline-pedido mb-4">
                   <div class="progress progress-pedido">
-                    <div class="progress-bar bg-luren progress-bar-pedido" role="progressbar"
-                         [style.width.%]="getPorcentajeEstado(pedido.estado)">
+                    <div class="progress-bar" role="progressbar"
+                         [style.width.%]="getPorcentajeEstado(pedido.estado)"
+                         [ngClass]="{
+                           'bg-warning': pedido.estado === 'PENDIENTE',
+                           'bg-success': pedido.estado === 'PAGADO',
+                           'bg-info': pedido.estado === 'LISTO',
+                           'bg-orange': pedido.estado === 'EN_CAMINO',
+                           'bg-danger': pedido.estado === 'RECHAZADO',
+                           'bg-purple': pedido.estado === 'ENTREGADO'
+                         }">
+                      {{ getPorcentajeEstado(pedido.estado) }}%
                     </div>
                   </div>
                   <div class="d-flex justify-content-between mt-2 timeline-labels">
-                    <span [class]="isEstadoActivo(pedido.estado, 'PENDIENTE') ? 'text-luren fw-bold' : 'text-muted'">Pendiente</span>
-                    <span [class]="isEstadoActivo(pedido.estado, 'CONFIRMADO') || isEstadoActivo(pedido.estado, 'PAGADO') ? 'text-luren fw-bold' : 'text-muted'">Pagado</span>
-                    <span [class]="isEstadoActivo(pedido.estado, 'PREPARACION') ? 'text-luren fw-bold' : 'text-muted'">Preparación</span>
-                    <span [class]="isEstadoActivo(pedido.estado, 'EN_CAMINO') ? 'text-luren fw-bold' : 'text-muted'">En Camino</span>
-                    <span [class]="isEstadoActivo(pedido.estado, 'ENTREGADO') ? 'text-luren fw-bold' : 'text-muted'">Entregado</span>
+                    <span [class]="isEstadoActivo(pedido.estado, 'PENDIENTE') ? 'text-luren fw-bold' : 'text-muted'">
+                      ⏳ Pendiente
+                    </span>
+                    <span [class]="isEstadoActivo(pedido.estado, 'PAGADO') ? 'text-luren fw-bold' : 'text-muted'">
+                      ✅ Pagado
+                    </span>
+                    <span [class]="isEstadoActivo(pedido.estado, 'LISTO') ? 'text-luren fw-bold' : 'text-muted'">
+                      📋 Listo
+                    </span>
+                    <span [class]="isEstadoActivo(pedido.estado, 'EN_CAMINO') ? 'text-luren fw-bold' : 'text-muted'">
+                      🚚 En Camino
+                    </span>
+                    <span [class]="isEstadoActivo(pedido.estado, 'ENTREGADO') ? 'text-luren fw-bold' : 'text-muted'">
+                      📦 Entregado
+                    </span>
                   </div>
                 </div>
 
@@ -102,11 +155,6 @@
                       <h6 class="text-muted mb-2">Información del Pedido</h6>
                       <p><strong>Número de Pedido:</strong> <span>{{ pedido.numeroPedido || pedido.id }}</span></p>
                       <p><strong>Canal:</strong> <span>{{ pedido.canal || 'WEB' }}</span></p>
-                      <p><strong>Estado:</strong>
-                        <span class="badge" [class]="getEstadoClase(pedido.estado)">
-                          {{ getEstadoTexto(pedido.estado) }}
-                        </span>
-                      </p>
                       <p><strong>Fecha:</strong> <span>{{ formatearFecha(pedido.fechaPedido || pedido.fecha) }}</span></p>
                       <p *ngIf="pedido.total"><strong>Total:</strong> S/. {{ pedido.total | number:'1.2-2' }}</p>
                     </div>
@@ -117,17 +165,23 @@
                       <p class="text-muted">{{ pedido.observaciones }}</p>
                     </div>
 
-                    <!-- Botones de acción -->
+                    <!-- ✅ Botones de acción mejorados -->
                     <div class="acciones-pedido mt-3">
-                      <button class="btn btn-outline-luren btn-sm" (click)="repetirPedido()">
-                        <i class="fas fa-redo me-1"></i>Repetir Pedido
-                      </button>
-                      <button class="btn btn-outline-secondary btn-sm ms-2" (click)="descargarComprobante()">
-                        <i class="fas fa-download me-1"></i>Descargar
-                      </button>
-                      <button class="btn btn-outline-primary btn-sm ms-2" (click)="copiarNumeroPedido()">
-                        <i class="fas fa-copy me-1"></i>Copiar Número
-                      </button>
+                      <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-outline-luren btn-sm" (click)="repetirPedido()"
+                                [disabled]="!pedido.items || pedido.items.length === 0">
+                          <i class="fas fa-redo me-1"></i>Repetir
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" (click)="descargarComprobante()">
+                          <i class="fas fa-download me-1"></i>Comprobante
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" (click)="copiarNumeroPedido()">
+                          <i class="fas fa-copy me-1"></i>Copiar
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" (click)="contactarSoporte()">
+                          <i class="fab fa-whatsapp me-1"></i>Ayuda
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

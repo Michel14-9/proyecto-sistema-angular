@@ -1,4 +1,4 @@
-<!-- src/app/modules/home/home.html -->
+<!-- src/app/modules/publico/index/index.html -->
 
 <!-- Hero Section -->
 <section class="hero-section">
@@ -16,42 +16,78 @@
   </div>
 </section>
 
-<!-- Carrusel de Combos Dinámicos -->
+<!-- Carrusel de Combos Dinámicos - MODERNO -->
 <section class="combos-section">
   <div class="container">
-    <h2 class="section-title text-center mb-5">Nuestros Combos</h2>
-    <div id="combosCarousel" class="carousel slide" data-bs-ride="carousel">
-      <div class="carousel-indicators" id="combos-indicators">
+    <div class="section-header text-center mb-5">
+      <h2 class="section-title">🔥 Nuestros Combos</h2>
+      <p class="section-subtitle">Los mejores combos para compartir en familia</p>
+    </div>
+
+    <div id="combosCarousel" class="carousel slide combo-carousel" data-bs-ride="carousel">
+      <!-- Indicadores modernos -->
+      <div class="carousel-indicators combo-indicators">
         <button *ngFor="let combo of combos; let i = index" type="button"
                 data-bs-target="#combosCarousel" [attr.data-bs-slide-to]="i"
                 [class.active]="i === 0" [attr.aria-current]="i === 0 ? 'true' : null"
                 [attr.aria-label]="'Slide ' + (i + 1)"></button>
       </div>
-      <div class="carousel-inner" id="combos-inner">
+
+      <div class="carousel-inner">
         <div *ngFor="let combo of combos; let i = index"
-             class="carousel-item" [class.active]="i === 0">
-          <img [src]="'assets/imagenes/' + combo.imagen" class="d-block w-100" [alt]="combo.nombre">
-          <div class="carousel-caption d-none d-md-block">
-            <h5>{{ combo.nombre }}</h5>
-            <p>{{ combo.descripcion }}</p>
-            <p class="fw-bold">S/. {{ combo.precio }}</p>
-            <button class="btn btn-primary" (click)="agregarAlCarrito(combo)">Agregar al Carrito</button>
+             class="carousel-item combo-slide" [class.active]="i === 0">
+
+          <!-- ✅ Imagen completa - SIN RECORTAR -->
+          <div class="combo-image-wrapper">
+            <img [src]="combo.imagenUrl || 'assets/imagenes/default-combo.jpg'"
+                 class="d-block w-100 combo-image-full"
+                 [alt]="combo.nombre"
+                 loading="lazy">
           </div>
-        </div>
-        <div *ngIf="combos.length === 0" class="loading-spinner">
-          <div class="spinner-border" role="status">
-            <span class="visually-hidden">Cargando combos...</span>
+
+          <!-- Overlay gradiente -->
+          <div class="combo-overlay"></div>
+
+          <!-- Contenido sobre la imagen -->
+          <div class="combo-content-overlay">
+            <div class="combo-badge">
+              <span class="badge-hot">🔥 Combo Especial</span>
+            </div>
+            <h3 class="combo-title">{{ combo.nombre }}</h3>
+            <p class="combo-description">{{ combo.descripcion }}</p>
+            <div class="combo-price">
+              <span class="price-currency">S/.</span>
+              <span class="price-amount">{{ combo.precio }}</span>
+            </div>
+            <button class="btn btn-combo-add" (click)="agregarAlCarrito(combo)">
+              <i class="fas fa-shopping-bag me-2"></i>
+              Agregar al Pedido
+            </button>
           </div>
         </div>
       </div>
-      <button class="carousel-control-prev" type="button" data-bs-target="#combosCarousel" data-bs-slide="prev">
-        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+
+      <!-- Controles -->
+      <button class="carousel-control-prev combo-control" type="button" data-bs-target="#combosCarousel" data-bs-slide="prev">
+        <span class="combo-control-icon" aria-hidden="true">
+          <i class="fas fa-chevron-left"></i>
+        </span>
         <span class="visually-hidden">Anterior</span>
       </button>
-      <button class="carousel-control-next" type="button" data-bs-target="#combosCarousel" data-bs-slide="next">
-        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+      <button class="carousel-control-next combo-control" type="button" data-bs-target="#combosCarousel" data-bs-slide="next">
+        <span class="combo-control-icon" aria-hidden="true">
+          <i class="fas fa-chevron-right"></i>
+        </span>
         <span class="visually-hidden">Siguiente</span>
       </button>
+    </div>
+
+    <!-- Estado de carga -->
+    <div *ngIf="!combos || combos.length === 0" class="text-center py-5">
+      <div class="spinner-border text-warning" role="status">
+        <span class="visually-hidden">Cargando combos...</span>
+      </div>
+      <p class="mt-3 text-muted">Cargando nuestros combos especiales...</p>
     </div>
   </div>
 </section>
@@ -68,7 +104,6 @@
           <div class="category-content">
             <h4 class="category-title">Pollo a la Brasa</h4>
             <p class="category-description">Nuestro auténtico pollo a la brasa con especias secretas, dorado y jugoso</p>
-            <!-- ✅ CAMBIAR routerLink a fragment -->
             <a [routerLink]="['/menu']" fragment="pollos" class="btn btn-outline-primary">Ver Más</a>
           </div>
         </div>
@@ -81,7 +116,6 @@
           <div class="category-content">
             <h4 class="category-title">Parrillas</h4>
             <p class="category-description">Deliciosas parrillas a la leña con el mejor sabor y calidad</p>
-            <!-- ✅ CAMBIAR routerLink a fragment -->
             <a [routerLink]="['/menu']" fragment="parrillas" class="btn btn-outline-primary">Ver Más</a>
           </div>
         </div>
@@ -94,7 +128,6 @@
           <div class="category-content">
             <h4 class="category-title">Chicharrón</h4>
             <p class="category-description">Chicharrón crocante y jugoso, perfecto para compartir en familia</p>
-            <!-- ✅ CAMBIAR routerLink a fragment -->
             <a [routerLink]="['/menu']" fragment="chicharron" class="btn btn-outline-primary">Ver Más</a>
           </div>
         </div>
@@ -107,7 +140,6 @@
           <div class="category-content">
             <h4 class="category-title">Broster</h4>
             <p class="category-description">Pollo broaster crujiente y dorado, ideal para los amantes de lo crocante</p>
-            <!-- ✅ CAMBIAR routerLink a fragment -->
             <a [routerLink]="['/menu']" fragment="broaster" class="btn btn-outline-primary">Ver Más</a>
           </div>
         </div>
@@ -120,7 +152,6 @@
           <div class="category-content">
             <h4 class="category-title">Hamburguesas</h4>
             <p class="category-description">Hamburguesas gourmet con ingredientes frescos y sabores únicos</p>
-            <!-- ✅ CAMBIAR routerLink a fragment -->
             <a [routerLink]="['/menu']" fragment="hamburguesas" class="btn btn-outline-primary">Ver Más</a>
           </div>
         </div>
@@ -133,7 +164,6 @@
           <div class="category-content">
             <h4 class="category-title">Platos Criollos</h4>
             <p class="category-description">Auténticos platos de la cocina peruana, llenos de sabor y tradición</p>
-            <!-- ✅ CAMBIAR routerLink a fragment -->
             <a [routerLink]="['/menu']" fragment="criollos" class="btn btn-outline-primary">Ver Más</a>
           </div>
         </div>

@@ -10,6 +10,49 @@
   --blanco: #fafafa;
 }
 
+/* ======= HEADER ======= */
+.delivery-header {
+  background-color: var(--naranja-oscuro);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  position: sticky;
+  top: 0;
+  z-index: 1040;
+}
+
+.bg-luren {
+  background-color: var(--naranja-oscuro) !important;
+}
+
+.navbar-brand {
+  font-size: 1.25rem;
+  letter-spacing: 0.5px;
+}
+
+.navbar-brand i {
+  font-size: 1.3rem;
+}
+
+.nav-link {
+  padding: 0.5rem 0.75rem;
+}
+
+/* ======= MAIN ======= */
+.delivery-main {
+  min-height: calc(100vh - 160px);
+  background-color: #f8f9fa;
+}
+
+/* ======= FOOTER ======= */
+.delivery-footer {
+  background-color: #1a1a2e;
+  padding: 1rem 0;
+  border-top: 3px solid var(--naranja-oscuro);
+}
+
+.delivery-footer p {
+  margin-bottom: 0;
+}
+
 /* ======= TARJETAS ESTADÍSTICAS ======= */
 .stat-card {
   border: none;
@@ -114,6 +157,14 @@
   .toast {
     min-width: 250px;
   }
+
+  .delivery-header .navbar-brand {
+    font-size: 1rem;
+  }
+
+  .delivery-footer {
+    text-align: center;
+  }
 }
 
 @media (max-width: 576px) {
@@ -123,5 +174,10 @@
 
   .stat-card .label {
     font-size: 0.75rem;
+  }
+
+  .delivery-header .nav-link {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.9rem;
   }
 }
