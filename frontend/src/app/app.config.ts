@@ -1,11 +1,13 @@
 // src/app/app.config.ts
-import { ApplicationConfig, importProvidersFrom } from '@angular/core'; // ✅ AGREGAR importProvidersFrom
+import { ApplicationConfig, importProvidersFrom } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptorsFromDi, HTTP_INTERCEPTORS } from '@angular/common/http';
-import { HttpClientXsrfModule } from '@angular/common/http'; // ✅ AGREGAR
+import { HttpClientXsrfModule } from '@angular/common/http';
 import { routes } from './app.routes';
 import { AuthInterceptor } from './core/interceptors/auth-interceptor';
 import { ErrorInterceptor } from './core/interceptors/error-interceptor';
+
+import { MaintenanceInterceptor } from './core/interceptors/maintenance.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -13,13 +15,14 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(
       withInterceptorsFromDi()
     ),
-    // ✅ AGREGAR CONFIGURACIÓN CSRF AUTOMÁTICA
+    //  CONFIGURACIÓN CSRF AUTOMÁTICA
     importProvidersFrom(
       HttpClientXsrfModule.withOptions({
         cookieName: 'XSRF-TOKEN',
         headerName: 'X-XSRF-TOKEN'
       })
     ),
+    //  INTERCEPTORES
     {
       provide: HTTP_INTERCEPTORS,
       useClass: AuthInterceptor,
@@ -28,6 +31,12 @@ export const appConfig: ApplicationConfig = {
     {
       provide: HTTP_INTERCEPTORS,
       useClass: ErrorInterceptor,
+      multi: true
+    },
+
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: MaintenanceInterceptor,
       multi: true
     }
   ]

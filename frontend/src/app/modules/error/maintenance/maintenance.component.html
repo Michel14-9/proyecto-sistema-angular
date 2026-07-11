@@ -1,0 +1,34 @@
+<div class="maintenance-container">
+  <div class="maintenance-content">
+    <div class="maintenance-icon">🔧</div>
+    <div class="maintenance-code">503</div>
+    <h1 class="maintenance-title">Sistema en Mantenimiento</h1>
+    <p class="maintenance-message">
+      Estamos realizando mejoras en el sistema para brindarte un mejor servicio.
+      <br>
+      Por favor, vuelve a intentarlo en unos minutos.
+    </p>
+    <div class="maintenance-status">
+      <div class="status-indicator">
+        <span class="status-dot"></span>
+        <span class="status-text">Tiempo estimado: 15-30 minutos</span>
+      </div>
+    </div>
+    <div class="maintenance-actions">
+      <button class="btn btn-primary btn-lg" (click)="recargar()">
+        <i class="fas fa-sync-alt me-2"></i>
+        Reintentar ahora
+      </button>
+    </div>
+    <div class="maintenance-info">
+      <p class="text-muted small">
+        <i class="fas fa-clock me-1"></i>
+        Última actualización: {{ fechaActualizacion }}
+      </p>
+      <p class="text-muted small">
+        <i class="fas fa-envelope me-1"></i>
+        ¿Problemas? Contacta con soporte@lurenchicken.com
+      </p>
+    </div>
+  </div>
+</div>

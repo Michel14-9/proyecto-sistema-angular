@@ -29,7 +29,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // ✅ Suscribirse a los cambios de autenticación
+
     this.subscriptions.push(
       this.authService.isAuthenticated$.subscribe(auth => {
         this.isAuthenticated = auth;
@@ -40,11 +40,11 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.subscriptions.push(
       this.authService.username$.subscribe(username => {
         this.username = username;
-        console.log('🔄 Header: username actualizado:', username);
+        console.log(' Header: username actualizado:', username);
       })
     );
 
-    // ✅ Suscribirse al carrito
+
     this.subscriptions.push(
       this.carritoService.getTotal().subscribe(total => {
         this.totalCarrito = total;
@@ -53,7 +53,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // ✅ Limpiar suscripciones
+
     this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
@@ -62,39 +62,39 @@ export class HeaderComponent implements OnInit, OnDestroy {
     console.log('🔄 LOGOUT DESDE EL HEADER');
     console.log('🔄 ========================================');
 
-    // ✅ 1. Limpiar localStorage
+    //  1. Limpiar localStorage
     localStorage.removeItem('token');
     localStorage.removeItem('username');
     localStorage.removeItem('role');
     console.log('✅ localStorage limpiado');
 
-    // ✅ 2. Limpiar carrito
+    //  2. Limpiar carrito
     this.carritoService.limpiarLocal();
     console.log('✅ Carrito limpiado');
 
-    // ✅ 3. Actualizar estado
+    //  3. Actualizar estado
     this.isAuthenticated = false;
     this.username = '';
     this.totalCarrito = 0;
     console.log('✅ Estado actualizado');
 
-    // ✅ 4. Eliminar cookies
+
     document.cookie = 'JSESSIONID=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     document.cookie = 'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     console.log('✅ Cookies eliminadas');
 
-    // ✅ 5. Logout en backend
+
     this.http.post('http://localhost:8080/api/auth/logout', {}, {
       withCredentials: true
     }).subscribe({
-      next: () => console.log('✅ Logout backend ok'),
-      error: () => console.log('⚠️ Logout backend falló')
+      next: () => console.log(' Logout backend ok'),
+      error: () => console.log(' Logout backend falló')
     });
 
-    // ✅ 6. Redirigir al login
+
     this.router.navigate(['/login']);
 
-    // ✅ 7. Recargar
+
     setTimeout(() => {
       window.location.reload();
     }, 200);

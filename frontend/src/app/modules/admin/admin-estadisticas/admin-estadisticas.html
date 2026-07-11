@@ -2,7 +2,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h3>Estadísticas Avanzadas</h3>
   <div class="d-flex gap-2 align-items-center">
-    <!-- ✅ FILTRO DE PERÍODO -->
+
     <select class="form-select form-select-sm" style="width: auto;" [(ngModel)]="filtroPeriodo" (change)="cambiarPeriodo()">
       <option value="hoy">📅 Hoy</option>
       <option value="semana">📅 Última Semana</option>
@@ -15,7 +15,7 @@
   </div>
 </div>
 
-<!-- ✅ INDICADOR DEL PERÍODO SELECCIONADO -->
+
 <div class="alert alert-info mb-3" *ngIf="reporteCompletoCargado">
   <i class="fas fa-info-circle me-2"></i>
   Mostrando datos del período:
@@ -33,9 +33,7 @@
 </div>
 
 <div *ngIf="reporteCompletoCargado && reporteCompleto">
-  <!-- ============================================================
-       TARJETAS DE RESUMEN (con etiquetas de período)
-       ============================================================ -->
+
   <div class="row mb-4">
     <div class="col-md-3">
       <div class="card stat-card text-primary">
@@ -77,9 +75,7 @@
     </div>
   </div>
 
-  <!-- ============================================================
-       GRÁFICOS (igual que antes)
-       ============================================================ -->
+
   <div class="row mb-4">
     <div class="col-md-6">
       <div class="card">
@@ -216,9 +212,7 @@
     </div>
   </div>
 
-  <!-- ============================================================
-       TABLAS DETALLE
-       ============================================================ -->
+
   <div class="row mt-4">
     <div class="col-md-6">
       <div class="card">
@@ -329,9 +323,7 @@
     </div>
   </div>
 
-  <!-- ============================================================
-       INGRESOS POR ESTADO
-       ============================================================ -->
+
   <div class="row mt-4">
     <div class="col-12">
       <div class="card">

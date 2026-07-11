@@ -1,10 +1,11 @@
 <!-- src/app/app.html -->
 
-<!-- ✅ Header condicional -->
+<!--  Header condicional -->
 <app-header *ngIf="layoutService.showHeader$ | async"></app-header>
 
+<app-alert></app-alert>
 <!-- Contenido principal -->
 <router-outlet></router-outlet>
 
-<!-- ✅ Footer condicional -->
+<!--  Footer condicional -->
 <app-footer *ngIf="layoutService.showFooter$ | async"></app-footer>

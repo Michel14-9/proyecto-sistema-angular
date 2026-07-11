@@ -163,7 +163,7 @@
       </div>
       <div class="card-body">
 
-        <!-- ✅ ESTADO DEL MODELO (Mensaje amigable) -->
+
         <div class="alert" [class.alert-success]="modeloEntrenado" [class.alert-warning]="!modeloEntrenado">
           <i class="fas" [class.fa-check-circle]="modeloEntrenado" [class.fa-exclamation-triangle]="!modeloEntrenado"></i>
           <span *ngIf="modeloEntrenado">
@@ -195,7 +195,7 @@
           </span>
         </div>
 
-        <!-- ✅ TABLA DE PREDICCIONES -->
+
         <div *ngIf="prediccionesCargadas && predicciones.length" class="table-responsive">
           <table class="table table-hover">
             <thead>
@@ -225,7 +225,7 @@
           </table>
         </div>
 
-        <!-- ✅ RESUMEN DE PREDICCIONES -->
+
         <div *ngIf="predicciones.length" class="row mt-3">
           <div class="col-md-4">
             <app-stat-card
@@ -257,14 +257,14 @@
           </div>
         </div>
 
-        <!-- ✅ GRÁFICO DE PREDICCIONES -->
+
         <div *ngIf="predicciones.length" class="mt-3">
           <div class="chart-container">
             <canvas id="predictionChart"></canvas>
           </div>
         </div>
 
-        <!-- ✅ MENSAJE CUANDO NO HAY PREDICCIONES -->
+
         <div *ngIf="!prediccionesCargadas && !modeloEntrenado" class="text-center py-5">
           <i class="fas fa-brain fa-4x text-muted mb-3"></i>
           <h5 class="text-muted">Sin predicciones disponibles</h5>

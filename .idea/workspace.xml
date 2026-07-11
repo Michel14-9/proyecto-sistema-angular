@@ -4,7 +4,49 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4e10dce1-a503-4051-8fa1-2dbc492f7fbc" name="Changes" comment="" />
+    <list default="true" id="4e10dce1-a503-4051-8fa1-2dbc492f7fbc" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/exception/BusinessException.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/exception/ErrorResponse.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/exception/GlobalExceptionHandler.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/exception/ResourceNotFoundException.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/core/guards/admin.guard.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/core/guards/auth.guard.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/core/guards/cajero.guard.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/core/guards/cocinero.guard.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/core/guards/delivery.guard.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/core/guards/role.guard.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/core/interceptors/maintenance.interceptor.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/core/services/config.service.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/core/services/maintenance.service.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/modules/error/forbidden/forbidden.component.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/modules/error/forbidden/forbidden.component.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/modules/error/forbidden/forbidden.component.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/modules/error/maintenance/maintenance.component.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/modules/error/maintenance/maintenance.component.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/modules/error/not-found/not-found.component.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/modules/error/not-found/not-found.component.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/modules/error/not-found/not-found.component.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/app/shared/alert/alert.component.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/assets/config/config.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/AdminController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/AdminController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/CajeroController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/CajeroController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/CarritoController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/CarritoController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/DeliveryController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/DeliveryController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/app.component.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/app.component.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/app.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/app.config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/app.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/app.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/app.routes.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/app.routes.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/core/components/header/header.component.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/core/components/header/header.component.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/core/interceptors/error-interceptor.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/core/interceptors/error-interceptor.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/core/services/alert.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/core/services/alert.service.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-dashboard/admin-dashboard.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-dashboard/admin-dashboard.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-estadisticas/admin-estadisticas.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-estadisticas/admin-estadisticas.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-reportes/admin-reportes.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-reportes/admin-reportes.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-shell/admin-shell.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-shell/admin-shell.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/auth/login/login.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/auth/login/login.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/menu/menu.component.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/publico/menu/menu.component.ts" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -13,8 +55,8 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Class" />
         <option value="Python Script" />
+        <option value="Class" />
       </list>
     </option>
   </component>
@@ -63,7 +105,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "backend",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "C:/Users/Michel/Documents/GitHub/proyecto-sistema-angular",
     "project.structure.last.edited": "Modules",
@@ -79,7 +121,7 @@
       <recent name="C:\Users\Michel\Documents\GitHub\proyecto-sistema-angular\backend" />
     </key>
   </component>
-  <component name="RunManager" selected="Application.MercadoPagoApplication">
+  <component name="RunManager" selected="Python.app">
     <configuration name="MercadoPagoApplication" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="mercadopago.example.mercado.pago.MercadoPagoApplication" />
       <module name="mercado-pago" />
@@ -142,9 +184,9 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.app" />
         <item itemvalue="Application.MercadoPagoApplication" />
         <item itemvalue="Application.SistemaApolloAngularApplication" />
-        <item itemvalue="Python.app" />
       </list>
     </recent_temporary>
   </component>

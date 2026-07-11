@@ -7,6 +7,8 @@ import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
+import com.sistemaapolloAngular.sistema_apolloAngular.exception.BusinessException;
+import com.sistemaapolloAngular.sistema_apolloAngular.exception.ResourceNotFoundException;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.ItemPedido;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.Pedido;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.ProductoFinal;
@@ -16,6 +18,7 @@ import com.sistemaapolloAngular.sistema_apolloAngular.repository.ProductoFinalRe
 import com.sistemaapolloAngular.sistema_apolloAngular.repository.UsuarioRepository;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.PedidoService;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -36,6 +39,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestController
 @RequestMapping("/cajero")
 @CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
@@ -51,440 +55,373 @@ public class CajeroController {
     private PedidoService pedidoService;
 
     @Autowired
-    private ProductoFinalRepository productoFinalRepository; // ✅ Agregar
+    private ProductoFinalRepository productoFinalRepository;
 
     /**
-     * ✅ OBTENER PRODUCTOS PARA PEDIDOS PRESENCIALES
+     *  OBTENER PRODUCTOS PARA PEDIDOS PRESENCIALES
      */
     @GetMapping("/productos")
     @ResponseBody
     @Transactional
-    public ResponseEntity<?> obtenerProductos() {
-        try {
-            List<ProductoFinal> productos = productoFinalRepository.findAll();
+    public ResponseEntity<List<Map<String, Object>>> obtenerProductos() {
+        List<ProductoFinal> productos = productoFinalRepository.findAll();
 
-            List<Map<String, Object>> productosDTO = new ArrayList<>();
-            for (ProductoFinal producto : productos) {
-                // Solo productos activos
-                if (!producto.isActivo()) {
-                    continue;
-                }
-                Map<String, Object> item = new HashMap<>();
-                item.put("id", producto.getId());
-                item.put("nombre", producto.getNombre());
-                item.put("precio", producto.getPrecio());
-                item.put("tipo", producto.getTipo());
-                productosDTO.add(item);
+        List<Map<String, Object>> productosDTO = new ArrayList<>();
+        for (ProductoFinal producto : productos) {
+            if (!producto.isActivo()) {
+                continue;
             }
-
-            System.out.println("📦 Productos disponibles para cajero: " + productosDTO.size());
-
-            return ResponseEntity.ok(productosDTO);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error al cargar productos: " + e.getMessage()));
+            Map<String, Object> item = new HashMap<>();
+            item.put("id", producto.getId());
+            item.put("nombre", producto.getNombre());
+            item.put("precio", producto.getPrecio());
+            item.put("tipo", producto.getTipo());
+            productosDTO.add(item);
         }
+
+        log.info("📦 Productos disponibles para cajero: {}", productosDTO.size());
+        return ResponseEntity.ok(productosDTO);
     }
 
     /**
-     * ✅ OBTENER PEDIDOS PENDIENTES (PRESENCIALES)
-     * Solo pedidos de CAJA/PRESENCIAL en estado PENDIENTE
-     * Los pedidos WEB no aparecen aquí porque los confirma MercadoPago
+     *  OBTENER PEDIDOS PENDIENTES (PRESENCIALES)
      */
     @GetMapping("/pedidos-pendientes")
     @ResponseBody
     @Transactional
-    public ResponseEntity<?> obtenerPedidosPendientes() {
-        try {
-            // ✅ Solo pedidos PENDIENTES que son PRESENCIALES (CAJA)
-            List<Pedido> pedidos = pedidoRepository.findAllWithItemsAndProducts()
-                    .stream()
-                    .filter(p -> "PENDIENTE".equals(p.getEstado()))
-                    .filter(p -> "CAJA".equals(p.getCanal()) || "PRESENCIAL".equals(p.getCanal()))
-                    .filter(p -> "PRESENCIAL".equals(p.getOrigen()))
-                    .collect(Collectors.toList());
+    public ResponseEntity<List<Map<String, Object>>> obtenerPedidosPendientes() {
+        List<Pedido> pedidos = pedidoRepository.findAllWithItemsAndProducts()
+                .stream()
+                .filter(p -> "PENDIENTE".equals(p.getEstado()))
+                .filter(p -> "CAJA".equals(p.getCanal()) || "PRESENCIAL".equals(p.getCanal()))
+                .filter(p -> "PRESENCIAL".equals(p.getOrigen()))
+                .collect(Collectors.toList());
 
-            System.out.println("💰 Pedidos presenciales pendientes: " + pedidos.size());
+        log.info("💰 Pedidos presenciales pendientes: {}", pedidos.size());
 
-            List<Map<String, Object>> pedidosDTO = new ArrayList<>();
+        List<Map<String, Object>> pedidosDTO = new ArrayList<>();
 
-            for (Pedido pedido : pedidos) {
-                Map<String, Object> pedidoDTO = new HashMap<>();
-                pedidoDTO.put("id", pedido.getId());
-                pedidoDTO.put("numeroPedido", pedido.getNumeroPedido());
-                pedidoDTO.put("total", pedido.getTotal());
-                pedidoDTO.put("fecha", pedido.getFecha());
-                pedidoDTO.put("fechaPedido", pedido.getFecha());
-                pedidoDTO.put("estado", pedido.getEstado());
-                pedidoDTO.put("metodoPago", pedido.getMetodoPago());
-                pedidoDTO.put("tipoEntrega", pedido.getTipoEntrega());
-                pedidoDTO.put("direccionEntrega", pedido.getDireccionEntrega());
-                pedidoDTO.put("observaciones", pedido.getObservaciones());
-                pedidoDTO.put("canal", pedido.getCanal());
-                pedidoDTO.put("origen", pedido.getOrigen());
+        for (Pedido pedido : pedidos) {
+            Map<String, Object> pedidoDTO = new HashMap<>();
+            pedidoDTO.put("id", pedido.getId());
+            pedidoDTO.put("numeroPedido", pedido.getNumeroPedido());
+            pedidoDTO.put("total", pedido.getTotal());
+            pedidoDTO.put("fecha", pedido.getFecha());
+            pedidoDTO.put("fechaPedido", pedido.getFecha());
+            pedidoDTO.put("estado", pedido.getEstado());
+            pedidoDTO.put("metodoPago", pedido.getMetodoPago());
+            pedidoDTO.put("tipoEntrega", pedido.getTipoEntrega());
+            pedidoDTO.put("direccionEntrega", pedido.getDireccionEntrega());
+            pedidoDTO.put("observaciones", pedido.getObservaciones());
+            pedidoDTO.put("canal", pedido.getCanal());
+            pedidoDTO.put("origen", pedido.getOrigen());
 
-                // ✅ Datos del cliente (si tiene usuario o es presencial)
-                if (pedido.getUsuario() != null) {
-                    Usuario usuario = pedido.getUsuario();
-                    Map<String, String> usuarioDTO = new HashMap<>();
-                    usuarioDTO.put("nombres", usuario.getNombres() != null ? usuario.getNombres() : "");
-                    usuarioDTO.put("apellidos", usuario.getApellidos() != null ? usuario.getApellidos() : "");
-                    usuarioDTO.put("telefono", usuario.getTelefono() != null ? usuario.getTelefono() : "");
-                    pedidoDTO.put("cliente", usuarioDTO);
-                } else {
-                    // ✅ Cliente presencial sin usuario
-                    Map<String, String> clienteDTO = new HashMap<>();
-                    clienteDTO.put("nombres", pedido.getNombreCliente() != null ? pedido.getNombreCliente() : "Cliente");
-                    clienteDTO.put("apellidos", "");
-                    clienteDTO.put("telefono", pedido.getTelefonoCliente() != null ? pedido.getTelefonoCliente() : "");
-                    pedidoDTO.put("cliente", clienteDTO);
-                }
-
-                List<Map<String, Object>> itemsDTO = new ArrayList<>();
-                if (pedido.getItems() != null) {
-                    for (ItemPedido item : pedido.getItems()) {
-                        Map<String, Object> itemDTO = new HashMap<>();
-                        itemDTO.put("nombreProducto", item.getNombreProductoSeguro());
-                        itemDTO.put("cantidad", item.getCantidad());
-                        itemDTO.put("precio", item.getPrecio());
-                        itemDTO.put("subtotal", item.getSubtotal());
-                        itemsDTO.add(itemDTO);
-                    }
-                }
-                pedidoDTO.put("items", itemsDTO);
-
-                pedidosDTO.add(pedidoDTO);
+            if (pedido.getUsuario() != null) {
+                Usuario usuario = pedido.getUsuario();
+                Map<String, String> usuarioDTO = new HashMap<>();
+                usuarioDTO.put("nombres", usuario.getNombres() != null ? usuario.getNombres() : "");
+                usuarioDTO.put("apellidos", usuario.getApellidos() != null ? usuario.getApellidos() : "");
+                usuarioDTO.put("telefono", usuario.getTelefono() != null ? usuario.getTelefono() : "");
+                pedidoDTO.put("cliente", usuarioDTO);
+            } else {
+                Map<String, String> clienteDTO = new HashMap<>();
+                clienteDTO.put("nombres", pedido.getNombreCliente() != null ? pedido.getNombreCliente() : "Cliente");
+                clienteDTO.put("apellidos", "");
+                clienteDTO.put("telefono", pedido.getTelefonoCliente() != null ? pedido.getTelefonoCliente() : "");
+                pedidoDTO.put("cliente", clienteDTO);
             }
 
-            return ResponseEntity.ok(pedidosDTO);
+            List<Map<String, Object>> itemsDTO = new ArrayList<>();
+            if (pedido.getItems() != null) {
+                for (ItemPedido item : pedido.getItems()) {
+                    Map<String, Object> itemDTO = new HashMap<>();
+                    itemDTO.put("nombreProducto", item.getNombreProductoSeguro());
+                    itemDTO.put("cantidad", item.getCantidad());
+                    itemDTO.put("precio", item.getPrecio());
+                    itemDTO.put("subtotal", item.getSubtotal());
+                    itemsDTO.add(itemDTO);
+                }
+            }
+            pedidoDTO.put("items", itemsDTO);
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of(
-                    "error", "Error al cargar pedidos: " + e.getMessage()
-            ));
+            pedidosDTO.add(pedidoDTO);
         }
+
+        return ResponseEntity.ok(pedidosDTO);
     }
 
     /**
-     * ✅ CREAR PEDIDO PRESENCIAL
-     * Cajero registra el pedido que el cliente dicta en mostrador
+     *  CREAR PEDIDO PRESENCIAL
      */
     @PostMapping("/crear-pedido-presencial")
     @ResponseBody
     @Transactional
-    public ResponseEntity<?> crearPedidoPresencial(@RequestBody Map<String, Object> request,
-                                                   Authentication authentication) {
-        try {
-            if (authentication == null || !authentication.isAuthenticated()) {
-                return ResponseEntity.status(401).body(Map.of(
-                        "status", "ERROR",
-                        "message", "No autenticado"
-                ));
-            }
+    public ResponseEntity<Map<String, Object>> crearPedidoPresencial(
+            @RequestBody Map<String, Object> request,
+            Authentication authentication) {
 
-            boolean hasCajeroRole = authentication.getAuthorities().stream()
-                    .anyMatch(grantedAuthority ->
-                            grantedAuthority.getAuthority().equals("ROLE_CAJERO"));
-
-            if (!hasCajeroRole) {
-                return ResponseEntity.status(403).body(Map.of(
-                        "status", "ERROR",
-                        "message", "No tiene permisos de cajero"
-                ));
-            }
-
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> itemsRequest = (List<Map<String, Object>>) request.get("items");
-
-            if (itemsRequest == null || itemsRequest.isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "status", "ERROR",
-                        "message", "El pedido debe tener al menos un producto"
-                ));
-            }
-
-            String metodoPago = (String) request.getOrDefault("metodoPago", "EFECTIVO");
-            String tipoEntrega = (String) request.getOrDefault("tipoEntrega", "LOCAL");
-            String nombreCliente = (String) request.get("nombreCliente");
-            String telefonoCliente = (String) request.get("telefonoCliente");
-            String observaciones = (String) request.get("observaciones");
-
-            // ✅ Crear pedido presencial (estado PENDIENTE, canal CAJA, origen PRESENCIAL)
-            Pedido pedido = pedidoService.crearPedidoPresencial(
-                    itemsRequest, metodoPago, tipoEntrega, nombreCliente, telefonoCliente, observaciones);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("status", "SUCCESS");
-            response.put("message", "Pedido presencial creado correctamente");
-            response.put("pedidoId", pedido.getId());
-            response.put("numeroPedido", pedido.getNumeroPedido());
-            response.put("total", pedido.getTotal());
-            response.put("estado", pedido.getEstado());
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of(
-                    "status", "ERROR",
-                    "message", "Error: " + e.getMessage()
-            ));
+        //  Validación de autenticación
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new BusinessException("Usuario no autenticado");
         }
+
+        //  Validación de roles
+        boolean hasCajeroRole = authentication.getAuthorities().stream()
+                .anyMatch(grantedAuthority ->
+                        grantedAuthority.getAuthority().equals("ROLE_CAJERO"));
+
+        if (!hasCajeroRole) {
+            throw new BusinessException("No tiene permisos de cajero");
+        }
+
+        // Validación de items
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> itemsRequest = (List<Map<String, Object>>) request.get("items");
+
+        if (itemsRequest == null || itemsRequest.isEmpty()) {
+            throw new BusinessException("El pedido debe tener al menos un producto");
+        }
+
+        String metodoPago = (String) request.getOrDefault("metodoPago", "EFECTIVO");
+        String tipoEntrega = (String) request.getOrDefault("tipoEntrega", "LOCAL");
+        String nombreCliente = (String) request.get("nombreCliente");
+        String telefonoCliente = (String) request.get("telefonoCliente");
+        String observaciones = (String) request.get("observaciones");
+
+        //  Crear pedido
+        Pedido pedido = pedidoService.crearPedidoPresencial(
+                itemsRequest, metodoPago, tipoEntrega, nombreCliente, telefonoCliente, observaciones);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "SUCCESS");
+        response.put("message", "Pedido presencial creado correctamente");
+        response.put("pedidoId", pedido.getId());
+        response.put("numeroPedido", pedido.getNumeroPedido());
+        response.put("total", pedido.getTotal());
+        response.put("estado", pedido.getEstado());
+
+        return ResponseEntity.ok(response);
     }
 
     /**
-     * ✅ MÉTRICAS DEL DÍA
+     *  MÉTRICAS DEL DÍA
      */
     @GetMapping("/metricas-hoy")
     @ResponseBody
     @Transactional
-    public ResponseEntity<?> obtenerMetricasHoy() {
-        try {
-            // ✅ Pedidos presenciales pendientes
-            List<Pedido> pedidosPendientes = pedidoRepository.findAllWithItemsAndProducts()
-                    .stream()
-                    .filter(p -> "PENDIENTE".equals(p.getEstado()))
-                    .filter(p -> "CAJA".equals(p.getCanal()) || "PRESENCIAL".equals(p.getCanal()))
-                    .filter(p -> "PRESENCIAL".equals(p.getOrigen()))
-                    .collect(Collectors.toList());
+    public ResponseEntity<Map<String, Object>> obtenerMetricasHoy() {
+        //  Pedidos presenciales pendientes
+        List<Pedido> pedidosPendientes = pedidoRepository.findAllWithItemsAndProducts()
+                .stream()
+                .filter(p -> "PENDIENTE".equals(p.getEstado()))
+                .filter(p -> "CAJA".equals(p.getCanal()) || "PRESENCIAL".equals(p.getCanal()))
+                .filter(p -> "PRESENCIAL".equals(p.getOrigen()))
+                .collect(Collectors.toList());
 
-            LocalDate hoy = LocalDate.now();
-            LocalDateTime hoyInicio = hoy.atStartOfDay();
-            LocalDateTime hoyFin = hoy.atTime(23, 59, 59);
+        LocalDate hoy = LocalDate.now();
+        LocalDateTime hoyInicio = hoy.atStartOfDay();
+        LocalDateTime hoyFin = hoy.atTime(23, 59, 59);
 
-            // ✅ Pedidos pagados hoy (presenciales y web)
-            List<Pedido> pedidosPagadosHoy = pedidoRepository.findAllWithItemsAndProducts()
-                    .stream()
-                    .filter(p -> "PAGADO".equals(p.getEstado()))
-                    .filter(p -> p.getFecha() != null)
-                    .filter(p -> !p.getFecha().isBefore(hoyInicio) && !p.getFecha().isAfter(hoyFin))
-                    .collect(Collectors.toList());
+        //  Pedidos pagados hoy
+        List<Pedido> pedidosPagadosHoy = pedidoRepository.findAllWithItemsAndProducts()
+                .stream()
+                .filter(p -> "PAGADO".equals(p.getEstado()))
+                .filter(p -> p.getFecha() != null)
+                .filter(p -> !p.getFecha().isBefore(hoyInicio) && !p.getFecha().isAfter(hoyFin))
+                .collect(Collectors.toList());
 
-            double ingresosHoy = pedidosPagadosHoy.stream()
-                    .mapToDouble(Pedido::getTotal)
-                    .sum();
+        double ingresosHoy = pedidosPagadosHoy.stream()
+                .mapToDouble(Pedido::getTotal)
+                .sum();
 
-            Map<String, Object> metricas = new HashMap<>();
-            metricas.put("success", true);
-            metricas.put("totalPedidosPendientes", pedidosPendientes.size());
-            metricas.put("totalPedidosPagadosHoy", pedidosPagadosHoy.size());
-            metricas.put("ingresosHoy", ingresosHoy);
+        Map<String, Object> metricas = new HashMap<>();
+        metricas.put("success", true);
+        metricas.put("totalPedidosPendientes", pedidosPendientes.size());
+        metricas.put("totalPedidosPagadosHoy", pedidosPagadosHoy.size());
+        metricas.put("ingresosHoy", ingresosHoy);
 
-            return ResponseEntity.ok(metricas);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of(
-                    "success", false,
-                    "error", e.getMessage()
-            ));
-        }
+        return ResponseEntity.ok(metricas);
     }
 
     /**
-     * ✅ MARCAR PEDIDO COMO PAGADO
-     * El cajero cobra en efectivo/tarjeta y el pedido queda PAGADO
-     * ❌ NO va a cocina (es presencial, cliente retira en local)
+     *  MARCAR PEDIDO COMO PAGADO
      */
     @PostMapping("/marcar-pagado/{pedidoId}")
     @ResponseBody
     @Transactional
-    public ResponseEntity<?> marcarComoPagado(@PathVariable String pedidoId,
-                                              Authentication authentication) {
-        try {
-            if (authentication == null || !authentication.isAuthenticated()) {
-                return ResponseEntity.status(401).body(Map.of(
-                        "status", "ERROR",
-                        "message", "No autenticado"
-                ));
-            }
+    public ResponseEntity<Map<String, Object>> marcarComoPagado(
+            @PathVariable String pedidoId,
+            Authentication authentication) {
 
-            boolean hasCajeroRole = authentication.getAuthorities().stream()
-                    .anyMatch(grantedAuthority ->
-                            grantedAuthority.getAuthority().equals("ROLE_CAJERO"));
-
-            if (!hasCajeroRole) {
-                return ResponseEntity.status(403).body(Map.of(
-                        "status", "ERROR",
-                        "message", "No tiene permisos de cajero"
-                ));
-            }
-
-            Long pedidoIdLong;
-            try {
-                pedidoIdLong = Long.parseLong(pedidoId);
-            } catch (NumberFormatException e) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "status", "ERROR",
-                        "message", "ID de pedido inválido"
-                ));
-            }
-
-            Optional<Pedido> pedidoOpt = pedidoRepository.findById(pedidoIdLong);
-            if (pedidoOpt.isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "status", "ERROR",
-                        "message", "Pedido no encontrado"
-                ));
-            }
-
-            Pedido pedido = pedidoOpt.get();
-
-            // ✅ Validar que sea un pedido presencial pendiente
-            if (!"PENDIENTE".equals(pedido.getEstado())) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "status", "ERROR",
-                        "message", "El pedido no está en estado PENDIENTE. Estado actual: " + pedido.getEstado()
-                ));
-            }
-
-            // ✅ Validar que sea presencial (no web)
-            if ("WEB".equals(pedido.getCanal()) || "ONLINE".equals(pedido.getOrigen())) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "status", "ERROR",
-                        "message", "Este es un pedido WEB, no se puede marcar como pagado desde caja"
-                ));
-            }
-
-            String username = authentication.getName();
-            Optional<Usuario> cajeroOpt = usuarioRepository.findByUsername(username);
-            String nombreCajero = "Cajero";
-
-            if (cajeroOpt.isPresent()) {
-                Usuario cajero = cajeroOpt.get();
-                if (cajero.getNombres() != null && cajero.getApellidos() != null) {
-                    nombreCajero = cajero.getNombres() + " " + cajero.getApellidos();
-                } else if (cajero.getNombres() != null) {
-                    nombreCajero = cajero.getNombres();
-                } else {
-                    nombreCajero = cajero.getUsername();
-                }
-            }
-
-            // ✅ Marcar como PAGADO
-            pedido.setEstado("PAGADO");
-            pedido.setFechaActualizacion(LocalDateTime.now());
-            pedido.setListoParaCocina(false); // ✅ NO va a cocina (presencial)
-
-            // Guardar método de pago si no tiene
-            if (pedido.getMetodoPago() == null) {
-                pedido.setMetodoPago("EFECTIVO");
-            }
-
-            Pedido pedidoGuardado = pedidoRepository.save(pedido);
-
-            // ✅ Generar boleta PDF
-            String boletaPath = generarBoletaPDF(pedidoGuardado, nombreCajero);
-
-            System.out.println("💰 PEDIDO PAGADO EN CAJA: " + pedidoGuardado.getNumeroPedido());
-            System.out.println("   - Canal: " + pedidoGuardado.getCanal());
-            System.out.println("   - Origen: " + pedidoGuardado.getOrigen());
-            System.out.println("   - Cliente: " + (pedidoGuardado.getNombreCliente() != null ?
-                    pedidoGuardado.getNombreCliente() : "No especificado"));
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("status", "SUCCESS");
-            response.put("message", "Pedido marcado como PAGADO y boleta generada");
-            response.put("boletaPath", boletaPath);
-            response.put("numeroPedido", pedidoGuardado.getNumeroPedido());
-            response.put("total", pedidoGuardado.getTotal());
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of(
-                    "status", "ERROR",
-                    "message", "Error: " + e.getMessage()
-            ));
+        //  Validación de autenticación
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new BusinessException("Usuario no autenticado");
         }
+
+        // Validación de roles
+        boolean hasCajeroRole = authentication.getAuthorities().stream()
+                .anyMatch(grantedAuthority ->
+                        grantedAuthority.getAuthority().equals("ROLE_CAJERO"));
+
+        if (!hasCajeroRole) {
+            throw new BusinessException("No tiene permisos de cajero");
+        }
+
+        //  Validación de ID
+        Long pedidoIdLong;
+        try {
+            pedidoIdLong = Long.parseLong(pedidoId);
+        } catch (NumberFormatException e) {
+            throw new BusinessException("ID de pedido inválido: " + pedidoId);
+        }
+
+        //  Buscar pedido
+        Pedido pedido = pedidoRepository.findById(pedidoIdLong)
+                .orElseThrow(() -> new ResourceNotFoundException("Pedido", pedidoIdLong));
+
+        //  Validar estado
+        if (!"PENDIENTE".equals(pedido.getEstado())) {
+            throw new BusinessException("El pedido no está en estado PENDIENTE. Estado actual: " + pedido.getEstado());
+        }
+
+        //  Validar que sea presencial
+        if ("WEB".equals(pedido.getCanal()) || "ONLINE".equals(pedido.getOrigen())) {
+            throw new BusinessException("Este es un pedido WEB, no se puede marcar como pagado desde caja");
+        }
+
+        //  Obtener nombre del cajero
+        String username = authentication.getName();
+        Optional<Usuario> cajeroOpt = usuarioRepository.findByUsername(username);
+        String nombreCajero = "Cajero";
+
+        if (cajeroOpt.isPresent()) {
+            Usuario cajero = cajeroOpt.get();
+            if (cajero.getNombres() != null && cajero.getApellidos() != null) {
+                nombreCajero = cajero.getNombres() + " " + cajero.getApellidos();
+            } else if (cajero.getNombres() != null) {
+                nombreCajero = cajero.getNombres();
+            } else {
+                nombreCajero = cajero.getUsername();
+            }
+        }
+
+        //  Marcar como PAGADO
+        pedido.setEstado("PAGADO");
+        pedido.setFechaActualizacion(LocalDateTime.now());
+        pedido.setListoParaCocina(false);
+
+        if (pedido.getMetodoPago() == null) {
+            pedido.setMetodoPago("EFECTIVO");
+        }
+
+        Pedido pedidoGuardado = pedidoRepository.save(pedido);
+
+        //  Generar boleta PDF
+        String boletaPath = generarBoletaPDF(pedidoGuardado, nombreCajero);
+
+        log.info("💰 PEDIDO PAGADO EN CAJA: {}", pedidoGuardado.getNumeroPedido());
+        log.info("   - Canal: {}", pedidoGuardado.getCanal());
+        log.info("   - Origen: {}", pedidoGuardado.getOrigen());
+        log.info("   - Cliente: {}", pedidoGuardado.getNombreCliente() != null ?
+                pedidoGuardado.getNombreCliente() : "No especificado");
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "SUCCESS");
+        response.put("message", "Pedido marcado como PAGADO y boleta generada");
+        response.put("boletaPath", boletaPath);
+        response.put("numeroPedido", pedidoGuardado.getNumeroPedido());
+        response.put("total", pedidoGuardado.getTotal());
+
+        return ResponseEntity.ok(response);
     }
 
     /**
-     * ✅ MARCAR PEDIDO COMO CANCELADO
+     *  MARCAR PEDIDO COMO CANCELADO
      */
     @PostMapping("/marcar-cancelado/{pedidoId}")
     @ResponseBody
     @Transactional
-    public ResponseEntity<?> marcarComoCancelado(@PathVariable String pedidoId,
-                                                 @RequestParam(required = false) String motivo,
-                                                 Authentication authentication) {
-        try {
-            if (authentication == null || !authentication.isAuthenticated()) {
-                return ResponseEntity.status(401).body(Map.of(
-                        "status", "ERROR",
-                        "message", "Sesión expirada. Por favor, inicie sesión nuevamente."
-                ));
-            }
+    public ResponseEntity<Map<String, Object>> marcarComoCancelado(
+            @PathVariable String pedidoId,
+            @RequestParam(required = false) String motivo,
+            Authentication authentication) {
 
-            boolean hasCajeroRole = authentication.getAuthorities().stream()
-                    .anyMatch(grantedAuthority ->
-                            grantedAuthority.getAuthority().equals("ROLE_CAJERO"));
-
-            if (!hasCajeroRole) {
-                return ResponseEntity.status(403).body(Map.of(
-                        "status", "ERROR",
-                        "message", "No tiene permisos de cajero"
-                ));
-            }
-
-            Long pedidoIdLong;
-            try {
-                pedidoIdLong = Long.parseLong(pedidoId);
-            } catch (NumberFormatException e) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "status", "ERROR",
-                        "message", "ID de pedido inválido: " + pedidoId
-                ));
-            }
-
-            Optional<Pedido> pedidoOpt = pedidoRepository.findById(pedidoIdLong);
-
-            if (pedidoOpt.isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "status", "ERROR",
-                        "message", "Pedido no encontrado con ID: " + pedidoId
-                ));
-            }
-
-            Pedido pedido = pedidoOpt.get();
-
-            if (!"PENDIENTE".equals(pedido.getEstado())) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "status", "ERROR",
-                        "message", "Solo se pueden cancelar pedidos PENDIENTES. Estado actual: " + pedido.getEstado()
-                ));
-            }
-
-            pedido.setEstado("CANCELADO");
-            pedido.setFechaActualizacion(LocalDateTime.now());
-            if (motivo != null && !motivo.trim().isEmpty()) {
-                pedido.setObservaciones("CANCELADO - Motivo: " + motivo);
-            }
-            pedidoRepository.save(pedido);
-
-            System.out.println("🚫 PEDIDO CANCELADO: " + pedido.getNumeroPedido());
-
-            return ResponseEntity.ok(Map.of(
-                    "status", "SUCCESS",
-                    "message", "Pedido cancelado exitosamente"
-            ));
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of(
-                    "status", "ERROR",
-                    "message", "Error: " + e.getMessage()
-            ));
+        //  Validación de autenticación
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new BusinessException("Sesión expirada. Por favor, inicie sesión nuevamente.");
         }
+
+        //  Validación de roles
+        boolean hasCajeroRole = authentication.getAuthorities().stream()
+                .anyMatch(grantedAuthority ->
+                        grantedAuthority.getAuthority().equals("ROLE_CAJERO"));
+
+        if (!hasCajeroRole) {
+            throw new BusinessException("No tiene permisos de cajero");
+        }
+
+        //  Validación de ID
+        Long pedidoIdLong;
+        try {
+            pedidoIdLong = Long.parseLong(pedidoId);
+        } catch (NumberFormatException e) {
+            throw new BusinessException("ID de pedido inválido: " + pedidoId);
+        }
+
+        //  Buscar pedido
+        Pedido pedido = pedidoRepository.findById(pedidoIdLong)
+                .orElseThrow(() -> new ResourceNotFoundException("Pedido", pedidoIdLong));
+
+        //  Validar estado
+        if (!"PENDIENTE".equals(pedido.getEstado())) {
+            throw new BusinessException("Solo se pueden cancelar pedidos PENDIENTES. Estado actual: " + pedido.getEstado());
+        }
+
+        //  Cancelar pedido
+        pedido.setEstado("CANCELADO");
+        pedido.setFechaActualizacion(LocalDateTime.now());
+        if (motivo != null && !motivo.trim().isEmpty()) {
+            pedido.setObservaciones("CANCELADO - Motivo: " + motivo);
+        }
+        pedidoRepository.save(pedido);
+
+        log.info("🚫 PEDIDO CANCELADO: {}", pedido.getNumeroPedido());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "SUCCESS");
+        response.put("message", "Pedido cancelado exitosamente");
+
+        return ResponseEntity.ok(response);
     }
 
     /**
-     * ✅ GENERAR BOLETA PDF
+     *  SERVIR BOLETA
      */
+    @GetMapping("/boletas/{filename:.+}")
+    public ResponseEntity<Resource> servirBoleta(@PathVariable String filename) {
+        try {
+            Path filePath = Paths.get("boletas/" + filename).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (resource.exists() && resource.isReadable()) {
+                return ResponseEntity.ok()
+                        .contentType(MediaType.APPLICATION_PDF)
+                        .header(HttpHeaders.CONTENT_DISPOSITION,
+                                "inline; filename=\"" + filename + "\"")
+                        .body(resource);
+            } else {
+                throw new ResourceNotFoundException("Boleta", "filename", filename);
+            }
+        } catch (Exception e) {
+            log.error("❌ Error al servir boleta: {}", e.getMessage(), e);
+            throw new BusinessException("Error al servir la boleta: " + e.getMessage());
+        }
+    }
+
+    // ============================================================
+    // MÉTODO PRIVADO PARA GENERAR BOLETA PDF (CON try-catch LOCAL)
+    // ============================================================
+
     private String generarBoletaPDF(Pedido pedido, String nombreCajero) {
         String directoryPath = "boletas/";
         String fileName = "boleta_" + pedido.getNumeroPedido() + ".pdf";
@@ -525,7 +462,6 @@ public class CajeroController {
                     pedido.getFecha().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"))));
             document.add(new Paragraph("CAJERO: " + nombreCajero));
 
-            // ✅ Cliente (presencial o usuario)
             if (pedido.getUsuario() != null) {
                 String nombreCliente = pedido.getUsuario().getNombres() + " " +
                         pedido.getUsuario().getApellidos();
@@ -621,31 +557,8 @@ public class CajeroController {
             return fileName;
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(" Error al generar boleta PDF: {}", e.getMessage(), e);
             return "error_generacion";
-        }
-    }
-
-    /**
-     * ✅ SERVIR BOLETA
-     */
-    @GetMapping("/boletas/{filename:.+}")
-    public ResponseEntity<Resource> servirBoleta(@PathVariable String filename) {
-        try {
-            Path filePath = Paths.get("boletas/" + filename).normalize();
-            Resource resource = new UrlResource(filePath.toUri());
-
-            if (resource.exists() && resource.isReadable()) {
-                return ResponseEntity.ok()
-                        .contentType(MediaType.APPLICATION_PDF)
-                        .header(HttpHeaders.CONTENT_DISPOSITION,
-                                "inline; filename=\"" + filename + "\"")
-                        .body(resource);
-            } else {
-                return ResponseEntity.notFound().build();
-            }
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
         }
     }
 }

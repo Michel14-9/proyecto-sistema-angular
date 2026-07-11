@@ -34,7 +34,7 @@ export class AdminShellComponent implements OnInit, AfterViewInit, OnDestroy {
     private router: Router,
     private layoutService: LayoutService,
     public alertService: AlertService,
-    private cdr: ChangeDetectorRef  // ✅ Agregado
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -59,7 +59,7 @@ export class AdminShellComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  // ✅ Agregado para forzar detección de cambios después de que la vista se renderice
+
   ngAfterViewInit(): void {
     this.cdr.detectChanges();
   }

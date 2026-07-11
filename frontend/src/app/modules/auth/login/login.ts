@@ -1,5 +1,3 @@
-// src/app/modules/auth/login/login.ts
-
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -7,6 +5,7 @@ import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
 import { CarritoService } from '../../../core/services/carrito.service';
+import { AlertService } from '../../../core/services/alert.service';
 
 @Component({
   selector: 'app-login',
@@ -28,31 +27,16 @@ export class LoginComponent implements OnInit {
   username: string = '';
   totalCarrito: number = 0;
 
-  // ✅ Mapeo de roles a rutas (NUEVA ESTRUCTURA)
-  private readonly roleRoutes: { [key: string]: string } = {
-    'ROLE_ADMIN': '/admin/dashboard',    // ✅ Nueva ruta admin con dashboard
-    'ADMIN': '/admin/dashboard',
-    'admin': '/admin/dashboard',
-    'ROLE_CAJERO': '/cajero',
-    'CAJERO': '/cajero',
-    'cajero': '/cajero',
-    'ROLE_COCINERO': '/cocinero',
-    'COCINERO': '/cocinero',
-    'cocinero': '/cocinero',
-    'ROLE_DELIVERY': '/delivery',
-    'DELIVERY': '/delivery',
-    'delivery': '/delivery',
-    'ROLE_CLIENTE': '/',
-    'CLIENTE': '/',
-    'cliente': '/'
-  };
+  //  Variable para guardar la URL de retorno
+  returnUrl: string = '/';
 
   constructor(
     private authService: AuthService,
     private carritoService: CarritoService,
     private router: Router,
     private route: ActivatedRoute,
-    private http: HttpClient
+    private http: HttpClient,
+    private alertService: AlertService
   ) {}
 
   ngOnInit(): void {
@@ -61,30 +45,34 @@ export class LoginComponent implements OnInit {
       return;
     }
 
-    if (this.authService.isAuthenticated()) {
-      const rol = this.authService.getRole();
-      console.log('🔍 Usuario ya autenticado, rol:', rol);
-      this.redirigirPorRol(rol);
-      return;
-    } else {
-      console.log('🔄 Sin sesión, carrito en 0');
-      this.carritoService.limpiarLocal();
-      this.totalCarrito = 0;
-    }
-
+    //  OBTENER returnUrl DE LOS QUERY PARAMS
     this.route.queryParams.subscribe(params => {
+      this.returnUrl = params['returnUrl'] || '/';
+      console.log('🔙 Return URL capturada:', this.returnUrl);
+
       if (params['logout']) {
         this.logoutExitoso = true;
         setTimeout(() => this.logoutExitoso = false, 4000);
       }
     });
 
+    if (this.authService.isAuthenticated()) {
+      const rol = this.authService.getRole();
+      console.log('🔍 Usuario ya autenticado, rol:', rol);
+      this.redirigirPorRol(rol);
+      return;
+    } else {
+      console.log(' Sin sesión, carrito en 0');
+      this.carritoService.limpiarLocal();
+      this.totalCarrito = 0;
+    }
+
     this.isAuthenticated = this.authService.isAuthenticated();
     this.username = this.authService.getUsername();
 
     this.carritoService.getTotal().subscribe(total => {
       this.totalCarrito = total;
-      console.log('💰 Total del carrito actualizado:', total);
+      console.log(' Total del carrito actualizado:', total);
     });
   }
 
@@ -102,7 +90,7 @@ export class LoginComponent implements OnInit {
     this.authService.login(this.loginEmail, this.loginPassword).subscribe({
       next: (response: any) => {
         this.cargando = false;
-        console.log('🔍 Respuesta login:', response);
+        console.log(' Respuesta login:', response);
 
         if (response && response.status === "ok") {
           const rol = response.rol || 'ROLE_CLIENTE';
@@ -121,9 +109,12 @@ export class LoginComponent implements OnInit {
             this.carritoService.refrescarTotal();
           }, 500);
 
-          // ✅ Redirigir según el rol (NUEVA ESTRUCTURA)
-          console.log(`🔀 Redirigiendo con rol: ${rol}`);
-          this.redirigirPorRol(rol);
+          //  REDIRIGIR USANDO returnUrl PRIMERO
+          console.log(` Return URL: ${this.returnUrl}`);
+          console.log(` Rol del usuario: ${rol}`);
+
+          this.redirigirDespuesDeLogin(rol);
+
         } else {
           this.errorLogin = true;
           this.errorMessage = response?.mensaje || 'Usuario o contraseña incorrectos';
@@ -133,22 +124,70 @@ export class LoginComponent implements OnInit {
         this.errorLogin = true;
         this.errorMessage = err.error?.mensaje || 'Error al iniciar sesión. Intenta de nuevo.';
         this.cargando = false;
-        console.error('❌ Error en login:', err);
+        console.error(' Error en login:', err);
       }
     });
   }
 
+  //  Redirigir después del login
+  private redirigirDespuesDeLogin(rol: string): void {
+    // Si hay returnUrl y NO es la página de login, redirigir allí
+    if (this.returnUrl && this.returnUrl !== '/login' && this.returnUrl !== '/') {
+      console.log(` Redirigiendo a returnUrl: ${this.returnUrl}`);
+      this.router.navigateByUrl(this.returnUrl);
+      return;
+    }
+
+    // Si no hay returnUrl o es login, redirigir por rol
+    this.redirigirPorRol(rol);
+  }
+
+  //  Método de redirección por rol - CORREGIDO
+  private redirigirPorRol(rol: string | null): void {
+    console.log(` Redirigiendo por rol: ${rol}`);
+
+    if (!rol) {
+      console.log('⚠ Rol es null, redirigiendo a inicio');
+      this.router.navigate(['/']);
+      return;
+    }
+
+    //  Normalizar el rol (quitar prefijo ROLE_ y convertir a minúsculas)
+    let rolNormalizado = rol;
+    if (rolNormalizado.startsWith('ROLE_')) {
+      rolNormalizado = rolNormalizado.substring(5);
+    }
+    rolNormalizado = rolNormalizado.toLowerCase();
+
+    console.log(` Rol normalizado: ${rolNormalizado}`);
+
+    //  Mapeo de roles a rutas (con keys en minúsculas)
+    const roleRoutes: { [key: string]: string } = {
+      'admin': '/admin/dashboard',
+      'cajero': '/cajero',
+      'cocinero': '/cocinero',
+      'delivery': '/delivery',
+      'cliente': '/'
+    };
+
+    // Buscar la ruta correspondiente
+    let ruta = roleRoutes[rolNormalizado] || '/';
+
+    console.log(` Navegando a: ${ruta}`);
+    this.router.navigate([ruta]);
+  }
+
   logout(): void {
-    console.log('🔄 Cerrando sesión...');
+    console.log(' Cerrando sesión...');
 
     localStorage.removeItem('token');
     localStorage.removeItem('username');
     localStorage.removeItem('role');
     localStorage.removeItem('user');
-    console.log('✅ localStorage limpiado');
+    console.log(' localStorage limpiado');
 
     this.carritoService.limpiarLocal();
-    console.log('✅ Carrito limpiado');
+    console.log(' Carrito limpiado');
 
     this.isAuthenticated = false;
     this.username = '';
@@ -160,8 +199,8 @@ export class LoginComponent implements OnInit {
     this.http.post('http://localhost:8080/api/auth/logout', {}, {
       withCredentials: true
     }).subscribe({
-      next: () => console.log('✅ Logout backend ok'),
-      error: (err) => console.log('⚠️ Logout backend falló:', err.status)
+      next: () => console.log(' Logout backend ok'),
+      error: (err) => console.log(' Logout backend falló:', err.status)
     });
 
     this.logoutExitoso = true;
@@ -169,26 +208,7 @@ export class LoginComponent implements OnInit {
       this.logoutExitoso = false;
     }, 4000);
 
-    console.log('🔄 Redirigiendo al login...');
+    console.log(' Redirigiendo al login...');
     this.router.navigate(['/login']);
-  }
-
-  // ✅ Método de redirección para la NUEVA ESTRUCTURA
-  private redirigirPorRol(rol: string | null): void {
-    console.log(`🔀 Redirigiendo con rol: ${rol}`);
-
-    // Normalizar el rol
-    let rolNormalizado = rol || '';
-
-    // Si empieza con ROLE_, lo quitamos
-    if (rolNormalizado.startsWith('ROLE_')) {
-      rolNormalizado = rolNormalizado.substring(5);
-    }
-
-    // Buscar la ruta correspondiente
-    let ruta = this.roleRoutes[rolNormalizado] || this.roleRoutes[rol || ''] || '/';
-
-    console.log(`🔀 Navegando a: ${ruta}`);
-    this.router.navigate([ruta]);
   }
 }

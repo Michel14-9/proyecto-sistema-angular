@@ -128,10 +128,10 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
         console.log('📊 Datos recibidos del backend:', data);
 
         if (data && data.success) {
-          // ✅ Actualizar métricas según el tipo
+          //  Actualizar métricas según el tipo
           this.actualizarMetricas(data);
 
-          // ✅ Actualizar datos del gráfico
+          //  Actualizar datos del gráfico
           if (data.datos_grafico) {
             this.reporteDatosGrafico = {
               labels: data.datos_grafico.labels || [],
@@ -145,7 +145,7 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
             this.reporteDatosGrafico = this.procesarDatosLocalmente(data);
           }
 
-          // ✅ Actualizar columnas
+          //  Actualizar columnas
           this.actualizarColumnas();
 
           this.reporteDatosTabla = data.data || [];
@@ -164,7 +164,7 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   // ============================================================
-  // ✅ ACTUALIZAR MÉTRICAS SEGÚN EL TIPO
+  //  ACTUALIZAR MÉTRICAS SEGÚN EL TIPO
   // ============================================================
   actualizarMetricas(data: any): void {
     const metricas = data.metricas || {};
@@ -250,7 +250,7 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   // ============================================================
-  // ✅ ACTUALIZAR COLUMNAS SEGÚN EL TIPO
+  // ACTUALIZAR COLUMNAS SEGÚN EL TIPO
   // ============================================================
   actualizarColumnas(): void {
     switch (this.reporteTipo) {
@@ -281,7 +281,7 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   // ============================================================
-  // ✅ MÉTODO FALLBACK PARA PROCESAR DATOS LOCALMENTE
+  //  MÉTODO FALLBACK PARA PROCESAR DATOS LOCALMENTE
   // ============================================================
   procesarDatosLocalmente(data: any): any {
     if (this.reporteTipo === 'productos') {
@@ -364,7 +364,7 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   // ============================================================
-  // ✅ MÉTODO PARA CALCULAR CATEGORÍAS DE PRODUCTOS
+  //  MÉTODO PARA CALCULAR CATEGORÍAS DE PRODUCTOS
   // ============================================================
   calcularCategoriasProductos(data: any[]): any {
     const categoriasMap = new Map();
@@ -416,11 +416,11 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
         this.reportChartInstance = null;
       }
 
-      // ✅ Tipos que usan gráfico de barras
+      //  Tipos que usan gráfico de barras
       const tiposBarra = ['productos', 'usuarios', 'metodos-pago', 'tipos-entrega', 'favoritos'];
       const isBar = tiposBarra.includes(this.reporteTipo);
 
-      // ✅ Tipos que usan formato de moneda
+      //  Tipos que usan formato de moneda
       const tiposMoneda = ['ventas', 'pedidos', 'metodos-pago', 'tipos-entrega'];
       const isMoneda = tiposMoneda.includes(this.reporteTipo);
 

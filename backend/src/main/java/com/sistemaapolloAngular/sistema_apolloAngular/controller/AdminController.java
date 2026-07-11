@@ -7,6 +7,8 @@ import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
+import com.sistemaapolloAngular.sistema_apolloAngular.exception.BusinessException;
+import com.sistemaapolloAngular.sistema_apolloAngular.exception.ResourceNotFoundException;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.Favorito;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.ItemPedido;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.Pedido;
@@ -18,6 +20,7 @@ import com.sistemaapolloAngular.sistema_apolloAngular.repository.UsuarioReposito
 import com.sistemaapolloAngular.sistema_apolloAngular.service.ProductoFinalService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +36,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestController
 @RequestMapping("/admin")
 @CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
@@ -56,9 +60,9 @@ public class AdminController {
         this.productoFinalService = productoFinalService;
     }
 
-
+    // ============================================================
     // 1. ENDPOINTS PÚBLICOS PARA PYTHON
-
+    // ============================================================
 
     @GetMapping("/data/productos")
     @ResponseBody
@@ -132,11 +136,10 @@ public class AdminController {
                 response.add(item);
             }
 
-            System.out.println(" Favoritos enviados a Python: " + response.size());
+            log.info("📤 Favoritos enviados a Python: {}", response.size());
 
         } catch (Exception e) {
-            System.err.println(" Error obteniendo favoritos: " + e.getMessage());
-            e.printStackTrace();
+            log.error("❌ Error obteniendo favoritos: {}", e.getMessage(), e);
         }
 
         return response;
@@ -154,69 +157,55 @@ public class AdminController {
 
     @GetMapping("/productos/{id}")
     @ResponseBody
-    public ResponseEntity<?> obtenerProductoPorId(@PathVariable Long id) {
-        try {
-            Optional<ProductoFinal> producto = productoFinalService.obtenerPorId(id);
-            if (producto.isPresent()) {
-                return ResponseEntity.ok(producto.get());
-            } else {
-                return ResponseEntity.status(404).body(Map.of("error", "Producto no encontrado"));
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<ProductoFinal> obtenerProductoPorId(@PathVariable Long id) {
+        ProductoFinal producto = productoFinalService.obtenerPorId(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Producto", id));
+        return ResponseEntity.ok(producto);
     }
 
     @PostMapping("/productos/guardar")
     @ResponseBody
-    public ResponseEntity<?> guardarProducto(
+    public ResponseEntity<Map<String, Object>> guardarProducto(
             @RequestParam String nombre,
             @RequestParam String descripcion,
             @RequestParam Double precio,
             @RequestParam String tipo,
             @RequestParam(required = false) String imagenUrl) {
 
-        try {
-            if (nombre == null || nombre.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of("success", false, "error", "El nombre del producto es requerido"));
-            }
-
-            if (precio == null || precio <= 0) {
-                return ResponseEntity.badRequest().body(Map.of("success", false, "error", "El precio debe ser mayor a 0"));
-            }
-
-            if (tipo == null || tipo.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of("success", false, "error", "El tipo/categoría es requerido"));
-            }
-
-            ProductoFinal producto = new ProductoFinal();
-            producto.setNombre(nombre.trim());
-            producto.setDescripcion(descripcion != null ? descripcion.trim() : "");
-            producto.setPrecio(precio);
-            producto.setTipo(tipo.trim());
-
-            if (imagenUrl != null && !imagenUrl.trim().isEmpty()) {
-                producto.setImagenUrl(imagenUrl.trim());
-            } else {
-                producto.setImagenUrl("/imagenes/default-product.jpg");
-            }
-
-            ProductoFinal productoCreado = productoFinalService.guardar(producto);
-
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "Producto guardado exitosamente!",
-                    "producto", productoCreado
-            ));
-
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("success", false, "error", "Error al guardar el producto: " + e.getMessage()));
+        if (nombre == null || nombre.trim().isEmpty()) {
+            throw new BusinessException("El nombre del producto es requerido");
         }
+
+        if (precio == null || precio <= 0) {
+            throw new BusinessException("El precio debe ser mayor a 0");
+        }
+
+        if (tipo == null || tipo.trim().isEmpty()) {
+            throw new BusinessException("El tipo/categoría es requerido");
+        }
+
+        ProductoFinal producto = new ProductoFinal();
+        producto.setNombre(nombre.trim());
+        producto.setDescripcion(descripcion != null ? descripcion.trim() : "");
+        producto.setPrecio(precio);
+        producto.setTipo(tipo.trim());
+        producto.setImagenUrl(imagenUrl != null && !imagenUrl.trim().isEmpty()
+                ? imagenUrl.trim()
+                : "/imagenes/default-product.jpg");
+
+        ProductoFinal productoCreado = productoFinalService.guardar(producto);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Producto guardado exitosamente!");
+        response.put("producto", productoCreado);
+
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/productos/actualizar/{id}")
     @ResponseBody
-    public ResponseEntity<?> actualizarProducto(
+    public ResponseEntity<Map<String, Object>> actualizarProducto(
             @PathVariable Long id,
             @RequestParam String nombre,
             @RequestParam String descripcion,
@@ -224,91 +213,64 @@ public class AdminController {
             @RequestParam String tipo,
             @RequestParam(required = false) String imagenUrl) {
 
-        try {
-            if (nombre == null || nombre.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of("success", false, "error", "El nombre del producto es requerido"));
-            }
-
-            if (precio == null || precio <= 0) {
-                return ResponseEntity.badRequest().body(Map.of("success", false, "error", "El precio debe ser mayor a 0"));
-            }
-
-            if (tipo == null || tipo.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of("success", false, "error", "El tipo/categoría es requerido"));
-            }
-
-            Optional<ProductoFinal> productoOpt = productoFinalService.obtenerPorId(id);
-            if (productoOpt.isPresent()) {
-                ProductoFinal producto = productoOpt.get();
-                producto.setNombre(nombre.trim());
-                producto.setDescripcion(descripcion != null ? descripcion.trim() : "");
-                producto.setPrecio(precio);
-                producto.setTipo(tipo.trim());
-
-                if (imagenUrl != null && !imagenUrl.trim().isEmpty()) {
-                    producto.setImagenUrl(imagenUrl.trim());
-                } else {
-                    producto.setImagenUrl("/imagenes/default-product.jpg");
-                }
-
-                ProductoFinal productoActualizado = productoFinalService.guardar(producto);
-
-                return ResponseEntity.ok(Map.of(
-                        "success", true,
-                        "message", "Producto actualizado exitosamente!",
-                        "producto", productoActualizado
-                ));
-            } else {
-                return ResponseEntity.status(404).body(Map.of("success", false, "error", "Producto no encontrado"));
-            }
-
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("success", false, "error", "Error al actualizar el producto: " + e.getMessage()));
+        if (nombre == null || nombre.trim().isEmpty()) {
+            throw new BusinessException("El nombre del producto es requerido");
         }
+
+        if (precio == null || precio <= 0) {
+            throw new BusinessException("El precio debe ser mayor a 0");
+        }
+
+        if (tipo == null || tipo.trim().isEmpty()) {
+            throw new BusinessException("El tipo/categoría es requerido");
+        }
+
+        ProductoFinal producto = productoFinalService.obtenerPorId(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Producto", id));
+
+        producto.setNombre(nombre.trim());
+        producto.setDescripcion(descripcion != null ? descripcion.trim() : "");
+        producto.setPrecio(precio);
+        producto.setTipo(tipo.trim());
+        producto.setImagenUrl(imagenUrl != null && !imagenUrl.trim().isEmpty()
+                ? imagenUrl.trim()
+                : "/imagenes/default-product.jpg");
+
+        ProductoFinal productoActualizado = productoFinalService.guardar(producto);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Producto actualizado exitosamente!");
+        response.put("producto", productoActualizado);
+
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/productos/eliminar/{id}")
     @ResponseBody
     @Transactional
-    public ResponseEntity<?> eliminarProducto(@PathVariable Long id) {
-        try {
-            Optional<ProductoFinal> productoOpt = productoFinalService.obtenerPorId(id);
-            if (productoOpt.isEmpty()) {
-                return ResponseEntity.status(404).body(Map.of(
-                        "success", false,
-                        "error", "Producto no encontrado"
-                ));
-            }
+    public ResponseEntity<Map<String, Object>> eliminarProducto(@PathVariable Long id) {
+        ProductoFinal producto = productoFinalService.obtenerPorId(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Producto", id));
 
-            ProductoFinal producto = productoOpt.get();
-            String nombreProducto = producto.getNombre();
+        String nombreProducto = producto.getNombre();
+        boolean tieneItemsPedido = pedidoRepository.existsByItemsProductoId(id);
 
-            boolean tieneItemsPedido = pedidoRepository.existsByItemsProductoId(id);
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
 
-            if (tieneItemsPedido) {
-                producto.setActivo(false);
-                productoFinalService.guardar(producto);
-                return ResponseEntity.ok(Map.of(
-                        "success", true,
-                        "message", "Producto '" + nombreProducto + "' desactivado (tiene pedidos históricos).",
-                        "desactivado", true
-                ));
-            } else {
-                productoFinalService.eliminar(id);
-                return ResponseEntity.ok(Map.of(
-                        "success", true,
-                        "message", "Producto '" + nombreProducto + "' eliminado exitosamente!",
-                        "desactivado", false
-                ));
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of(
-                    "success", false,
-                    "error", "Error al eliminar el producto: " + e.getMessage()
-            ));
+        if (tieneItemsPedido) {
+            producto.setActivo(false);
+            productoFinalService.guardar(producto);
+            response.put("message", "Producto '" + nombreProducto + "' desactivado (tiene pedidos históricos).");
+            response.put("desactivado", true);
+        } else {
+            productoFinalService.eliminar(id);
+            response.put("message", "Producto '" + nombreProducto + "' eliminado exitosamente!");
+            response.put("desactivado", false);
         }
+
+        return ResponseEntity.ok(response);
     }
 
     // ============================================================
@@ -319,13 +281,13 @@ public class AdminController {
     @ResponseBody
     public List<Usuario> obtenerTodosUsuarios() {
         List<Usuario> usuarios = usuarioRepository.findAll();
-        System.out.println("👥 Enviando " + usuarios.size() + " usuarios al frontend");
+        log.info("👥 Enviando {} usuarios al frontend", usuarios.size());
         return usuarios;
     }
 
     @PostMapping("/usuarios/guardar")
     @ResponseBody
-    public ResponseEntity<?> guardarUsuario(
+    public ResponseEntity<Map<String, Object>> guardarUsuario(
             @RequestParam String nombres,
             @RequestParam String apellidos,
             @RequestParam String tipoDocumento,
@@ -336,106 +298,69 @@ public class AdminController {
             @RequestParam String rol,
             @RequestParam String password) {
 
-        try {
-            List<String> rolesValidos = Arrays.asList("admin", "cajero", "cocinero", "delivery");
-            if (!rolesValidos.contains(rol.toLowerCase())) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "success", false,
-                        "error", "Rol no válido. Roles permitidos: admin, cajero, cocinero, delivery"
-                ));
-            }
-
-            if (usuarioRepository.findByUsername(email).isPresent()) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "success", false,
-                        "error", "El correo electrónico ya está registrado"
-                ));
-            }
-
-            if (password == null || password.trim().length() < 6) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "success", false,
-                        "error", "La contraseña debe tener al menos 6 caracteres"
-                ));
-            }
-
-            Usuario usuario = new Usuario();
-            usuario.setNombres(nombres.trim());
-            usuario.setApellidos(apellidos.trim());
-            usuario.setTipoDocumento(tipoDocumento);
-            usuario.setNumeroDocumento(numeroDocumento.trim());
-            usuario.setTelefono(telefono.trim());
-            usuario.setFechaNacimiento(LocalDate.parse(fechaNacimiento));
-            usuario.setUsername(email.trim());
-            usuario.setRol(rol.toUpperCase());
-            usuario.setPassword(passwordEncoder.encode(password));
-
-            Usuario usuarioCreado = usuarioRepository.save(usuario);
-
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "Usuario creado exitosamente!",
-                    "usuario", usuarioCreado
-            ));
-
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of(
-                    "success", false,
-                    "error", "Error al guardar el usuario: " + e.getMessage()
-            ));
+        List<String> rolesValidos = Arrays.asList("admin", "cajero", "cocinero", "delivery");
+        if (!rolesValidos.contains(rol.toLowerCase())) {
+            throw new BusinessException("Rol no válido. Roles permitidos: admin, cajero, cocinero, delivery");
         }
+
+        if (usuarioRepository.findByUsername(email).isPresent()) {
+            throw new BusinessException("El correo electrónico ya está registrado");
+        }
+
+        if (password == null || password.trim().length() < 6) {
+            throw new BusinessException("La contraseña debe tener al menos 6 caracteres");
+        }
+
+        Usuario usuario = new Usuario();
+        usuario.setNombres(nombres.trim());
+        usuario.setApellidos(apellidos.trim());
+        usuario.setTipoDocumento(tipoDocumento);
+        usuario.setNumeroDocumento(numeroDocumento.trim());
+        usuario.setTelefono(telefono.trim());
+        usuario.setFechaNacimiento(LocalDate.parse(fechaNacimiento));
+        usuario.setUsername(email.trim());
+        usuario.setRol(rol.toUpperCase());
+        usuario.setPassword(passwordEncoder.encode(password));
+
+        Usuario usuarioCreado = usuarioRepository.save(usuario);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Usuario creado exitosamente!");
+        response.put("usuario", usuarioCreado);
+
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/usuarios/eliminar/{id}")
     @ResponseBody
     @Transactional
-    public ResponseEntity<?> eliminarUsuario(@PathVariable Long id) {
-        try {
-            Optional<Usuario> usuarioOpt = usuarioRepository.findById(id);
-            if (usuarioOpt.isEmpty()) {
-                return ResponseEntity.status(404).body(Map.of(
-                        "success", false,
-                        "error", "Usuario no encontrado"
-                ));
-            }
+    public ResponseEntity<Map<String, Object>> eliminarUsuario(@PathVariable Long id) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario", id));
 
-            Usuario usuario = usuarioOpt.get();
-
-            if ("admin@luren.com".equals(usuario.getUsername())) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "success", false,
-                        "error", "No se puede eliminar al administrador principal"
-                ));
-            }
-
-            String nombreUsuario = usuario.getNombres() + " " + usuario.getApellidos();
-
-            boolean tienePedidos = pedidoRepository.existsByUsuarioId(id);
-
-            if (tienePedidos) {
-                usuario.setActivo(false);
-                usuarioRepository.save(usuario);
-                return ResponseEntity.ok(Map.of(
-                        "success", true,
-                        "message", "Usuario '" + nombreUsuario + "' desactivado (tiene pedidos históricos).",
-                        "desactivado", true
-                ));
-            } else {
-                usuarioRepository.deleteById(id);
-                return ResponseEntity.ok(Map.of(
-                        "success", true,
-                        "message", "Usuario '" + nombreUsuario + "' eliminado exitosamente!",
-                        "desactivado", false
-                ));
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of(
-                    "success", false,
-                    "error", "Error al eliminar el usuario: " + e.getMessage()
-            ));
+        if ("admin@luren.com".equals(usuario.getUsername())) {
+            throw new BusinessException("No se puede eliminar al administrador principal");
         }
+
+        String nombreUsuario = usuario.getNombres() + " " + usuario.getApellidos();
+        boolean tienePedidos = pedidoRepository.existsByUsuarioId(id);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+
+        if (tienePedidos) {
+            usuario.setActivo(false);
+            usuarioRepository.save(usuario);
+            response.put("message", "Usuario '" + nombreUsuario + "' desactivado (tiene pedidos históricos).");
+            response.put("desactivado", true);
+        } else {
+            usuarioRepository.deleteById(id);
+            response.put("message", "Usuario '" + nombreUsuario + "' eliminado exitosamente!");
+            response.put("desactivado", false);
+        }
+
+        return ResponseEntity.ok(response);
     }
 
     // ============================================================
@@ -445,52 +370,42 @@ public class AdminController {
     @GetMapping("/menu/combos")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> obtenerCombosApi() {
-        Map<String, Object> response = new HashMap<>();
+        List<ProductoFinal> todosLosProductos = productoFinalService.obtenerTodos();
 
-        try {
-            List<ProductoFinal> todosLosProductos = productoFinalService.obtenerTodos();
+        List<ProductoFinal> combos = todosLosProductos.stream()
+                .filter(p -> p.getTipo() != null &&
+                        (p.getTipo().equalsIgnoreCase("COMBO") ||
+                                p.getTipo().equalsIgnoreCase("combo")))
+                .filter(ProductoFinal::isActivo)
+                .collect(Collectors.toList());
 
-            List<ProductoFinal> combos = todosLosProductos.stream()
-                    .filter(p -> p.getTipo() != null &&
-                            (p.getTipo().equalsIgnoreCase("COMBO") ||
-                                    p.getTipo().equalsIgnoreCase("combo")))
+        if (combos.isEmpty()) {
+            combos = todosLosProductos.stream()
                     .filter(ProductoFinal::isActivo)
+                    .limit(5)
                     .collect(Collectors.toList());
-
-            if (combos.isEmpty()) {
-                combos = todosLosProductos.stream()
-                        .filter(ProductoFinal::isActivo)
-                        .limit(5)
-                        .collect(Collectors.toList());
-            }
-
-            List<Map<String, Object>> combosData = new ArrayList<>();
-            for (ProductoFinal producto : combos) {
-                Map<String, Object> combo = new HashMap<>();
-                combo.put("id", producto.getId());
-                combo.put("nombre", producto.getNombre());
-                combo.put("descripcion", producto.getDescripcion() != null ? producto.getDescripcion() : "");
-                combo.put("precio", producto.getPrecio());
-                combo.put("imagenUrl", producto.getImagenUrl() != null ? producto.getImagenUrl() : "/assets/images/default-combo.jpg");
-                combosData.add(combo);
-            }
-
-            response.put("success", true);
-            response.put("data", combosData);
-            response.put("total", combosData.size());
-
-            System.out.println(" Combos cargados: " + combosData.size());
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            System.err.println(" Error cargando combos: " + e.getMessage());
-            e.printStackTrace();
-            response.put("success", false);
-            response.put("message", "Error al cargar combos: " + e.getMessage());
-            response.put("data", new ArrayList<>());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
+
+        List<Map<String, Object>> combosData = new ArrayList<>();
+        for (ProductoFinal producto : combos) {
+            Map<String, Object> combo = new HashMap<>();
+            combo.put("id", producto.getId());
+            combo.put("nombre", producto.getNombre());
+            combo.put("descripcion", producto.getDescripcion() != null ? producto.getDescripcion() : "");
+            combo.put("precio", producto.getPrecio());
+            combo.put("imagenUrl", producto.getImagenUrl() != null ?
+                    producto.getImagenUrl() : "/assets/images/default-combo.jpg");
+            combosData.add(combo);
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("data", combosData);
+        response.put("total", combosData.size());
+
+        log.info(" Combos cargados: {}", combosData.size());
+
+        return ResponseEntity.ok(response);
     }
 
     // ============================================================
@@ -571,11 +486,10 @@ public class AdminController {
             }
 
             document.close();
-            System.out.println(" Reporte PDF generado: " + filename);
+            log.info(" Reporte PDF generado: {}", filename);
 
         } catch (Exception e) {
-            System.err.println(" Error al generar PDF: " + e.getMessage());
-            e.printStackTrace();
+            log.error(" Error al generar PDF: {}", e.getMessage(), e);
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error al generar el PDF");
         }
     }
@@ -628,11 +542,10 @@ public class AdminController {
             workbook.write(response.getOutputStream());
             workbook.close();
 
-            System.out.println(" Reporte Excel generado: " + filename);
+            log.info("✅ Reporte Excel generado: {}", filename);
 
         } catch (Exception e) {
-            System.err.println(" Error al generar Excel: " + e.getMessage());
-            e.printStackTrace();
+            log.error("💥 Error al generar Excel: {}", e.getMessage(), e);
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error al generar el Excel");
         }
     }
@@ -656,7 +569,7 @@ public class AdminController {
 
     private void generarPDFVentas(Document document, List<Pedido> pedidos) {
         try {
-            document.add(new Paragraph(" RESUMEN DE VENTAS").setBold().setFontSize(12));
+            document.add(new Paragraph("📊 RESUMEN DE VENTAS").setBold().setFontSize(12));
             document.add(new Paragraph(" "));
 
             double totalVentas = pedidos.stream().mapToDouble(Pedido::getTotal).sum();
@@ -692,13 +605,13 @@ public class AdminController {
             document.add(new Paragraph("TOTAL GENERAL: S/ " + String.format("%.2f", totalVentas)).setBold());
 
         } catch (Exception e) {
-            System.err.println(" Error generando PDF Ventas: " + e.getMessage());
+            log.error("❌ Error generando PDF Ventas: {}", e.getMessage(), e);
         }
     }
 
     private void generarPDFProductos(Document document, List<Pedido> pedidos, List<ProductoFinal> productos) {
         try {
-            document.add(new Paragraph(" TOP PRODUCTOS MÁS VENDIDOS").setBold().setFontSize(12));
+            document.add(new Paragraph("🏆 TOP PRODUCTOS MÁS VENDIDOS").setBold().setFontSize(12));
             document.add(new Paragraph(" "));
 
             Map<String, Integer> productosVendidos = new HashMap<>();
@@ -735,13 +648,13 @@ public class AdminController {
             document.add(table);
 
         } catch (Exception e) {
-            System.err.println("❌ Error generando PDF Productos: " + e.getMessage());
+            log.error("❌ Error generando PDF Productos: {}", e.getMessage(), e);
         }
     }
 
     private void generarPDFUsuarios(Document document, List<Pedido> pedidos, List<Usuario> usuarios) {
         try {
-            document.add(new Paragraph("📊 ACTIVIDAD DE USUARIOS").setBold().setFontSize(12));
+            document.add(new Paragraph("👥 ACTIVIDAD DE USUARIOS").setBold().setFontSize(12));
             document.add(new Paragraph(" "));
 
             Map<String, Integer> pedidosPorUsuario = new HashMap<>();
@@ -775,13 +688,13 @@ public class AdminController {
             document.add(new Paragraph("Total de Usuarios Activos: " + pedidosPorUsuario.size()));
 
         } catch (Exception e) {
-            System.err.println(" Error generando PDF Usuarios: " + e.getMessage());
+            log.error("❌ Error generando PDF Usuarios: {}", e.getMessage(), e);
         }
     }
 
     private void generarPDFPedidos(Document document, List<Pedido> pedidos) {
         try {
-            document.add(new Paragraph(" ESTADÍSTICAS DE PEDIDOS").setBold().setFontSize(12));
+            document.add(new Paragraph("📦 ESTADÍSTICAS DE PEDIDOS").setBold().setFontSize(12));
             document.add(new Paragraph(" "));
 
             Map<String, Integer> estados = new HashMap<>();
@@ -805,13 +718,13 @@ public class AdminController {
             document.add(table);
 
         } catch (Exception e) {
-            System.err.println(" Error generando PDF Pedidos: " + e.getMessage());
+            log.error("❌ Error generando PDF Pedidos: {}", e.getMessage(), e);
         }
     }
 
     private void generarPDFMetodosPago(Document document, List<Pedido> pedidos) {
         try {
-            document.add(new Paragraph(" MÉTODOS DE PAGO").setBold().setFontSize(12));
+            document.add(new Paragraph("💳 MÉTODOS DE PAGO").setBold().setFontSize(12));
             document.add(new Paragraph(" "));
 
             Map<String, Integer> metodos = new HashMap<>();
@@ -840,13 +753,13 @@ public class AdminController {
             document.add(table);
 
         } catch (Exception e) {
-            System.err.println(" Error generando PDF Métodos de Pago: " + e.getMessage());
+            log.error("❌ Error generando PDF Métodos de Pago: {}", e.getMessage(), e);
         }
     }
 
     private void generarPDFTiposEntrega(Document document, List<Pedido> pedidos) {
         try {
-            document.add(new Paragraph(" TIPOS DE ENTREGA").setBold().setFontSize(12));
+            document.add(new Paragraph("🚚 TIPOS DE ENTREGA").setBold().setFontSize(12));
             document.add(new Paragraph(" "));
 
             Map<String, Integer> tipos = new HashMap<>();
@@ -875,13 +788,13 @@ public class AdminController {
             document.add(table);
 
         } catch (Exception e) {
-            System.err.println(" Error generando PDF Tipos de Entrega: " + e.getMessage());
+            log.error("❌ Error generando PDF Tipos de Entrega: {}", e.getMessage(), e);
         }
     }
 
     private void generarPDFHorarios(Document document, List<Pedido> pedidos) {
         try {
-            document.add(new Paragraph(" HORARIOS PICO").setBold().setFontSize(12));
+            document.add(new Paragraph("🕐 HORARIOS PICO").setBold().setFontSize(12));
             document.add(new Paragraph(" "));
 
             Map<String, Integer> horas = new LinkedHashMap<>();
@@ -921,18 +834,18 @@ public class AdminController {
                         .orElse(null);
                 if (horaPico != null) {
                     document.add(new Paragraph(" "));
-                    document.add(new Paragraph(" HORA PICO: " + horaPico.getKey() + " (" + horaPico.getValue() + " pedidos)").setBold());
+                    document.add(new Paragraph("🔥 HORA PICO: " + horaPico.getKey() + " (" + horaPico.getValue() + " pedidos)").setBold());
                 }
             }
 
         } catch (Exception e) {
-            System.err.println(" Error generando PDF Horarios: " + e.getMessage());
+            log.error("❌ Error generando PDF Horarios: {}", e.getMessage(), e);
         }
     }
 
     private void generarPDFFavoritos(Document document) {
         try {
-            document.add(new Paragraph(" PRODUCTOS FAVORITOS").setBold().setFontSize(12));
+            document.add(new Paragraph("❤️ PRODUCTOS FAVORITOS").setBold().setFontSize(12));
             document.add(new Paragraph(" "));
 
             List<Favorito> favoritos = favoritoRepository.findAllWithUsuarioAndProducto();
@@ -968,13 +881,13 @@ public class AdminController {
             document.add(new Paragraph("Total de Favoritos: " + favoritos.size()));
 
         } catch (Exception e) {
-            System.err.println(" Error generando PDF Favoritos: " + e.getMessage());
+            log.error("❌ Error generando PDF Favoritos: {}", e.getMessage(), e);
         }
     }
 
     // ============================================================
     // MÉTODOS AUXILIARES PARA EXCEL
-
+    // ============================================================
 
     private void generarExcelVentas(Workbook workbook, List<Pedido> pedidos) {
         Sheet sheet = workbook.createSheet("Ventas");
@@ -1289,7 +1202,7 @@ public class AdminController {
                         .filter(p -> !p.getFecha().isBefore(inicio) && !p.getFecha().isAfter(fin))
                         .collect(Collectors.toList());
             } catch (Exception e) {
-                System.err.println("⚠️ Error al parsear fechas, usando todos los pedidos");
+                log.warn(" Error al parsear fechas, usando todos los pedidos");
             }
         }
 
