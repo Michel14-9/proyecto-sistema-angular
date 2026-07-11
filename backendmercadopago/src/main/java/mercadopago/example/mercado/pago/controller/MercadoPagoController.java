@@ -82,7 +82,7 @@ public class MercadoPagoController {
                 String resource = (String) payload.get("resource");
                 if (resource != null) {
                     paymentId = resource.replaceAll("[^0-9]", "");
-                    System.out.println("🔍 PaymentId extraído de resource: " + paymentId);
+                    System.out.println(" PaymentId extraído de resource: " + paymentId);
                 }
             }
 
@@ -100,7 +100,7 @@ public class MercadoPagoController {
                 Object idObj = payload.get("id");
                 if (idObj != null) {
                     String merchantOrderId = String.valueOf(idObj).replaceAll("[^0-9]", "");
-                    System.out.println("🔍 Merchant Order ID (formato nuevo): " + merchantOrderId);
+                    System.out.println(" Merchant Order ID (formato nuevo): " + merchantOrderId);
                     paymentId = extraerPaymentIdDeMerchantOrder(merchantOrderId);
                 }
             }

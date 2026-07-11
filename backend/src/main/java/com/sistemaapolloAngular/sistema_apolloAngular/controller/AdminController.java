@@ -7,10 +7,12 @@ import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
+import com.sistemaapolloAngular.sistema_apolloAngular.model.Favorito;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.ItemPedido;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.Pedido;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.ProductoFinal;
 import com.sistemaapolloAngular.sistema_apolloAngular.model.Usuario;
+import com.sistemaapolloAngular.sistema_apolloAngular.repository.FavoritoRepository;
 import com.sistemaapolloAngular.sistema_apolloAngular.repository.PedidoRepository;
 import com.sistemaapolloAngular.sistema_apolloAngular.repository.UsuarioRepository;
 import com.sistemaapolloAngular.sistema_apolloAngular.service.ProductoFinalService;
@@ -32,7 +34,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/admin-menu")
+@RequestMapping("/admin")
 @CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
 public class AdminController {
 
@@ -47,317 +49,125 @@ public class AdminController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private FavoritoRepository favoritoRepository;
+
     public AdminController(ProductoFinalService productoFinalService) {
         this.productoFinalService = productoFinalService;
     }
 
-    @GetMapping("/estadisticas-dashboard")
+
+    // 1. ENDPOINTS PÚBLICOS PARA PYTHON
+
+
+    @GetMapping("/data/productos")
     @ResponseBody
-    @Transactional
-    public Map<String, Object> obtenerEstadisticasDashboard() {
-        Map<String, Object> estadisticas = new HashMap<>();
-
-        try {
-            LocalDate hoy = LocalDate.now();
-            LocalDateTime hoyInicio = hoy.atStartOfDay();
-            LocalDateTime hoyFin = hoy.atTime(23, 59, 59);
-
-            LocalDate primerDiaMes = hoy.withDayOfMonth(1);
-            LocalDateTime mesInicio = primerDiaMes.atStartOfDay();
-            LocalDateTime mesFin = hoy.atTime(23, 59, 59);
-
-            List<ProductoFinal> productos = productoFinalService.obtenerTodos();
-            List<Usuario> usuarios = usuarioRepository.findAll();
-            List<Pedido> todosLosPedidos = pedidoRepository.findAll();
-
-            List<Pedido> pedidosHoy = todosLosPedidos.stream()
-                    .filter(pedido -> {
-                        if (pedido.getFecha() == null) return false;
-                        LocalDateTime fechaPedido = pedido.getFecha();
-                        return !fechaPedido.isBefore(hoyInicio) && !fechaPedido.isAfter(hoyFin);
-                    })
-                    .collect(Collectors.toList());
-
-            double ingresosHoy = pedidosHoy.stream()
-                    .filter(p -> "ENTREGADO".equals(p.getEstado()))
-                    .mapToDouble(Pedido::getTotal)
-                    .sum();
-
-            List<Pedido> pedidosMes = todosLosPedidos.stream()
-                    .filter(pedido -> {
-                        if (pedido.getFecha() == null) return false;
-                        LocalDateTime fechaPedido = pedido.getFecha();
-                        return !fechaPedido.isBefore(mesInicio) && !fechaPedido.isAfter(mesFin);
-                    })
-                    .collect(Collectors.toList());
-
-            double ventasMesTotal = pedidosMes.stream()
-                    .filter(p -> "ENTREGADO".equals(p.getEstado()))
-                    .mapToDouble(Pedido::getTotal)
-                    .sum();
-
-            long totalPedidosMes = pedidosMes.size();
-
-            double ventaMaxima = pedidosMes.stream()
-                    .filter(p -> "ENTREGADO".equals(p.getEstado()))
-                    .mapToDouble(Pedido::getTotal)
-                    .max()
-                    .orElse(0.0);
-
-            double promedioDiario = hoy.getDayOfMonth() > 0 ? ventasMesTotal / hoy.getDayOfMonth() : 0.0;
-
-            estadisticas.put("totalProductos", productos.size());
-            estadisticas.put("totalUsuarios", usuarios.size());
-            estadisticas.put("pedidosHoy", pedidosHoy.size());
-            estadisticas.put("ingresosHoy", ingresosHoy);
-            estadisticas.put("ventasMesTotal", ventasMesTotal);
-            estadisticas.put("totalPedidos", totalPedidosMes);
-            estadisticas.put("ventaMaxima", ventaMaxima);
-            estadisticas.put("promedioDiario", promedioDiario);
-            estadisticas.put("success", true);
-
-        } catch (Exception e) {
-            estadisticas.put("success", false);
-            estadisticas.put("error", e.getMessage());
-            e.printStackTrace();
-        }
-
-        return estadisticas;
+    public List<ProductoFinal> getProductosForPython() {
+        return productoFinalService.obtenerTodos();
     }
 
-    @GetMapping("/ventas-recientes")
+    @GetMapping("/data/usuarios")
+    @ResponseBody
+    public List<Usuario> getUsuariosForPython() {
+        return usuarioRepository.findAll();
+    }
+
+    @GetMapping("/data/pedidos")
     @ResponseBody
     @Transactional
-    public List<Map<String, Object>> obtenerVentasRecientes() {
+    public List<Pedido> getPedidosForPython() {
+        return pedidoRepository.findAllWithItemsAndProducts();
+    }
+
+    @GetMapping("/data/pedidos/entregados")
+    @ResponseBody
+    @Transactional
+    public List<Pedido> getPedidosEntregadosForPython() {
+        return pedidoRepository.findAllWithItemsAndProducts()
+                .stream()
+                .filter(p -> "ENTREGADO".equals(p.getEstado()))
+                .collect(Collectors.toList());
+    }
+
+    @GetMapping("/data/pedidos/pagados")
+    @ResponseBody
+    @Transactional
+    public List<Pedido> getPedidosPagadosForPython() {
+        return pedidoRepository.findAllWithItemsAndProducts()
+                .stream()
+                .filter(p -> "PAGADO".equals(p.getEstado()))
+                .collect(Collectors.toList());
+    }
+
+    @GetMapping("/data/favoritos")
+    @ResponseBody
+    @Transactional
+    public List<Map<String, Object>> getFavoritosForPython() {
+        List<Map<String, Object>> response = new ArrayList<>();
+
         try {
-            List<Pedido> pedidos = pedidoRepository.findAllWithItemsAndProducts()
-                    .stream()
-                    .limit(10)
-                    .collect(Collectors.toList());
+            List<Favorito> favoritos = favoritoRepository.findAllWithUsuarioAndProducto();
 
-            List<Map<String, Object>> ventas = new ArrayList<>();
+            for (Favorito f : favoritos) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("id", f.getId());
+                item.put("fechaAgregado", f.getFechaAgregado());
+                item.put("activo", f.isActivo());
 
-            for (Pedido pedido : pedidos) {
-                Map<String, Object> venta = new HashMap<>();
-                venta.put("id", pedido.getId());
-                venta.put("numeroPedido", pedido.getNumeroPedido());
-                venta.put("total", pedido.getTotal());
-                venta.put("fecha", pedido.getFecha());
-                venta.put("estado", pedido.getEstado());
-
-                if (pedido.getUsuario() != null) {
-                    Usuario usuario = pedido.getUsuario();
-                    venta.put("cliente", usuario.getNombres() + " " + usuario.getApellidos());
-                    venta.put("usuario", Map.of(
-                            "nombres", usuario.getNombres(),
-                            "apellidos", usuario.getApellidos()
-                    ));
-                } else {
-                    venta.put("cliente", "Cliente general");
-                    venta.put("usuario", null);
+                if (f.getUsuario() != null) {
+                    item.put("usuarioId", f.getUsuario().getId());
+                    String nombreCompleto = (f.getUsuario().getNombres() != null ? f.getUsuario().getNombres() : "") + " " +
+                            (f.getUsuario().getApellidos() != null ? f.getUsuario().getApellidos() : "");
+                    item.put("usuarioNombre", nombreCompleto.trim().isEmpty() ? f.getUsuario().getUsername() : nombreCompleto.trim());
+                    item.put("usuarioEmail", f.getUsuario().getUsername());
                 }
 
-                List<Map<String, Object>> itemsData = new ArrayList<>();
-                if (pedido.getItems() != null && !pedido.getItems().isEmpty()) {
-                    for (ItemPedido item : pedido.getItems()) {
-                        Map<String, Object> itemData = new HashMap<>();
-                        itemData.put("nombreProducto", item.getNombreProducto());
-                        itemData.put("nombreProductoSeguro", item.getNombreProductoSeguro());
-                        itemData.put("cantidad", item.getCantidad());
-                        itemData.put("precio", item.getPrecio());
-                        itemData.put("subtotal", item.getSubtotal());
-                        itemsData.add(itemData);
-                    }
+                if (f.getProducto() != null) {
+                    item.put("productoId", f.getProducto().getId());
+                    item.put("productoNombre", f.getProducto().getNombre());
+                    item.put("productoCategoria", f.getProducto().getTipo() != null ? f.getProducto().getTipo() : "Sin categoría");
+                    item.put("productoPrecio", f.getProducto().getPrecio());
                 }
-                venta.put("items", itemsData);
-                ventas.add(venta);
+
+                response.add(item);
             }
 
-            return ventas;
+            System.out.println(" Favoritos enviados a Python: " + response.size());
 
         } catch (Exception e) {
+            System.err.println(" Error obteniendo favoritos: " + e.getMessage());
             e.printStackTrace();
-            return new ArrayList<>();
         }
+
+        return response;
     }
 
-    @GetMapping("/estadisticas-ventas")
+    // ============================================================
+    // 2. CRUD DE PRODUCTOS
+    // ============================================================
+
+    @GetMapping("/productos")
     @ResponseBody
-    @Transactional
-    public Map<String, Object> obtenerEstadisticasVentas() {
-        Map<String, Object> estadisticas = new HashMap<>();
-
-        try {
-            LocalDate hoy = LocalDate.now();
-            Map<String, Double> ventasUltimaSemana = new LinkedHashMap<>();
-            List<Pedido> todosLosPedidos = pedidoRepository.findAll();
-
-            for (int i = 6; i >= 0; i--) {
-                LocalDate fecha = hoy.minusDays(i);
-                LocalDateTime inicioDia = fecha.atStartOfDay();
-                LocalDateTime finDia = fecha.atTime(23, 59, 59);
-
-                double ventasDia = todosLosPedidos.stream()
-                        .filter(pedido -> {
-                            if (pedido.getFecha() == null) return false;
-                            LocalDateTime fechaPedido = pedido.getFecha();
-                            return !fechaPedido.isBefore(inicioDia) &&
-                                    !fechaPedido.isAfter(finDia) &&
-                                    "ENTREGADO".equals(pedido.getEstado());
-                        })
-                        .mapToDouble(Pedido::getTotal)
-                        .sum();
-
-                ventasUltimaSemana.put(
-                        fecha.format(DateTimeFormatter.ofPattern("dd/MM")),
-                        ventasDia
-                );
-            }
-
-            estadisticas.put("ventasPorDia", ventasUltimaSemana);
-            estadisticas.put("success", true);
-
-        } catch (Exception e) {
-            estadisticas.put("success", false);
-            estadisticas.put("error", e.getMessage());
-            e.printStackTrace();
-        }
-
-        return estadisticas;
+    public List<ProductoFinal> obtenerTodosProductos() {
+        return productoFinalService.obtenerTodos();
     }
 
-    @GetMapping("/exportar-dashboard-excel")
-    @Transactional
-    public void exportarDashboardExcel(HttpServletResponse response) throws IOException {
+    @GetMapping("/productos/{id}")
+    @ResponseBody
+    public ResponseEntity<?> obtenerProductoPorId(@PathVariable Long id) {
         try {
-            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-            String filename = "dashboard_apollo_" + timestamp + ".xlsx";
-            response.setHeader("Content-Disposition", "attachment; filename=" + filename);
-
-            List<ProductoFinal> productos = productoFinalService.obtenerTodos();
-            Workbook workbook = new XSSFWorkbook();
-
-            // Resumen Dashboard
-            Sheet resumenSheet = workbook.createSheet("Resumen Dashboard");
-
-            CellStyle titleStyle = workbook.createCellStyle();
-            titleStyle.setFillForegroundColor(IndexedColors.DARK_BLUE.getIndex());
-            titleStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-            Font titleFont = workbook.createFont();
-            titleFont.setBold(true);
-            titleFont.setColor(IndexedColors.WHITE.getIndex());
-            titleStyle.setFont(titleFont);
-
-            CellStyle metricStyle = workbook.createCellStyle();
-            metricStyle.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
-            metricStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-            Font metricFont = workbook.createFont();
-            metricFont.setBold(true);
-            metricStyle.setFont(metricFont);
-
-            Row titleRow = resumenSheet.createRow(0);
-            Cell titleCell = titleRow.createCell(0);
-            titleCell.setCellValue("REPORTE DASHBOARD - SISTEMA APOLLO");
-            titleCell.setCellStyle(titleStyle);
-
-            int rowNum = 2;
-            String[][] metrics = {
-                    {"Total de Productos", String.valueOf(productos.size())},
-                    {"Precio Promedio", "S/. " + String.format("%.2f", productos.stream().mapToDouble(ProductoFinal::getPrecio).average().orElse(0.0))},
-                    {"Producto Más Caro", "S/. " + String.format("%.2f", productos.stream().mapToDouble(ProductoFinal::getPrecio).max().orElse(0.0))},
-                    {"Producto Más Económico", "S/. " + String.format("%.2f", productos.stream().mapToDouble(ProductoFinal::getPrecio).min().orElse(0.0))},
-                    {"Valor Total del Inventario", "S/. " + String.format("%.2f", productos.stream().mapToDouble(ProductoFinal::getPrecio).sum())},
-                    {"Fecha de Generación", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))}
-            };
-
-            for (String[] metric : metrics) {
-                Row metricRow = resumenSheet.createRow(rowNum++);
-                metricRow.createCell(0).setCellValue(metric[0]);
-                Cell valueCell = metricRow.createCell(1);
-                valueCell.setCellValue(metric[1]);
-                valueCell.setCellStyle(metricStyle);
+            Optional<ProductoFinal> producto = productoFinalService.obtenerPorId(id);
+            if (producto.isPresent()) {
+                return ResponseEntity.ok(producto.get());
+            } else {
+                return ResponseEntity.status(404).body(Map.of("error", "Producto no encontrado"));
             }
-
-            // Estadísticas por Categoría
-            Sheet statsSheet = workbook.createSheet("Estadísticas por Categoría");
-            Row statsHeader = statsSheet.createRow(0);
-            String[] statsHeaders = {"Categoría", "Cantidad", "Precio Promedio", "Precio Máx", "Precio Mín", "Valor Total"};
-
-            CellStyle headerStyle = workbook.createCellStyle();
-            headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
-            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-            Font headerFont = workbook.createFont();
-            headerFont.setBold(true);
-            headerStyle.setFont(headerFont);
-
-            for (int i = 0; i < statsHeaders.length; i++) {
-                Cell cell = statsHeader.createCell(i);
-                cell.setCellValue(statsHeaders[i]);
-                cell.setCellStyle(headerStyle);
-            }
-
-            Map<String, List<ProductoFinal>> productosPorCategoria = productos.stream()
-                    .collect(Collectors.groupingBy(ProductoFinal::getTipo));
-
-            int statsRowNum = 1;
-            for (Map.Entry<String, List<ProductoFinal>> entry : productosPorCategoria.entrySet()) {
-                String categoria = entry.getKey();
-                List<ProductoFinal> productosCategoria = entry.getValue();
-
-                double promedio = productosCategoria.stream().mapToDouble(ProductoFinal::getPrecio).average().orElse(0.0);
-                double maxPrecio = productosCategoria.stream().mapToDouble(ProductoFinal::getPrecio).max().orElse(0.0);
-                double minPrecio = productosCategoria.stream().mapToDouble(ProductoFinal::getPrecio).min().orElse(0.0);
-                double valorTotal = productosCategoria.stream().mapToDouble(ProductoFinal::getPrecio).sum();
-
-                Row statsRow = statsSheet.createRow(statsRowNum++);
-                statsRow.createCell(0).setCellValue(categoria);
-                statsRow.createCell(1).setCellValue(productosCategoria.size());
-                statsRow.createCell(2).setCellValue(promedio);
-                statsRow.createCell(3).setCellValue(maxPrecio);
-                statsRow.createCell(4).setCellValue(minPrecio);
-                statsRow.createCell(5).setCellValue(valorTotal);
-            }
-
-            // Lista de Productos
-            Sheet productosSheet = workbook.createSheet("Todos los Productos");
-            Row productosHeader = productosSheet.createRow(0);
-            String[] productosHeaders = {"ID", "Nombre", "Categoría", "Precio", "Descripción"};
-
-            for (int i = 0; i < productosHeaders.length; i++) {
-                Cell cell = productosHeader.createCell(i);
-                cell.setCellValue(productosHeaders[i]);
-                cell.setCellStyle(headerStyle);
-            }
-
-            int productosRowNum = 1;
-            for (ProductoFinal producto : productos) {
-                Row row = productosSheet.createRow(productosRowNum++);
-                row.createCell(0).setCellValue(producto.getId());
-                row.createCell(1).setCellValue(producto.getNombre());
-                row.createCell(2).setCellValue(producto.getTipo());
-                row.createCell(3).setCellValue(producto.getPrecio());
-                row.createCell(4).setCellValue(producto.getDescripcion() != null ? producto.getDescripcion() : "");
-            }
-
-            for (int i = 0; i < 6; i++) {
-                resumenSheet.autoSizeColumn(i);
-                statsSheet.autoSizeColumn(i);
-                if (i < 5) productosSheet.autoSizeColumn(i);
-            }
-
-            workbook.write(response.getOutputStream());
-            workbook.close();
-
-            System.out.println(" Reporte Dashboard Excel generado: " + filename);
-
         } catch (Exception e) {
-            System.err.println(" Error al generar reporte dashboard: " + e.getMessage());
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error al generar el reporte del dashboard");
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }
     }
 
-    @PostMapping("/guardar")
+    @PostMapping("/productos/guardar")
     @ResponseBody
     public ResponseEntity<?> guardarProducto(
             @RequestParam String nombre,
@@ -404,7 +214,7 @@ public class AdminController {
         }
     }
 
-    @PostMapping("/actualizar/{id}")
+    @PutMapping("/productos/actualizar/{id}")
     @ResponseBody
     public ResponseEntity<?> actualizarProducto(
             @PathVariable Long id,
@@ -457,13 +267,10 @@ public class AdminController {
         }
     }
 
-    @PostMapping("/eliminar/{id}")
+    @DeleteMapping("/productos/eliminar/{id}")
     @ResponseBody
     @Transactional
-    public ResponseEntity<?> eliminarProducto(
-            @PathVariable Long id,
-            @RequestParam(required = false) String redirectSection) {
-
+    public ResponseEntity<?> eliminarProducto(@PathVariable Long id) {
         try {
             Optional<ProductoFinal> productoOpt = productoFinalService.obtenerPorId(id);
             if (productoOpt.isEmpty()) {
@@ -476,11 +283,9 @@ public class AdminController {
             ProductoFinal producto = productoOpt.get();
             String nombreProducto = producto.getNombre();
 
-            // Verificar si tiene pedidos históricos
             boolean tieneItemsPedido = pedidoRepository.existsByItemsProductoId(id);
 
             if (tieneItemsPedido) {
-                // Solo desactivar, conservar historial
                 producto.setActivo(false);
                 productoFinalService.guardar(producto);
                 return ResponseEntity.ok(Map.of(
@@ -489,7 +294,6 @@ public class AdminController {
                         "desactivado", true
                 ));
             } else {
-                // Sin historial, eliminar físicamente
                 productoFinalService.eliminar(id);
                 return ResponseEntity.ok(Map.of(
                         "success", true,
@@ -507,56 +311,9 @@ public class AdminController {
         }
     }
 
-    @GetMapping("/estadisticas")
-    @ResponseBody
-    public Map<String, Object> obtenerEstadisticas() {
-        Map<String, Object> estadisticas = new HashMap<>();
-
-        try {
-            List<ProductoFinal> productos = productoFinalService.obtenerTodos();
-            List<Usuario> usuarios = usuarioRepository.findAll();
-
-            estadisticas.put("totalProductos", productos.size());
-            estadisticas.put("precioPromedio", productos.stream().mapToDouble(ProductoFinal::getPrecio).average().orElse(0.0));
-            estadisticas.put("precioMaximo", productos.stream().mapToDouble(ProductoFinal::getPrecio).max().orElse(0.0));
-            estadisticas.put("precioMinimo", productos.stream().mapToDouble(ProductoFinal::getPrecio).min().orElse(0.0));
-            estadisticas.put("totalUsuarios", usuarios.size());
-
-            Map<String, Long> productosPorCategoria = productos.stream()
-                    .collect(Collectors.groupingBy(ProductoFinal::getTipo, Collectors.counting()));
-            estadisticas.put("productosPorCategoria", productosPorCategoria);
-            estadisticas.put("pedidosHoy", 0);
-            estadisticas.put("ingresosHoy", 0.0);
-            estadisticas.put("success", true);
-
-        } catch (Exception e) {
-            estadisticas.put("success", false);
-            estadisticas.put("error", e.getMessage());
-        }
-
-        return estadisticas;
-    }
-
-    @GetMapping("/productos")
-    @ResponseBody
-    public List<ProductoFinal> obtenerTodosProductos() {
-        return productoFinalService.obtenerTodos();
-    }
-
-    @GetMapping("/productos/{id}")
-    @ResponseBody
-    public ResponseEntity<?> obtenerProductoPorId(@PathVariable Long id) {
-        try {
-            Optional<ProductoFinal> producto = productoFinalService.obtenerPorId(id);
-            if (producto.isPresent()) {
-                return ResponseEntity.ok(producto.get());
-            } else {
-                return ResponseEntity.status(404).body(Map.of("error", "Producto no encontrado"));
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
-        }
-    }
+    // ============================================================
+    // 3. CRUD DE USUARIOS
+    // ============================================================
 
     @GetMapping("/usuarios")
     @ResponseBody
@@ -629,7 +386,7 @@ public class AdminController {
         }
     }
 
-    @PostMapping("/usuarios/eliminar/{id}")
+    @DeleteMapping("/usuarios/eliminar/{id}")
     @ResponseBody
     @Transactional
     public ResponseEntity<?> eliminarUsuario(@PathVariable Long id) {
@@ -653,11 +410,9 @@ public class AdminController {
 
             String nombreUsuario = usuario.getNombres() + " " + usuario.getApellidos();
 
-            // Verificar si tiene pedidos asociados
             boolean tienePedidos = pedidoRepository.existsByUsuarioId(id);
 
             if (tienePedidos) {
-                // Solo desactivar, conservar historial de pedidos
                 usuario.setActivo(false);
                 usuarioRepository.save(usuario);
                 return ResponseEntity.ok(Map.of(
@@ -666,7 +421,6 @@ public class AdminController {
                         "desactivado", true
                 ));
             } else {
-                // Sin historial, eliminar físicamente
                 usuarioRepository.deleteById(id);
                 return ResponseEntity.ok(Map.of(
                         "success", true,
@@ -684,218 +438,25 @@ public class AdminController {
         }
     }
 
-    // ============ REPORTES ============
+    // ============================================================
+    // 4. COMBOS
+    // ============================================================
 
-    @GetMapping("/reportes/ventas")
-    @ResponseBody
-    @Transactional
-    public ResponseEntity<?> obtenerReporteVentas(
-            @RequestParam String fechaInicio,
-            @RequestParam String fechaFin) {
-
-        try {
-            LocalDateTime inicio = LocalDate.parse(fechaInicio).atStartOfDay();
-            LocalDateTime fin = LocalDate.parse(fechaFin).atTime(23, 59, 59);
-
-            List<Pedido> pedidos = pedidoRepository.findAll().stream()
-                    .filter(p -> p.getFecha() != null)
-                    .filter(p -> !p.getFecha().isBefore(inicio) && !p.getFecha().isAfter(fin))
-                    .filter(p -> "ENTREGADO".equals(p.getEstado()))
-                    .collect(Collectors.toList());
-
-            Map<String, Object> resultado = new HashMap<>();
-            resultado.put("success", true);
-
-            // Métricas
-            Map<String, Object> metricas = new HashMap<>();
-            metricas.put("totalVentas", pedidos.stream().mapToDouble(Pedido::getTotal).sum());
-            metricas.put("totalPedidos", pedidos.size());
-            metricas.put("productosVendidos", pedidos.stream()
-                    .flatMap(p -> p.getItems().stream())
-                    .mapToInt(ItemPedido::getCantidad)
-                    .sum());
-            metricas.put("crecimiento", 0.0);
-            resultado.put("metricas", metricas);
-
-            // Datos del gráfico
-            Map<String, Object> datosGrafico = new HashMap<>();
-            List<String> labels = new ArrayList<>();
-            List<Double> datos = new ArrayList<>();
-
-            Map<LocalDate, Double> ventasPorDia = pedidos.stream()
-                    .collect(Collectors.groupingBy(
-                            p -> p.getFecha().toLocalDate(),
-                            Collectors.summingDouble(Pedido::getTotal)
-                    ));
-
-            LocalDate inicioDate = LocalDate.parse(fechaInicio);
-            LocalDate finDate = LocalDate.parse(fechaFin);
-
-            for (LocalDate date = inicioDate; !date.isAfter(finDate); date = date.plusDays(1)) {
-                labels.add(date.format(DateTimeFormatter.ofPattern("dd/MM")));
-                datos.add(ventasPorDia.getOrDefault(date, 0.0));
-            }
-
-            datosGrafico.put("labels", labels);
-            datosGrafico.put("datos", datos);
-
-            // Categorías para gráfico de pastel
-            Map<String, Double> categorias = new HashMap<>();
-            for (Pedido p : pedidos) {
-                for (ItemPedido item : p.getItems()) {
-                    String categoria = item.getNombreProducto() != null ?
-                            item.getNombreProducto().substring(0, Math.min(10, item.getNombreProducto().length())) : "Otros";
-                    categorias.merge(categoria, item.getSubtotal(), Double::sum);
-                }
-            }
-
-            Map<String, Object> categoriasData = new HashMap<>();
-            categoriasData.put("labels", new ArrayList<>(categorias.keySet()));
-            categoriasData.put("datos", new ArrayList<>(categorias.values()));
-            datosGrafico.put("categorias", categoriasData);
-
-            resultado.put("datosGrafico", datosGrafico);
-
-            // Tabla de datos
-            List<Map<String, Object>> tablaDatos = new ArrayList<>();
-            for (Pedido p : pedidos.stream().limit(50).collect(Collectors.toList())) {
-                Map<String, Object> fila = new HashMap<>();
-                fila.put("id", p.getId());
-                fila.put("fecha", p.getFecha().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
-                fila.put("cliente", p.getUsuario() != null ?
-                        p.getUsuario().getNombres() + " " + p.getUsuario().getApellidos() : "Cliente general");
-                fila.put("productos", p.getItems().stream().map(ItemPedido::getNombreProducto).collect(Collectors.joining(", ")));
-                fila.put("total", p.getTotal());
-                fila.put("estado", p.getEstado());
-                tablaDatos.add(fila);
-            }
-            resultado.put("tablaDatos", tablaDatos);
-            resultado.put("columnas", List.of("id", "fecha", "cliente", "productos", "total", "estado"));
-
-            return ResponseEntity.ok(resultado);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of("success", false, "error", e.getMessage()));
-        }
-    }
-
-    // ============ EXPORTAR PDF ============
-
-    @GetMapping("/exportar-pdf")
-    @ResponseBody
-    public void exportarPDF(
-            @RequestParam(required = false) String fechaInicio,
-            @RequestParam(required = false) String fechaFin,
-            @RequestParam(required = false) String tipo,
-            HttpServletResponse response) throws IOException {
-        try {
-            response.setContentType("application/pdf");
-            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-            String filename = "reporte_" + (tipo != null ? tipo : "ventas") + "_" + timestamp + ".pdf";
-            response.setHeader("Content-Disposition", "attachment; filename=" + filename);
-
-            // Obtener datos para el reporte
-            List<Pedido> pedidos = obtenerPedidosFiltrados(fechaInicio, fechaFin);
-
-            // Crear PDF con iText
-            PdfWriter writer = new PdfWriter(response.getOutputStream());
-            PdfDocument pdfDoc = new PdfDocument(writer);
-            Document document = new Document(pdfDoc);
-            document.setMargins(20, 20, 20, 20);
-
-            // Título
-            Paragraph titulo = new Paragraph("REPORTE DE " + (tipo != null ? tipo.toUpperCase() : "VENTAS"))
-                    .setTextAlignment(TextAlignment.CENTER)
-                    .setBold()
-                    .setFontSize(18);
-            document.add(titulo);
-            document.add(new Paragraph(" "));
-
-            Paragraph subtitulo = new Paragraph("Generado: " +
-                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")))
-                    .setTextAlignment(TextAlignment.CENTER);
-            document.add(subtitulo);
-            document.add(new Paragraph(" "));
-            document.add(new Paragraph("_________________________________________"));
-            document.add(new Paragraph(" "));
-
-            // Filtros aplicados
-            if (fechaInicio != null && fechaFin != null) {
-                document.add(new Paragraph("Período: " + fechaInicio + " al " + fechaFin));
-            }
-            document.add(new Paragraph("Total de registros: " + pedidos.size()));
-            document.add(new Paragraph(" "));
-
-            // Tabla de pedidos
-            float[] columnWidths = {2, 3, 2, 2, 2, 3};
-            Table table = new Table(UnitValue.createPercentArray(columnWidths));
-            table.setWidth(UnitValue.createPercentValue(100));
-            table.setMarginTop(10);
-            table.setMarginBottom(10);
-
-            table.addHeaderCell(new Paragraph("N° Pedido").setBold());
-            table.addHeaderCell(new Paragraph("Cliente").setBold());
-            table.addHeaderCell(new Paragraph("Fecha").setBold());
-            table.addHeaderCell(new Paragraph("Total").setBold());
-            table.addHeaderCell(new Paragraph("Estado").setBold());
-            table.addHeaderCell(new Paragraph("Tipo Entrega").setBold());
-
-            for (Pedido pedido : pedidos.stream().limit(100).collect(Collectors.toList())) {
-                table.addCell(new Paragraph(pedido.getNumeroPedido() != null ? pedido.getNumeroPedido() : "N/A"));
-
-                String cliente = "N/A";
-                if (pedido.getUsuario() != null) {
-                    cliente = (pedido.getUsuario().getNombres() != null ? pedido.getUsuario().getNombres() : "") + " " +
-                            (pedido.getUsuario().getApellidos() != null ? pedido.getUsuario().getApellidos() : "");
-                    cliente = cliente.trim().isEmpty() ? pedido.getUsuario().getUsername() : cliente;
-                }
-                table.addCell(new Paragraph(cliente));
-
-                table.addCell(new Paragraph(pedido.getFecha() != null ?
-                        pedido.getFecha().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) : "N/A"));
-                table.addCell(new Paragraph("S/ " + String.format("%.2f", pedido.getTotal())));
-                table.addCell(new Paragraph(pedido.getEstado() != null ? pedido.getEstado() : "N/A"));
-                table.addCell(new Paragraph(pedido.getTipoEntrega() != null ? pedido.getTipoEntrega() : "N/A"));
-            }
-
-            document.add(table);
-            document.add(new Paragraph(" "));
-            document.add(new Paragraph("_________________________________________"));
-            document.add(new Paragraph(" "));
-
-            // Totales
-            double totalGeneral = pedidos.stream().mapToDouble(Pedido::getTotal).sum();
-            document.add(new Paragraph("TOTAL GENERAL: S/ " + String.format("%.2f", totalGeneral)).setBold());
-            document.add(new Paragraph("TOTAL PEDIDOS: " + pedidos.size()));
-
-            document.close();
-            System.out.println("📄 Reporte PDF generado: " + filename);
-
-        } catch (Exception e) {
-            System.err.println("❌ Error al generar PDF: " + e.getMessage());
-            e.printStackTrace();
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error al generar el PDF");
-        }
-    }
-    @GetMapping("/api/menu/combos")
+    @GetMapping("/menu/combos")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> obtenerCombosApi() {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            // Obtener productos que son combos (tipo = "COMBO" o "combo")
             List<ProductoFinal> todosLosProductos = productoFinalService.obtenerTodos();
 
-            // Filtrar solo los que tienen tipo "COMBO" (o "combo")
             List<ProductoFinal> combos = todosLosProductos.stream()
                     .filter(p -> p.getTipo() != null &&
                             (p.getTipo().equalsIgnoreCase("COMBO") ||
                                     p.getTipo().equalsIgnoreCase("combo")))
-                    .filter(ProductoFinal::isActivo) // Solo activos
+                    .filter(ProductoFinal::isActivo)
                     .collect(Collectors.toList());
 
-            // Si no hay combos, devolver los primeros 5 productos como destacados
             if (combos.isEmpty()) {
                 combos = todosLosProductos.stream()
                         .filter(ProductoFinal::isActivo)
@@ -903,7 +464,6 @@ public class AdminController {
                         .collect(Collectors.toList());
             }
 
-            // Convertir a la estructura que espera el frontend
             List<Map<String, Object>> combosData = new ArrayList<>();
             for (ProductoFinal producto : combos) {
                 Map<String, Object> combo = new HashMap<>();
@@ -919,12 +479,12 @@ public class AdminController {
             response.put("data", combosData);
             response.put("total", combosData.size());
 
-            System.out.println("✅ Combos cargados: " + combosData.size());
+            System.out.println(" Combos cargados: " + combosData.size());
 
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            System.err.println("❌ Error cargando combos: " + e.getMessage());
+            System.err.println(" Error cargando combos: " + e.getMessage());
             e.printStackTrace();
             response.put("success", false);
             response.put("message", "Error al cargar combos: " + e.getMessage());
@@ -932,10 +492,95 @@ public class AdminController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
-    // ============ EXPORTAR EXCEL ============
+
+    // ============================================================
+    // 5. EXPORTACIONES PROFESIONALES (PDF Y EXCEL)
+    // ============================================================
+
+    @GetMapping("/exportar-pdf")
+    public void exportarPDF(
+            @RequestParam(required = false) String fechaInicio,
+            @RequestParam(required = false) String fechaFin,
+            @RequestParam(required = false) String tipo,
+            HttpServletResponse response) throws IOException {
+        try {
+            response.setContentType("application/pdf");
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String filename = "reporte_" + (tipo != null ? tipo : "ventas") + "_" + timestamp + ".pdf";
+            response.setHeader("Content-Disposition", "attachment; filename=" + filename);
+
+            List<Pedido> pedidos = obtenerPedidosFiltrados(fechaInicio, fechaFin);
+            List<ProductoFinal> productos = productoFinalService.obtenerTodos();
+            List<Usuario> usuarios = usuarioRepository.findAll();
+
+            PdfWriter writer = new PdfWriter(response.getOutputStream());
+            PdfDocument pdfDoc = new PdfDocument(writer);
+            Document document = new Document(pdfDoc);
+            document.setMargins(30, 30, 30, 30);
+
+            String tituloReporte = getTituloReporte(tipo);
+            Paragraph titulo = new Paragraph(tituloReporte)
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setBold()
+                    .setFontSize(20);
+            document.add(titulo);
+            document.add(new Paragraph(" "));
+
+            Paragraph subtitulo = new Paragraph("Generado: " +
+                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")))
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setFontSize(10);
+            document.add(subtitulo);
+            document.add(new Paragraph(" "));
+
+            if (fechaInicio != null && fechaFin != null) {
+                Paragraph periodo = new Paragraph("Período: " + fechaInicio + " al " + fechaFin)
+                        .setTextAlignment(TextAlignment.CENTER)
+                        .setFontSize(10);
+                document.add(periodo);
+            }
+            document.add(new Paragraph(" "));
+            document.add(new Paragraph("_________________________________________"));
+            document.add(new Paragraph(" "));
+
+            switch (tipo != null ? tipo : "ventas") {
+                case "productos":
+                    generarPDFProductos(document, pedidos, productos);
+                    break;
+                case "usuarios":
+                    generarPDFUsuarios(document, pedidos, usuarios);
+                    break;
+                case "pedidos":
+                    generarPDFPedidos(document, pedidos);
+                    break;
+                case "metodos-pago":
+                    generarPDFMetodosPago(document, pedidos);
+                    break;
+                case "tipos-entrega":
+                    generarPDFTiposEntrega(document, pedidos);
+                    break;
+                case "horarios":
+                    generarPDFHorarios(document, pedidos);
+                    break;
+                case "favoritos":
+                    generarPDFFavoritos(document);
+                    break;
+                default:
+                    generarPDFVentas(document, pedidos);
+                    break;
+            }
+
+            document.close();
+            System.out.println(" Reporte PDF generado: " + filename);
+
+        } catch (Exception e) {
+            System.err.println(" Error al generar PDF: " + e.getMessage());
+            e.printStackTrace();
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error al generar el PDF");
+        }
+    }
 
     @GetMapping("/exportar-excel")
-    @ResponseBody
     public void exportarExcel(
             @RequestParam(required = false) String fechaInicio,
             @RequestParam(required = false) String fechaFin,
@@ -947,100 +592,689 @@ public class AdminController {
             String filename = "reporte_" + (tipo != null ? tipo : "ventas") + "_" + timestamp + ".xlsx";
             response.setHeader("Content-Disposition", "attachment; filename=" + filename);
 
-            // Obtener datos para el reporte
             List<Pedido> pedidos = obtenerPedidosFiltrados(fechaInicio, fechaFin);
+            List<ProductoFinal> productos = productoFinalService.obtenerTodos();
+            List<Usuario> usuarios = usuarioRepository.findAll();
 
             Workbook workbook = new XSSFWorkbook();
-            Sheet sheet = workbook.createSheet("Reporte");
 
-            // Estilo para headers
-            CellStyle headerStyle = workbook.createCellStyle();
-            Font headerFont = workbook.createFont();
-            headerFont.setBold(true);
-            headerFont.setFontHeightInPoints((short) 12);
-            headerStyle.setFont(headerFont);
-            headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
-            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-            headerStyle.setBorderBottom(BorderStyle.THIN);
-            headerStyle.setBorderTop(BorderStyle.THIN);
-            headerStyle.setBorderLeft(BorderStyle.THIN);
-            headerStyle.setBorderRight(BorderStyle.THIN);
-
-            // Headers
-            String[] headers = {"N° Pedido", "Cliente", "Email", "Teléfono", "Fecha", "Subtotal", "Costo Envío", "Total", "Estado", "Tipo Entrega", "Dirección", "Items"};
-            Row headerRow = sheet.createRow(0);
-            for (int i = 0; i < headers.length; i++) {
-                Cell cell = headerRow.createCell(i);
-                cell.setCellValue(headers[i]);
-                cell.setCellStyle(headerStyle);
-                sheet.setColumnWidth(i, 4000);
-            }
-
-            // Datos
-            int rowNum = 1;
-            for (Pedido pedido : pedidos) {
-                Row row = sheet.createRow(rowNum++);
-
-                row.createCell(0).setCellValue(pedido.getNumeroPedido() != null ? pedido.getNumeroPedido() : "N/A");
-
-                String cliente = "N/A";
-                String email = "";
-                String telefono = "";
-                if (pedido.getUsuario() != null) {
-                    cliente = (pedido.getUsuario().getNombres() != null ? pedido.getUsuario().getNombres() : "") + " " +
-                            (pedido.getUsuario().getApellidos() != null ? pedido.getUsuario().getApellidos() : "");
-                    cliente = cliente.trim().isEmpty() ? pedido.getUsuario().getUsername() : cliente;
-                    email = pedido.getUsuario().getUsername() != null ? pedido.getUsuario().getUsername() : "";
-                    telefono = pedido.getUsuario().getTelefono() != null ? pedido.getUsuario().getTelefono() : "";
-                }
-                row.createCell(1).setCellValue(cliente);
-                row.createCell(2).setCellValue(email);
-                row.createCell(3).setCellValue(telefono);
-
-                row.createCell(4).setCellValue(pedido.getFecha() != null ?
-                        pedido.getFecha().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) : "N/A");
-                row.createCell(5).setCellValue(pedido.getSubtotal() != null ? pedido.getSubtotal() : 0.0);
-                row.createCell(6).setCellValue(pedido.getCostoEnvio() != null ? pedido.getCostoEnvio() : 0.0);
-                row.createCell(7).setCellValue(pedido.getTotal());
-                row.createCell(8).setCellValue(pedido.getEstado() != null ? pedido.getEstado() : "N/A");
-                row.createCell(9).setCellValue(pedido.getTipoEntrega() != null ? pedido.getTipoEntrega() : "N/A");
-                row.createCell(10).setCellValue(pedido.getDireccionEntrega() != null ? pedido.getDireccionEntrega() : "N/A");
-
-                // Items
-                String itemsStr = "";
-                if (pedido.getItems() != null && !pedido.getItems().isEmpty()) {
-                    itemsStr = pedido.getItems().stream()
-                            .map(item -> item.getNombreProducto() + " x" + item.getCantidad())
-                            .collect(Collectors.joining(", "));
-                }
-                row.createCell(11).setCellValue(itemsStr);
-            }
-
-            // Agregar fila de totales
-            Row totalRow = sheet.createRow(rowNum);
-            totalRow.createCell(6).setCellValue("TOTAL GENERAL:");
-            double totalGeneral = pedidos.stream().mapToDouble(Pedido::getTotal).sum();
-            totalRow.createCell(7).setCellValue(totalGeneral);
-            totalRow.createCell(8).setCellValue("Total Pedidos: " + pedidos.size());
-
-            // Auto-ajustar columnas
-            for (int i = 0; i < headers.length; i++) {
-                sheet.autoSizeColumn(i);
+            switch (tipo != null ? tipo : "ventas") {
+                case "productos":
+                    generarExcelProductos(workbook, pedidos, productos);
+                    break;
+                case "usuarios":
+                    generarExcelUsuarios(workbook, pedidos, usuarios);
+                    break;
+                case "pedidos":
+                    generarExcelPedidos(workbook, pedidos);
+                    break;
+                case "metodos-pago":
+                    generarExcelMetodosPago(workbook, pedidos);
+                    break;
+                case "tipos-entrega":
+                    generarExcelTiposEntrega(workbook, pedidos);
+                    break;
+                case "horarios":
+                    generarExcelHorarios(workbook, pedidos);
+                    break;
+                case "favoritos":
+                    generarExcelFavoritos(workbook);
+                    break;
+                default:
+                    generarExcelVentas(workbook, pedidos);
+                    break;
             }
 
             workbook.write(response.getOutputStream());
             workbook.close();
 
-            System.out.println("📊 Reporte Excel generado: " + filename);
+            System.out.println(" Reporte Excel generado: " + filename);
 
         } catch (Exception e) {
-            System.err.println("❌ Error al generar Excel: " + e.getMessage());
+            System.err.println(" Error al generar Excel: " + e.getMessage());
             e.printStackTrace();
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error al generar el Excel");
         }
     }
 
-    // ============ MÉTODO AUXILIAR PARA FILTRAR PEDIDOS ============
+    // ============================================================
+    // MÉTODOS AUXILIARES PARA PDF
+    // ============================================================
+
+    private String getTituloReporte(String tipo) {
+        Map<String, String> titulos = new HashMap<>();
+        titulos.put("ventas", "REPORTE DE VENTAS");
+        titulos.put("productos", "REPORTE DE PRODUCTOS MÁS VENDIDOS");
+        titulos.put("usuarios", "REPORTE DE ACTIVIDAD DE USUARIOS");
+        titulos.put("pedidos", "REPORTE DE ESTADÍSTICAS DE PEDIDOS");
+        titulos.put("metodos-pago", "REPORTE DE MÉTODOS DE PAGO");
+        titulos.put("tipos-entrega", "REPORTE DE TIPOS DE ENTREGA");
+        titulos.put("horarios", "REPORTE DE HORARIOS PICO");
+        titulos.put("favoritos", "REPORTE DE PRODUCTOS FAVORITOS");
+        return titulos.getOrDefault(tipo, "REPORTE");
+    }
+
+    private void generarPDFVentas(Document document, List<Pedido> pedidos) {
+        try {
+            document.add(new Paragraph(" RESUMEN DE VENTAS").setBold().setFontSize(12));
+            document.add(new Paragraph(" "));
+
+            double totalVentas = pedidos.stream().mapToDouble(Pedido::getTotal).sum();
+            document.add(new Paragraph("Total de Ventas: S/ " + String.format("%.2f", totalVentas)));
+            document.add(new Paragraph("Total de Pedidos: " + pedidos.size()));
+            document.add(new Paragraph(" "));
+
+            float[] columnWidths = {2, 3, 2, 2, 2, 3};
+            Table table = new Table(UnitValue.createPercentArray(columnWidths));
+            table.setWidth(UnitValue.createPercentValue(100));
+
+            table.addHeaderCell(new Paragraph("N° Pedido").setBold());
+            table.addHeaderCell(new Paragraph("Cliente").setBold());
+            table.addHeaderCell(new Paragraph("Fecha").setBold());
+            table.addHeaderCell(new Paragraph("Total").setBold());
+            table.addHeaderCell(new Paragraph("Estado").setBold());
+            table.addHeaderCell(new Paragraph("Tipo Entrega").setBold());
+
+            for (Pedido pedido : pedidos.stream().limit(100).collect(Collectors.toList())) {
+                table.addCell(new Paragraph(pedido.getNumeroPedido() != null ? pedido.getNumeroPedido() : "N/A"));
+                table.addCell(new Paragraph(getNombreCliente(pedido)));
+                table.addCell(new Paragraph(pedido.getFecha() != null ?
+                        pedido.getFecha().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) : "N/A"));
+                table.addCell(new Paragraph("S/ " + String.format("%.2f", pedido.getTotal())));
+                table.addCell(new Paragraph(pedido.getEstado() != null ? pedido.getEstado() : "N/A"));
+                table.addCell(new Paragraph(pedido.getTipoEntrega() != null ? pedido.getTipoEntrega() : "N/A"));
+            }
+
+            document.add(table);
+            document.add(new Paragraph(" "));
+            document.add(new Paragraph("_________________________________________"));
+            document.add(new Paragraph(" "));
+            document.add(new Paragraph("TOTAL GENERAL: S/ " + String.format("%.2f", totalVentas)).setBold());
+
+        } catch (Exception e) {
+            System.err.println(" Error generando PDF Ventas: " + e.getMessage());
+        }
+    }
+
+    private void generarPDFProductos(Document document, List<Pedido> pedidos, List<ProductoFinal> productos) {
+        try {
+            document.add(new Paragraph(" TOP PRODUCTOS MÁS VENDIDOS").setBold().setFontSize(12));
+            document.add(new Paragraph(" "));
+
+            Map<String, Integer> productosVendidos = new HashMap<>();
+            Map<String, Double> montosPorProducto = new HashMap<>();
+
+            for (Pedido pedido : pedidos) {
+                for (ItemPedido item : pedido.getItems()) {
+                    String nombre = item.getNombreProductoSeguro();
+                    productosVendidos.put(nombre, productosVendidos.getOrDefault(nombre, 0) + item.getCantidad());
+                    montosPorProducto.put(nombre, montosPorProducto.getOrDefault(nombre, 0.0) + item.getSubtotal());
+                }
+            }
+
+            List<Map.Entry<String, Integer>> sorted = new ArrayList<>(productosVendidos.entrySet());
+            sorted.sort((a, b) -> b.getValue().compareTo(a.getValue()));
+
+            float[] columnWidths = {1, 3, 2, 2};
+            Table table = new Table(UnitValue.createPercentArray(columnWidths));
+            table.setWidth(UnitValue.createPercentValue(100));
+
+            table.addHeaderCell(new Paragraph("#").setBold());
+            table.addHeaderCell(new Paragraph("Producto").setBold());
+            table.addHeaderCell(new Paragraph("Cantidad Vendida").setBold());
+            table.addHeaderCell(new Paragraph("Monto Total").setBold());
+
+            int i = 1;
+            for (Map.Entry<String, Integer> entry : sorted.stream().limit(20).collect(Collectors.toList())) {
+                table.addCell(new Paragraph(String.valueOf(i++)));
+                table.addCell(new Paragraph(entry.getKey()));
+                table.addCell(new Paragraph(String.valueOf(entry.getValue())));
+                table.addCell(new Paragraph("S/ " + String.format("%.2f", montosPorProducto.get(entry.getKey()))));
+            }
+
+            document.add(table);
+
+        } catch (Exception e) {
+            System.err.println("❌ Error generando PDF Productos: " + e.getMessage());
+        }
+    }
+
+    private void generarPDFUsuarios(Document document, List<Pedido> pedidos, List<Usuario> usuarios) {
+        try {
+            document.add(new Paragraph("📊 ACTIVIDAD DE USUARIOS").setBold().setFontSize(12));
+            document.add(new Paragraph(" "));
+
+            Map<String, Integer> pedidosPorUsuario = new HashMap<>();
+            for (Pedido pedido : pedidos) {
+                if (pedido.getUsuario() != null) {
+                    String nombre = getNombreCliente(pedido);
+                    pedidosPorUsuario.put(nombre, pedidosPorUsuario.getOrDefault(nombre, 0) + 1);
+                }
+            }
+
+            List<Map.Entry<String, Integer>> sorted = new ArrayList<>(pedidosPorUsuario.entrySet());
+            sorted.sort((a, b) -> b.getValue().compareTo(a.getValue()));
+
+            float[] columnWidths = {1, 3, 2};
+            Table table = new Table(UnitValue.createPercentArray(columnWidths));
+            table.setWidth(UnitValue.createPercentValue(100));
+
+            table.addHeaderCell(new Paragraph("#").setBold());
+            table.addHeaderCell(new Paragraph("Usuario").setBold());
+            table.addHeaderCell(new Paragraph("Pedidos Realizados").setBold());
+
+            int i = 1;
+            for (Map.Entry<String, Integer> entry : sorted.stream().limit(20).collect(Collectors.toList())) {
+                table.addCell(new Paragraph(String.valueOf(i++)));
+                table.addCell(new Paragraph(entry.getKey()));
+                table.addCell(new Paragraph(String.valueOf(entry.getValue())));
+            }
+
+            document.add(table);
+            document.add(new Paragraph(" "));
+            document.add(new Paragraph("Total de Usuarios Activos: " + pedidosPorUsuario.size()));
+
+        } catch (Exception e) {
+            System.err.println(" Error generando PDF Usuarios: " + e.getMessage());
+        }
+    }
+
+    private void generarPDFPedidos(Document document, List<Pedido> pedidos) {
+        try {
+            document.add(new Paragraph(" ESTADÍSTICAS DE PEDIDOS").setBold().setFontSize(12));
+            document.add(new Paragraph(" "));
+
+            Map<String, Integer> estados = new HashMap<>();
+            for (Pedido pedido : pedidos) {
+                String estado = pedido.getEstado() != null ? pedido.getEstado() : "DESCONOCIDO";
+                estados.put(estado, estados.getOrDefault(estado, 0) + 1);
+            }
+
+            float[] columnWidths = {2, 2};
+            Table table = new Table(UnitValue.createPercentArray(columnWidths));
+            table.setWidth(UnitValue.createPercentValue(100));
+
+            table.addHeaderCell(new Paragraph("Estado").setBold());
+            table.addHeaderCell(new Paragraph("Cantidad").setBold());
+
+            for (Map.Entry<String, Integer> entry : estados.entrySet()) {
+                table.addCell(new Paragraph(entry.getKey()));
+                table.addCell(new Paragraph(String.valueOf(entry.getValue())));
+            }
+
+            document.add(table);
+
+        } catch (Exception e) {
+            System.err.println(" Error generando PDF Pedidos: " + e.getMessage());
+        }
+    }
+
+    private void generarPDFMetodosPago(Document document, List<Pedido> pedidos) {
+        try {
+            document.add(new Paragraph(" MÉTODOS DE PAGO").setBold().setFontSize(12));
+            document.add(new Paragraph(" "));
+
+            Map<String, Integer> metodos = new HashMap<>();
+            Map<String, Double> montos = new HashMap<>();
+
+            for (Pedido pedido : pedidos) {
+                String metodo = pedido.getMetodoPago() != null ? pedido.getMetodoPago() : "No especificado";
+                metodos.put(metodo, metodos.getOrDefault(metodo, 0) + 1);
+                montos.put(metodo, montos.getOrDefault(metodo, 0.0) + pedido.getTotal());
+            }
+
+            float[] columnWidths = {2, 2, 2};
+            Table table = new Table(UnitValue.createPercentArray(columnWidths));
+            table.setWidth(UnitValue.createPercentValue(100));
+
+            table.addHeaderCell(new Paragraph("Método de Pago").setBold());
+            table.addHeaderCell(new Paragraph("Cantidad de Pedidos").setBold());
+            table.addHeaderCell(new Paragraph("Monto Total").setBold());
+
+            for (Map.Entry<String, Integer> entry : metodos.entrySet()) {
+                table.addCell(new Paragraph(entry.getKey()));
+                table.addCell(new Paragraph(String.valueOf(entry.getValue())));
+                table.addCell(new Paragraph("S/ " + String.format("%.2f", montos.get(entry.getKey()))));
+            }
+
+            document.add(table);
+
+        } catch (Exception e) {
+            System.err.println(" Error generando PDF Métodos de Pago: " + e.getMessage());
+        }
+    }
+
+    private void generarPDFTiposEntrega(Document document, List<Pedido> pedidos) {
+        try {
+            document.add(new Paragraph(" TIPOS DE ENTREGA").setBold().setFontSize(12));
+            document.add(new Paragraph(" "));
+
+            Map<String, Integer> tipos = new HashMap<>();
+            Map<String, Double> montos = new HashMap<>();
+
+            for (Pedido pedido : pedidos) {
+                String tipo = pedido.getTipoEntrega() != null ? pedido.getTipoEntrega() : "No especificado";
+                tipos.put(tipo, tipos.getOrDefault(tipo, 0) + 1);
+                montos.put(tipo, montos.getOrDefault(tipo, 0.0) + pedido.getTotal());
+            }
+
+            float[] columnWidths = {2, 2, 2};
+            Table table = new Table(UnitValue.createPercentArray(columnWidths));
+            table.setWidth(UnitValue.createPercentValue(100));
+
+            table.addHeaderCell(new Paragraph("Tipo de Entrega").setBold());
+            table.addHeaderCell(new Paragraph("Cantidad de Pedidos").setBold());
+            table.addHeaderCell(new Paragraph("Monto Total").setBold());
+
+            for (Map.Entry<String, Integer> entry : tipos.entrySet()) {
+                table.addCell(new Paragraph(entry.getKey()));
+                table.addCell(new Paragraph(String.valueOf(entry.getValue())));
+                table.addCell(new Paragraph("S/ " + String.format("%.2f", montos.get(entry.getKey()))));
+            }
+
+            document.add(table);
+
+        } catch (Exception e) {
+            System.err.println(" Error generando PDF Tipos de Entrega: " + e.getMessage());
+        }
+    }
+
+    private void generarPDFHorarios(Document document, List<Pedido> pedidos) {
+        try {
+            document.add(new Paragraph(" HORARIOS PICO").setBold().setFontSize(12));
+            document.add(new Paragraph(" "));
+
+            Map<String, Integer> horas = new LinkedHashMap<>();
+            for (int i = 0; i < 24; i++) {
+                horas.put(String.format("%02d:00 - %02d:00", i, i + 1), 0);
+            }
+
+            for (Pedido pedido : pedidos) {
+                if (pedido.getFecha() != null) {
+                    int hora = pedido.getFecha().getHour();
+                    String rango = String.format("%02d:00 - %02d:00", hora, hora + 1);
+                    horas.put(rango, horas.getOrDefault(rango, 0) + 1);
+                }
+            }
+
+            Map<String, Integer> horasConPedidos = horas.entrySet().stream()
+                    .filter(e -> e.getValue() > 0)
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, LinkedHashMap::new));
+
+            float[] columnWidths = {2, 2};
+            Table table = new Table(UnitValue.createPercentArray(columnWidths));
+            table.setWidth(UnitValue.createPercentValue(100));
+
+            table.addHeaderCell(new Paragraph("Hora").setBold());
+            table.addHeaderCell(new Paragraph("Pedidos").setBold());
+
+            for (Map.Entry<String, Integer> entry : horasConPedidos.entrySet()) {
+                table.addCell(new Paragraph(entry.getKey()));
+                table.addCell(new Paragraph(String.valueOf(entry.getValue())));
+            }
+
+            document.add(table);
+
+            if (!horasConPedidos.isEmpty()) {
+                Map.Entry<String, Integer> horaPico = horasConPedidos.entrySet().stream()
+                        .max(Map.Entry.comparingByValue())
+                        .orElse(null);
+                if (horaPico != null) {
+                    document.add(new Paragraph(" "));
+                    document.add(new Paragraph(" HORA PICO: " + horaPico.getKey() + " (" + horaPico.getValue() + " pedidos)").setBold());
+                }
+            }
+
+        } catch (Exception e) {
+            System.err.println(" Error generando PDF Horarios: " + e.getMessage());
+        }
+    }
+
+    private void generarPDFFavoritos(Document document) {
+        try {
+            document.add(new Paragraph(" PRODUCTOS FAVORITOS").setBold().setFontSize(12));
+            document.add(new Paragraph(" "));
+
+            List<Favorito> favoritos = favoritoRepository.findAllWithUsuarioAndProducto();
+
+            Map<String, Integer> productosFavoritos = new HashMap<>();
+            for (Favorito f : favoritos) {
+                if (f.getProducto() != null) {
+                    String nombre = f.getProducto().getNombre();
+                    productosFavoritos.put(nombre, productosFavoritos.getOrDefault(nombre, 0) + 1);
+                }
+            }
+
+            List<Map.Entry<String, Integer>> sorted = new ArrayList<>(productosFavoritos.entrySet());
+            sorted.sort((a, b) -> b.getValue().compareTo(a.getValue()));
+
+            float[] columnWidths = {1, 3, 2};
+            Table table = new Table(UnitValue.createPercentArray(columnWidths));
+            table.setWidth(UnitValue.createPercentValue(100));
+
+            table.addHeaderCell(new Paragraph("#").setBold());
+            table.addHeaderCell(new Paragraph("Producto").setBold());
+            table.addHeaderCell(new Paragraph("Veces Favorito").setBold());
+
+            int i = 1;
+            for (Map.Entry<String, Integer> entry : sorted.stream().limit(20).collect(Collectors.toList())) {
+                table.addCell(new Paragraph(String.valueOf(i++)));
+                table.addCell(new Paragraph(entry.getKey()));
+                table.addCell(new Paragraph(String.valueOf(entry.getValue())));
+            }
+
+            document.add(table);
+            document.add(new Paragraph(" "));
+            document.add(new Paragraph("Total de Favoritos: " + favoritos.size()));
+
+        } catch (Exception e) {
+            System.err.println(" Error generando PDF Favoritos: " + e.getMessage());
+        }
+    }
+
+    // ============================================================
+    // MÉTODOS AUXILIARES PARA EXCEL
+
+
+    private void generarExcelVentas(Workbook workbook, List<Pedido> pedidos) {
+        Sheet sheet = workbook.createSheet("Ventas");
+        CellStyle headerStyle = crearEstiloCabecera(workbook);
+
+        String[] headers = {"N° Pedido", "Cliente", "Fecha", "Total", "Estado", "Tipo Entrega"};
+        Row headerRow = sheet.createRow(0);
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+            sheet.setColumnWidth(i, 4000);
+        }
+
+        int rowNum = 1;
+        double totalGeneral = 0;
+        for (Pedido pedido : pedidos) {
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(pedido.getNumeroPedido() != null ? pedido.getNumeroPedido() : "N/A");
+            row.createCell(1).setCellValue(getNombreCliente(pedido));
+            row.createCell(2).setCellValue(pedido.getFecha() != null ?
+                    pedido.getFecha().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) : "N/A");
+            row.createCell(3).setCellValue(pedido.getTotal());
+            row.createCell(4).setCellValue(pedido.getEstado() != null ? pedido.getEstado() : "N/A");
+            row.createCell(5).setCellValue(pedido.getTipoEntrega() != null ? pedido.getTipoEntrega() : "N/A");
+            totalGeneral += pedido.getTotal();
+        }
+
+        Row totalRow = sheet.createRow(rowNum);
+        totalRow.createCell(3).setCellValue("TOTAL:");
+        totalRow.createCell(4).setCellValue(totalGeneral);
+        totalRow.createCell(5).setCellValue("Total Pedidos: " + pedidos.size());
+    }
+
+    private void generarExcelProductos(Workbook workbook, List<Pedido> pedidos, List<ProductoFinal> productos) {
+        Sheet sheet = workbook.createSheet("Productos Más Vendidos");
+        CellStyle headerStyle = crearEstiloCabecera(workbook);
+
+        Map<String, Integer> productosVendidos = new HashMap<>();
+        Map<String, Double> montosPorProducto = new HashMap<>();
+
+        for (Pedido pedido : pedidos) {
+            for (ItemPedido item : pedido.getItems()) {
+                String nombre = item.getNombreProductoSeguro();
+                productosVendidos.put(nombre, productosVendidos.getOrDefault(nombre, 0) + item.getCantidad());
+                montosPorProducto.put(nombre, montosPorProducto.getOrDefault(nombre, 0.0) + item.getSubtotal());
+            }
+        }
+
+        List<Map.Entry<String, Integer>> sorted = new ArrayList<>(productosVendidos.entrySet());
+        sorted.sort((a, b) -> b.getValue().compareTo(a.getValue()));
+
+        String[] headers = {"#", "Producto", "Cantidad Vendida", "Monto Total"};
+        Row headerRow = sheet.createRow(0);
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+            sheet.setColumnWidth(i, 4000);
+        }
+
+        int rowNum = 1;
+        for (Map.Entry<String, Integer> entry : sorted) {
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(rowNum - 1);
+            row.createCell(1).setCellValue(entry.getKey());
+            row.createCell(2).setCellValue(entry.getValue());
+            row.createCell(3).setCellValue(montosPorProducto.get(entry.getKey()));
+        }
+    }
+
+    private void generarExcelUsuarios(Workbook workbook, List<Pedido> pedidos, List<Usuario> usuarios) {
+        Sheet sheet = workbook.createSheet("Actividad de Usuarios");
+        CellStyle headerStyle = crearEstiloCabecera(workbook);
+
+        Map<String, Integer> pedidosPorUsuario = new HashMap<>();
+        for (Pedido pedido : pedidos) {
+            if (pedido.getUsuario() != null) {
+                String nombre = getNombreCliente(pedido);
+                pedidosPorUsuario.put(nombre, pedidosPorUsuario.getOrDefault(nombre, 0) + 1);
+            }
+        }
+
+        List<Map.Entry<String, Integer>> sorted = new ArrayList<>(pedidosPorUsuario.entrySet());
+        sorted.sort((a, b) -> b.getValue().compareTo(a.getValue()));
+
+        String[] headers = {"#", "Usuario", "Pedidos Realizados"};
+        Row headerRow = sheet.createRow(0);
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+            sheet.setColumnWidth(i, 4000);
+        }
+
+        int rowNum = 1;
+        for (Map.Entry<String, Integer> entry : sorted) {
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(rowNum - 1);
+            row.createCell(1).setCellValue(entry.getKey());
+            row.createCell(2).setCellValue(entry.getValue());
+        }
+    }
+
+    private void generarExcelPedidos(Workbook workbook, List<Pedido> pedidos) {
+        Sheet sheet = workbook.createSheet("Estadísticas de Pedidos");
+        CellStyle headerStyle = crearEstiloCabecera(workbook);
+
+        Map<String, Integer> estados = new HashMap<>();
+        for (Pedido pedido : pedidos) {
+            String estado = pedido.getEstado() != null ? pedido.getEstado() : "DESCONOCIDO";
+            estados.put(estado, estados.getOrDefault(estado, 0) + 1);
+        }
+
+        String[] headers = {"Estado", "Cantidad"};
+        Row headerRow = sheet.createRow(0);
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+            sheet.setColumnWidth(i, 4000);
+        }
+
+        int rowNum = 1;
+        for (Map.Entry<String, Integer> entry : estados.entrySet()) {
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(entry.getKey());
+            row.createCell(1).setCellValue(entry.getValue());
+        }
+    }
+
+    private void generarExcelMetodosPago(Workbook workbook, List<Pedido> pedidos) {
+        Sheet sheet = workbook.createSheet("Métodos de Pago");
+        CellStyle headerStyle = crearEstiloCabecera(workbook);
+
+        Map<String, Integer> metodos = new HashMap<>();
+        Map<String, Double> montos = new HashMap<>();
+
+        for (Pedido pedido : pedidos) {
+            String metodo = pedido.getMetodoPago() != null ? pedido.getMetodoPago() : "No especificado";
+            metodos.put(metodo, metodos.getOrDefault(metodo, 0) + 1);
+            montos.put(metodo, montos.getOrDefault(metodo, 0.0) + pedido.getTotal());
+        }
+
+        String[] headers = {"Método de Pago", "Cantidad de Pedidos", "Monto Total"};
+        Row headerRow = sheet.createRow(0);
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+            sheet.setColumnWidth(i, 4000);
+        }
+
+        int rowNum = 1;
+        for (Map.Entry<String, Integer> entry : metodos.entrySet()) {
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(entry.getKey());
+            row.createCell(1).setCellValue(entry.getValue());
+            row.createCell(2).setCellValue(montos.get(entry.getKey()));
+        }
+    }
+
+    private void generarExcelTiposEntrega(Workbook workbook, List<Pedido> pedidos) {
+        Sheet sheet = workbook.createSheet("Tipos de Entrega");
+        CellStyle headerStyle = crearEstiloCabecera(workbook);
+
+        Map<String, Integer> tipos = new HashMap<>();
+        Map<String, Double> montos = new HashMap<>();
+
+        for (Pedido pedido : pedidos) {
+            String tipo = pedido.getTipoEntrega() != null ? pedido.getTipoEntrega() : "No especificado";
+            tipos.put(tipo, tipos.getOrDefault(tipo, 0) + 1);
+            montos.put(tipo, montos.getOrDefault(tipo, 0.0) + pedido.getTotal());
+        }
+
+        String[] headers = {"Tipo de Entrega", "Cantidad de Pedidos", "Monto Total"};
+        Row headerRow = sheet.createRow(0);
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+            sheet.setColumnWidth(i, 4000);
+        }
+
+        int rowNum = 1;
+        for (Map.Entry<String, Integer> entry : tipos.entrySet()) {
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(entry.getKey());
+            row.createCell(1).setCellValue(entry.getValue());
+            row.createCell(2).setCellValue(montos.get(entry.getKey()));
+        }
+    }
+
+    private void generarExcelHorarios(Workbook workbook, List<Pedido> pedidos) {
+        Sheet sheet = workbook.createSheet("Horarios Pico");
+        CellStyle headerStyle = crearEstiloCabecera(workbook);
+
+        Map<String, Integer> horas = new LinkedHashMap<>();
+        for (int i = 0; i < 24; i++) {
+            horas.put(String.format("%02d:00 - %02d:00", i, i + 1), 0);
+        }
+
+        for (Pedido pedido : pedidos) {
+            if (pedido.getFecha() != null) {
+                int hora = pedido.getFecha().getHour();
+                String rango = String.format("%02d:00 - %02d:00", hora, hora + 1);
+                horas.put(rango, horas.getOrDefault(rango, 0) + 1);
+            }
+        }
+
+        Map<String, Integer> horasConPedidos = horas.entrySet().stream()
+                .filter(e -> e.getValue() > 0)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, LinkedHashMap::new));
+
+        String[] headers = {"Hora", "Pedidos"};
+        Row headerRow = sheet.createRow(0);
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+            sheet.setColumnWidth(i, 4000);
+        }
+
+        int rowNum = 1;
+        for (Map.Entry<String, Integer> entry : horasConPedidos.entrySet()) {
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(entry.getKey());
+            row.createCell(1).setCellValue(entry.getValue());
+        }
+    }
+
+    private void generarExcelFavoritos(Workbook workbook) {
+        Sheet sheet = workbook.createSheet("Productos Favoritos");
+        CellStyle headerStyle = crearEstiloCabecera(workbook);
+
+        List<Favorito> favoritos = favoritoRepository.findAllWithUsuarioAndProducto();
+
+        Map<String, Integer> productosFavoritos = new HashMap<>();
+        for (Favorito f : favoritos) {
+            if (f.getProducto() != null) {
+                String nombre = f.getProducto().getNombre();
+                productosFavoritos.put(nombre, productosFavoritos.getOrDefault(nombre, 0) + 1);
+            }
+        }
+
+        List<Map.Entry<String, Integer>> sorted = new ArrayList<>(productosFavoritos.entrySet());
+        sorted.sort((a, b) -> b.getValue().compareTo(a.getValue()));
+
+        String[] headers = {"#", "Producto", "Veces Favorito"};
+        Row headerRow = sheet.createRow(0);
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+            sheet.setColumnWidth(i, 4000);
+        }
+
+        int rowNum = 1;
+        for (Map.Entry<String, Integer> entry : sorted) {
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(rowNum - 1);
+            row.createCell(1).setCellValue(entry.getKey());
+            row.createCell(2).setCellValue(entry.getValue());
+        }
+    }
+
+    // ============================================================
+    // MÉTODOS AUXILIARES
+    // ============================================================
+
+    private String getNombreCliente(Pedido pedido) {
+        if (pedido.getUsuario() != null) {
+            String nombre = (pedido.getUsuario().getNombres() != null ? pedido.getUsuario().getNombres() : "") + " " +
+                    (pedido.getUsuario().getApellidos() != null ? pedido.getUsuario().getApellidos() : "");
+            return nombre.trim().isEmpty() ? pedido.getUsuario().getUsername() : nombre.trim();
+        }
+
+        return pedido.getNombreCliente() != null && !pedido.getNombreCliente().isEmpty()
+                ? pedido.getNombreCliente()
+                : "Cliente general";
+    }
+
+    private CellStyle crearEstiloCabecera(Workbook workbook) {
+        CellStyle headerStyle = workbook.createCellStyle();
+        Font headerFont = workbook.createFont();
+        headerFont.setBold(true);
+        headerFont.setFontHeightInPoints((short) 12);
+        headerStyle.setFont(headerFont);
+        headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+        headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        headerStyle.setBorderBottom(BorderStyle.THIN);
+        headerStyle.setBorderTop(BorderStyle.THIN);
+        headerStyle.setBorderLeft(BorderStyle.THIN);
+        headerStyle.setBorderRight(BorderStyle.THIN);
+        return headerStyle;
+    }
+
+    // ============================================================
+    // MÉTODO AUXILIAR PARA FILTRAR PEDIDOS
+    // ============================================================
 
     private List<Pedido> obtenerPedidosFiltrados(String fechaInicio, String fechaFin) {
         List<Pedido> pedidos = pedidoRepository.findAllWithItemsAndProducts();

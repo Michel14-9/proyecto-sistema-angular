@@ -1,0 +1,96 @@
+/* src/app/modules/admin/admin-shell/admin-shell.css */
+.bg-luren {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+
+.admin-sidebar {
+  width: 260px;
+  min-height: 100vh;
+  background: #1a1a2e;
+  color: #fff;
+  padding: 20px 0;
+  flex-shrink: 0;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  padding: 0 20px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  margin-bottom: 20px;
+}
+
+.logo-icon {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #f7971e, #ffd200);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+}
+
+.logo-icon i {
+  color: #1a1a2e;
+}
+
+.logo-text h4 {
+  font-weight: 700;
+  color: #fff;
+}
+
+.logo-text small {
+  color: rgba(255,255,255,0.6);
+}
+
+.admin-sidebar .nav-link {
+  color: rgba(255,255,255,0.7);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+}
+
+.admin-sidebar .nav-link i {
+  width: 20px;
+  text-align: center;
+}
+
+.admin-sidebar .nav-link:hover {
+  color: #fff;
+  background: rgba(255,255,255,0.05);
+}
+
+.admin-sidebar .nav-link.active {
+  color: #ffd200;
+  background: rgba(255,215,0,0.1);
+  border-left-color: #ffd200;
+}
+
+.admin-main-content {
+  padding: 24px;
+  background: #f5f7fb;
+  min-height: 100vh;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #f7971e, #ffd200);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: #1a1a2e;
+}
+
+.admin-footer {
+  background: #1a1a2e;
+  padding: 15px 0;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}

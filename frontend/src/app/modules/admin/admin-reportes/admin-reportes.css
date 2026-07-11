@@ -1,0 +1,498 @@
+/* src/app/modules/admin/admin-reportes/admin-reportes.css */
+
+/* ============================================================
+   ESTILOS PARA REPORTES Y ESTADÍSTICAS
+   ============================================================ */
+
+/* --- Contenedor principal --- */
+.reportes-container {
+  padding: 0;
+}
+
+/* --- Botones de acción --- */
+.d-flex.gap-2 .btn {
+  border-radius: 8px;
+  font-weight: 500;
+  padding: 0.5rem 1.2rem;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.d-flex.gap-2 .btn i {
+  font-size: 1rem;
+}
+
+.d-flex.gap-2 .btn-outline-primary {
+  color: #f57c00;
+  border-color: #f57c00;
+}
+
+.d-flex.gap-2 .btn-outline-primary:hover {
+  background-color: #f57c00;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 124, 0, 0.3);
+}
+
+.d-flex.gap-2 .btn-outline-success {
+  color: #28a745;
+  border-color: #28a745;
+}
+
+.d-flex.gap-2 .btn-outline-success:hover {
+  background-color: #28a745;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.d-flex.gap-2 .btn-primary {
+  background: linear-gradient(135deg, #f7971e, #ffd200);
+  border: none;
+  color: #1a1a2e;
+}
+
+.d-flex.gap-2 .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(245, 124, 0, 0.4);
+  color: #1a1a2e;
+}
+
+/* --- Tarjetas de filtros --- */
+.card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 1rem 1.25rem;
+}
+
+.card-header .card-title {
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.card-body {
+  padding: 1.25rem;
+}
+
+/* --- Formulario de filtros --- */
+.form-label {
+  font-weight: 600;
+  color: #4a5568;
+  font-size: 0.85rem;
+  margin-bottom: 0.3rem;
+}
+
+.form-select,
+.form-control {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  background-color: white;
+}
+
+.form-select:focus,
+.form-control:focus {
+  border-color: #f57c00;
+  box-shadow: 0 0 0 0.2rem rgba(245, 124, 0, 0.15);
+}
+
+.form-select {
+  cursor: pointer;
+}
+
+/* --- Tarjetas de estadísticas (Stat Cards) --- */
+.stat-card {
+  border: none;
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  cursor: default;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  background: white;
+  height: 100%;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+.stat-card i {
+  font-size: 2rem;
+  opacity: 0.3;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.stat-card .number {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 0.2rem;
+}
+
+.stat-card .label {
+  color: #6c757d;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.stat-card.text-primary .number,
+.stat-card.text-primary i {
+  color: #007bff;
+}
+
+.stat-card.text-success .number,
+.stat-card.text-success i {
+  color: #28a745;
+}
+
+.stat-card.text-warning .number,
+.stat-card.text-warning i {
+  color: #ffc107;
+}
+
+.stat-card.text-info .number,
+.stat-card.text-info i {
+  color: #17a2b8;
+}
+
+.stat-card .number.text-success {
+  color: #28a745 !important;
+}
+
+.stat-card .number.text-danger {
+  color: #dc3545 !important;
+}
+
+/* --- Gráficos --- */
+.chart-container {
+  position: relative;
+  height: 300px;
+  width: 100%;
+}
+
+.chart-container canvas {
+  max-width: 100%;
+}
+
+/* --- Tabla de datos --- */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table {
+  margin-bottom: 0;
+  font-size: 0.9rem;
+}
+
+.table thead th {
+  font-weight: 600;
+  color: #4a5568;
+  border-top: none;
+  border-bottom: 2px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 0.75rem 1rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.table tbody td {
+  padding: 0.75rem 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #f7fafc;
+}
+
+/* --- Estado vacío --- */
+.text-center.py-5 {
+  padding: 3rem 1.5rem;
+}
+
+.text-center.py-5 i {
+  color: #cbd5e0;
+  margin-bottom: 1rem;
+}
+
+.text-center.py-5 h4 {
+  color: #4a5568;
+  margin-bottom: 0.5rem;
+}
+
+.text-center.py-5 p {
+  color: #a0aec0;
+  margin-bottom: 0;
+}
+
+/* --- Responsive --- */
+
+/* Tablets y pantallas medianas */
+@media (max-width: 992px) {
+  .d-flex.justify-content-between {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .d-flex.justify-content-between .d-flex.gap-2 {
+    flex-wrap: wrap;
+  }
+
+  .d-flex.justify-content-between .d-flex.gap-2 .btn {
+    flex: 1;
+    justify-content: center;
+    min-width: 120px;
+  }
+
+  .row.g-3 {
+    --bs-gutter-y: 1rem;
+  }
+
+  .stat-card .number {
+    font-size: 1.5rem;
+  }
+
+  .chart-container {
+    height: 250px;
+  }
+}
+
+/* Móviles */
+@media (max-width: 768px) {
+  .card-body {
+    padding: 1rem;
+  }
+
+  .stat-card {
+    padding: 1rem;
+  }
+
+  .stat-card i {
+    font-size: 1.5rem;
+  }
+
+  .stat-card .number {
+    font-size: 1.2rem;
+  }
+
+  .stat-card .label {
+    font-size: 0.75rem;
+  }
+
+  .chart-container {
+    height: 200px;
+  }
+
+  .table-responsive {
+    font-size: 0.8rem;
+  }
+
+  .table thead th {
+    font-size: 0.7rem;
+    padding: 0.4rem 0.5rem;
+  }
+
+  .table tbody td {
+    padding: 0.4rem 0.5rem;
+  }
+
+  .d-flex.gap-2 .btn {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  .d-flex.gap-2 .btn i {
+    font-size: 0.85rem;
+  }
+}
+
+/* Móviles pequeños */
+@media (max-width: 480px) {
+  .d-flex.justify-content-between .d-flex.gap-2 {
+    flex-direction: column;
+  }
+
+  .d-flex.justify-content-between .d-flex.gap-2 .btn {
+    width: 100%;
+  }
+
+  .row.g-3 .col-md-3 {
+    padding: 0 0.5rem;
+  }
+
+  .stat-card {
+    padding: 0.75rem;
+  }
+
+  .stat-card .number {
+    font-size: 1rem;
+  }
+
+  .stat-card i {
+    font-size: 1.2rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .chart-container {
+    height: 180px;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tbody tr {
+    display: block;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+  }
+
+  .table tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.3rem 0;
+    border: none;
+  }
+
+  .table tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #4a5568;
+    font-size: 0.7rem;
+  }
+
+  .table tbody td:last-child {
+    border-bottom: none;
+  }
+}
+
+/* --- Scrollbar personalizada --- */
+.table-responsive::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+
+/* --- Animaciones --- */
+.stat-card {
+  transition: all 0.3s ease;
+}
+
+.btn {
+  transition: all 0.3s ease;
+}
+
+.card {
+  transition: all 0.3s ease;
+}
+
+.chart-container canvas {
+  transition: opacity 0.5s ease;
+}
+
+/* --- Tooltips y mejoras visuales --- */
+.form-text {
+  color: #a0aec0;
+  font-size: 0.8rem;
+}
+
+.badge {
+  font-weight: 500;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+}
+
+/* --- Scroll suave --- */
+html {
+  scroll-behavior: smooth;
+}
+
+/* --- Loading state --- */
+.loading-overlay {
+  position: relative;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.loading-overlay::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #f57c00;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* --- Colores para los estados de crecimiento --- */
+.text-success {
+  color: #28a745 !important;
+}
+
+.text-danger {
+  color: #dc3545 !important;
+}
+
+/* --- Estilos para el gráfico de categorías --- */
+#categoryChart {
+  max-height: 250px;
+}
+
+/* --- Mejoras para pantallas de escritorio grandes --- */
+@media (min-width: 1400px) {
+  .chart-container {
+    height: 350px;
+  }
+
+  .stat-card .number {
+    font-size: 2.2rem;
+  }
+}

@@ -1,0 +1,353 @@
+<!-- src/app/modules/admin/admin-reportes/admin-reportes.html -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3>Reportes y Estadísticas</h3>
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-primary" (click)="exportarPDF()">
+      <i class="fas fa-file-pdf"></i> Exportar PDF
+    </button>
+    <button class="btn btn-outline-success" (click)="exportarExcel()">
+      <i class="fas fa-file-excel"></i> Exportar Excel
+    </button>
+    <button class="btn btn-primary" (click)="generarReporte()">
+      <i class="fas fa-sync-alt"></i> Generar Reporte
+    </button>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header">
+    <h5 class="card-title mb-0">Filtros del Reporte</h5>
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">Tipo de Reporte</label>
+        <select class="form-select" [(ngModel)]="reporteTipo" (change)="cambiarTipoReporte()">
+          <option value="ventas">📈 Ventas</option>
+          <option value="productos">🏷️ Productos Más Vendidos</option>
+          <option value="usuarios">👥 Actividad de Usuarios</option>
+          <option value="pedidos">📦 Estadísticas de Pedidos</option>
+          <option value="metodos-pago">💳 Métodos de Pago</option>
+          <option value="tipos-entrega">🚚 Tipos de Entrega</option>
+          <option value="horarios">⏰ Horarios Pico</option>
+          <option value="favoritos">❤️ Productos Favoritos</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Rango de Fechas</label>
+        <select class="form-select" [(ngModel)]="reporteRango" (change)="cambiarRangoFechas()">
+          <option value="hoy">Hoy</option>
+          <option value="ayer">Ayer</option>
+          <option value="semana">Esta Semana</option>
+          <option value="mes">Este Mes</option>
+          <option value="personalizado">Personalizado</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Fecha Inicio</label>
+        <input type="date" class="form-control" [(ngModel)]="reporteFechaInicio">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Fecha Fin</label>
+        <input type="date" class="form-control" [(ngModel)]="reporteFechaFin">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MÉTRICAS DINÁMICAS SEGÚN EL TIPO DE REPORTE
+     ============================================================ -->
+
+<!-- ✅ VENTAS -->
+<ng-container *ngIf="reporteTipo === 'ventas'">
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card stat-card text-primary">
+        <i class="fas fa-shopping-cart"></i>
+        <div class="number">S/ {{ reporteMetricas.totalVentas || 0 }}</div>
+        <div class="label">Total Ventas</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card text-success">
+        <i class="fas fa-chart-line"></i>
+        <div class="number">{{ reporteMetricas.totalPedidos || 0 }}</div>
+        <div class="label">Total Pedidos</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card text-warning">
+        <i class="fas fa-utensils"></i>
+        <div class="number">{{ reporteMetricas.productosVendidos || 0 }}</div>
+        <div class="label">Productos Vendidos</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card text-info">
+        <i class="fas fa-percentage"></i>
+        <div class="number" [class.text-success]="reporteMetricas.crecimiento > 0" [class.text-danger]="reporteMetricas.crecimiento < 0">
+          {{ reporteMetricas.crecimiento > 0 ? '+' : '' }}{{ reporteMetricas.crecimiento || 0 }}%
+        </div>
+        <div class="label">Crecimiento</div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- ✅ PRODUCTOS -->
+<ng-container *ngIf="reporteTipo === 'productos'">
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="card stat-card text-primary">
+        <i class="fas fa-boxes"></i>
+        <div class="number">{{ reporteMetricas.productosVendidos || 0 }}</div>
+        <div class="label">Productos Vendidos</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card text-success">
+        <i class="fas fa-trophy"></i>
+        <div class="number">{{ reporteDatosTabla.length || 0 }}</div>
+        <div class="label">Productos en Top</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card text-warning">
+        <i class="fas fa-chart-bar"></i>
+        <div class="number">{{ reporteDatosTabla[0]?.cantidad || 0 }}</div>
+        <div class="label">Top Producto (unidades)</div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- ✅ PEDIDOS -->
+<ng-container *ngIf="reporteTipo === 'pedidos'">
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="card stat-card text-primary">
+        <i class="fas fa-shopping-cart"></i>
+        <div class="number">{{ reporteMetricas.totalPedidos || 0 }}</div>
+        <div class="label">Total Pedidos</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card text-success">
+        <i class="fas fa-chart-pie"></i>
+        <div class="number">{{ (reporteMetricas.estados | keyValue).length || 0 }}</div>
+        <div class="label">Estados Diferentes</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card text-warning">
+        <i class="fas fa-dollar-sign"></i>
+        <div class="number">S/ {{ reporteMetricas.totalVentas || 0 }}</div>
+        <div class="label">Total Ventas</div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- ✅ USUARIOS -->
+<ng-container *ngIf="reporteTipo === 'usuarios'">
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="card stat-card text-primary">
+        <i class="fas fa-users"></i>
+        <div class="number">{{ reporteDatosTabla.length || 0 }}</div>
+        <div class="label">Usuarios Activos</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card text-success">
+        <i class="fas fa-shopping-cart"></i>
+        <div class="number">{{ reporteMetricas.totalPedidos || 0 }}</div>
+        <div class="label">Total Pedidos</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card text-warning">
+        <i class="fas fa-trophy"></i>
+        <div class="number">{{ reporteDatosTabla[0]?.pedidos || 0 }}</div>
+        <div class="label">Top Usuario (pedidos)</div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- ✅ MÉTODOS DE PAGO -->
+<ng-container *ngIf="reporteTipo === 'metodos-pago'">
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="card stat-card text-primary">
+        <i class="fas fa-credit-card"></i>
+        <div class="number">{{ reporteMetricas.metodosUsados || 0 }}</div>
+        <div class="label">Métodos Usados</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card text-success">
+        <i class="fas fa-trophy"></i>
+        <div class="number">{{ reporteDatosTabla[0]?.metodo || 'N/A' }}</div>
+        <div class="label">Top Método</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card text-warning">
+        <i class="fas fa-chart-bar"></i>
+        <div class="number">{{ reporteDatosTabla[0]?.cantidad || 0 }}</div>
+        <div class="label">Top Método (pedidos)</div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- ✅ TIPOS DE ENTREGA -->
+<ng-container *ngIf="reporteTipo === 'tipos-entrega'">
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="card stat-card text-primary">
+        <i class="fas fa-truck"></i>
+        <div class="number">{{ reporteMetricas.tiposUsados || 0 }}</div>
+        <div class="label">Tipos de Entrega</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card text-success">
+        <i class="fas fa-trophy"></i>
+        <div class="number">{{ reporteDatosTabla[0]?.tipo || 'N/A' }}</div>
+        <div class="label">Top Tipo</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card text-warning">
+        <i class="fas fa-chart-bar"></i>
+        <div class="number">{{ reporteDatosTabla[0]?.cantidad || 0 }}</div>
+        <div class="label">Top Tipo (pedidos)</div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- ✅ HORARIOS -->
+<ng-container *ngIf="reporteTipo === 'horarios'">
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="card stat-card text-danger">
+        <i class="fas fa-clock"></i>
+        <div class="number">{{ reporteMetricas.horaPico || 'N/A' }}</div>
+        <div class="label">Hora Pico</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card text-success">
+        <i class="fas fa-shopping-cart"></i>
+        <div class="number">{{ reporteMetricas.pedidosHoraPico || 0 }}</div>
+        <div class="label">Pedidos en Hora Pico</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card text-warning">
+        <i class="fas fa-chart-line"></i>
+        <div class="number">{{ reporteDatosTabla.length || 0 }}</div>
+        <div class="label">Horas con Pedidos</div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- ✅ FAVORITOS -->
+<ng-container *ngIf="reporteTipo === 'favoritos'">
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="card stat-card text-danger">
+        <i class="fas fa-heart"></i>
+        <div class="number">{{ reporteMetricas.totalFavoritos || 0 }}</div>
+        <div class="label">Total Favoritos</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card text-success">
+        <i class="fas fa-star"></i>
+        <div class="number">{{ reporteMetricas.totalProductosFavoritos || 0 }}</div>
+        <div class="label">Productos Favoritos</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card stat-card text-warning">
+        <i class="fas fa-trophy"></i>
+        <div class="number">{{ reporteMetricas.topProducto || 'N/A' }}</div>
+        <div class="label">Top Producto ({{ reporteMetricas.topCantidad || 0 }} favs)</div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- ============================================================
+     GRÁFICOS
+     ============================================================ -->
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">{{ reporteTituloGrafico }}</h5>
+      </div>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="reportChart"></canvas>
+        </div>
+        <div *ngIf="!reporteDatosGrafico" class="text-center py-5">
+          <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+          <h4 class="text-muted">No hay datos para el reporte</h4>
+          <p class="text-muted">Seleccione un rango de fechas y genere el reporte.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Distribución por Categoría</h5>
+      </div>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="categoryChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TABLA -->
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">{{ reporteTituloTabla }}</h5>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover" *ngIf="reporteDatosTabla && reporteDatosTabla.length > 0">
+            <thead>
+            <tr>
+              <th *ngFor="let col of reporteColumnas">{{ col }}</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr *ngFor="let fila of reporteDatosTabla">
+              <td *ngFor="let col of reporteColumnas">{{ fila[col] }}</td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+        <div *ngIf="!reporteDatosTabla || reporteDatosTabla.length === 0" class="text-center py-5">
+          <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+          <h4 class="text-muted">No hay datos para el reporte</h4>
+          <p class="text-muted">Seleccione un rango de fechas y genere el reporte.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,119 @@
+<!-- src/app/modules/admin/admin-shell/admin-shell.html -->
+<header class="admin-header">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-luren">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold" href="#">
+        <i class="fas fa-crown me-2"></i>Luren Chicken - Admin
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarAdmin">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarAdmin">
+        <ul class="navbar-nav ms-auto align-items-lg-center">
+          <li class="nav-item">
+            <span class="nav-link text-white-50">
+              <i class="fas fa-user me-1"></i>{{ username }}
+            </span>
+          </li>
+          <li class="nav-item">
+            <span class="nav-link text-white-50">
+              <i class="fas fa-clock me-1"></i>{{ horaActual }}
+            </span>
+          </li>
+          <li class="nav-item">
+            <button class="btn btn-outline-light btn-sm ms-2" (click)="logout()">
+              <i class="fas fa-sign-out-alt me-1"></i>Salir
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<main class="admin-main">
+  <div class="admin-container d-flex">
+    <!-- Sidebar -->
+    <div class="admin-sidebar">
+      <div class="sidebar-header">
+        <div class="logo-icon">
+          <i class="fas fa-utensils fa-2x"></i>
+        </div>
+        <div class="logo-text">
+          <h4 class="mb-0">Luren Chicken</h4>
+          <small class="text-muted">Panel Admin</small>
+        </div>
+      </div>
+
+      <ul class="nav flex-column">
+        <li class="nav-item" *ngFor="let item of menuItems">
+          <a class="nav-link" [class.active]="isActive(item.path)"
+             [routerLink]="item.path"
+             routerLinkActive="active">
+            <i [class]="'fas fa-' + item.icon"></i>
+            <span>{{ item.label }}</span>
+          </a>
+        </li>
+        <li class="nav-item mt-4">
+          <a class="nav-link" routerLink="/menu">
+            <i class="fas fa-eye"></i>
+            <span>Ver Menú Público</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="admin-main-content flex-grow-1">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="ms-3 mb-0">{{ seccionActual | titlecase }}</h2>
+        <div class="d-flex align-items-center">
+          <div class="user-avatar me-2">{{ username.charAt(0).toUpperCase() }}</div>
+          <span>{{ username }}</span>
+        </div>
+      </div>
+
+      <!-- Alertas -->
+      <div id="dynamicAlerts">
+        <ng-container *ngIf="alertService.alerta$ | async as alerta">
+          <div class="alert"
+               [class.alert-success]="alerta.tipo === 'success'"
+               [class.alert-danger]="alerta.tipo === 'danger'"
+               [class.alert-warning]="alerta.tipo === 'warning'"
+               [class.alert-info]="alerta.tipo === 'info'">
+            <div class="d-flex align-items-center">
+              <i class="fas me-2"
+                 [class.fa-check-circle]="alerta.tipo === 'success'"
+                 [class.fa-exclamation-circle]="alerta.tipo === 'danger'"
+                 [class.fa-exclamation-triangle]="alerta.tipo === 'warning'"
+                 [class.fa-info-circle]="alerta.tipo === 'info'"></i>
+              <span>{{ alerta.mensaje }}</span>
+              <button type="button" class="btn-close ms-auto" (click)="alertService.limpiar()"></button>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</main>
+
+<footer class="admin-footer">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-6 text-center text-md-start">
+        <p class="mb-0 text-white-50 small">
+          &copy; {{ fechaActual.split(' ').pop() || '2026' }} Luren Chicken - Todos los derechos reservados
+        </p>
+      </div>
+      <div class="col-md-6 text-center text-md-end">
+        <p class="mb-0 text-white-50 small">
+          <i class="fas fa-crown me-1"></i> Módulo de Administración v2.0
+          <span class="mx-2">|</span>
+          <i class="fas fa-shield-alt me-1"></i> Seguro y Confiable
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>

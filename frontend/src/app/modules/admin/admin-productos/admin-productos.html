@@ -1,0 +1,146 @@
+<!-- src/app/modules/admin/admin-productos/admin-productos.html -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3>Gestión de Menú</h3>
+  <button class="btn btn-primary" (click)="abrirModalProducto()">
+    <i class="fas fa-plus"></i> Agregar Producto
+  </button>
+</div>
+
+<div class="search-filter-container">
+  <div class="search-box">
+    <div class="input-group">
+      <input type="text" class="form-control" placeholder="Buscar productos..." [(ngModel)]="busquedaProductos" (input)="filtrarProductos()">
+      <button class="btn btn-outline-secondary" type="button" (click)="filtrarProductos()">
+        <i class="fas fa-search"></i>
+      </button>
+    </div>
+  </div>
+  <div class="filter-buttons">
+    <select class="form-select" [(ngModel)]="filtroCategoria" (change)="filtrarProductos()">
+      <option value="">Todas las categorías</option>
+      <option value="pollos">Pollos</option>
+      <option value="parrillas">Parrillas</option>
+      <option value="chicharron">Chicharrón</option>
+      <option value="broaster">Broaster</option>
+      <option value="hamburguesas">Hamburguesas</option>
+      <option value="criollos">Criollos</option>
+      <option value="combos">Combos</option>
+    </select>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+        <tr>
+          <th>ID</th>
+          <th>Imagen</th>
+          <th>Nombre</th>
+          <th>Categoría</th>
+          <th>Precio</th>
+          <th>Acciones</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let producto of productosFiltrados">
+          <td>{{ producto.id }}</td>
+          <td>
+            <img [src]="producto.imagenUrl || 'assets/archivos/default-product.jpg'"
+                 alt="{{ producto.nombre }}"
+                 class="product-image"
+                 (error)="producto.imagenUrl = 'assets/archivos/default-product.jpg'">
+          </td>
+          <td>
+            <strong>{{ producto.nombre }}</strong>
+            <br><small class="text-muted">{{ producto.descripcion }}</small>
+          </td>
+          <td><span class="badge bg-primary">{{ producto.tipo }}</span></td>
+          <td><strong>S/ {{ producto.precio | number:'1.2-2' }}</strong></td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn btn-sm btn-outline-primary" (click)="abrirModalProducto(producto)" title="Editar">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger" (click)="confirmarEliminarProducto(producto)" title="Eliminar">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div *ngIf="productosFiltrados.length === 0" class="text-center py-5">
+      <i class="fas fa-concierge-bell fa-3x text-muted mb-3"></i>
+      <h4 class="text-muted">No hay productos registrados</h4>
+      <p class="text-muted">Agrega productos para comenzar a gestionar tu menú.</p>
+      <button class="btn btn-primary mt-3" (click)="abrirModalProducto()">
+        <i class="fas fa-plus"></i> Agregar Primer Producto
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Producto -->
+<div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="productModalLabel">{{ modalProductoTitulo }}</h5>
+        <button type="button" class="btn-close" (click)="cerrarModalProducto()"></button>
+      </div>
+      <form #productForm="ngForm" (ngSubmit)="guardarProducto()">
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label">Nombre *</label>
+                <input type="text" class="form-control" [(ngModel)]="productoForm.nombre" name="nombre" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Categoría *</label>
+                <select class="form-select" [(ngModel)]="productoForm.tipo" name="tipo" required>
+                  <option value="">Seleccione una categoría</option>
+                  <option value="pollos">Pollos</option>
+                  <option value="parrillas">Parrillas</option>
+                  <option value="chicharron">Chicharrón</option>
+                  <option value="broaster">Broaster</option>
+                  <option value="hamburguesas">Hamburguesas</option>
+                  <option value="criollos">Criollos</option>
+                  <option value="combos">Combos</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Precio (S/) *</label>
+                <input type="number" class="form-control" [(ngModel)]="productoForm.precio" name="precio" step="0.01" min="0" required>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label">Descripción</label>
+                <textarea class="form-control" [(ngModel)]="productoForm.descripcion" name="descripcion" rows="4"></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Imagen URL</label>
+                <input type="text" class="form-control" [(ngModel)]="productoForm.imagenUrl" name="imagenUrl" placeholder="https://ejemplo.com/imagen.jpg">
+                <div class="form-text">Ingresa la URL de la imagen del producto</div>
+                <div class="mt-2" *ngIf="productoForm.imagenUrl">
+                  <img [src]="productoForm.imagenUrl" class="image-preview" alt="Vista previa" (error)="productoForm.imagenUrl = ''">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="cerrarModalProducto()">Cancelar</button>
+          <button type="submit" class="btn btn-primary" [disabled]="productForm.invalid || guardandoProducto">
+            <span *ngIf="!guardandoProducto"><i class="fas fa-save me-2"></i>Guardar Producto</span>
+            <span *ngIf="guardandoProducto"><span class="spinner-border spinner-border-sm me-2"></span>Guardando...</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

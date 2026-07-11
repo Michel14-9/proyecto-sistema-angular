@@ -4,7 +4,7 @@ import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
-import { HttpClient } from '@angular/common/http'; //
+import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
 import { CarritoService } from '../../../core/services/carrito.service';
 
@@ -28,6 +28,25 @@ export class LoginComponent implements OnInit {
   username: string = '';
   totalCarrito: number = 0;
 
+  // ✅ Mapeo de roles a rutas (NUEVA ESTRUCTURA)
+  private readonly roleRoutes: { [key: string]: string } = {
+    'ROLE_ADMIN': '/admin/dashboard',    // ✅ Nueva ruta admin con dashboard
+    'ADMIN': '/admin/dashboard',
+    'admin': '/admin/dashboard',
+    'ROLE_CAJERO': '/cajero',
+    'CAJERO': '/cajero',
+    'cajero': '/cajero',
+    'ROLE_COCINERO': '/cocinero',
+    'COCINERO': '/cocinero',
+    'cocinero': '/cocinero',
+    'ROLE_DELIVERY': '/delivery',
+    'DELIVERY': '/delivery',
+    'delivery': '/delivery',
+    'ROLE_CLIENTE': '/',
+    'CLIENTE': '/',
+    'cliente': '/'
+  };
+
   constructor(
     private authService: AuthService,
     private carritoService: CarritoService,
@@ -44,6 +63,7 @@ export class LoginComponent implements OnInit {
 
     if (this.authService.isAuthenticated()) {
       const rol = this.authService.getRole();
+      console.log('🔍 Usuario ya autenticado, rol:', rol);
       this.redirigirPorRol(rol);
       return;
     } else {
@@ -82,15 +102,27 @@ export class LoginComponent implements OnInit {
     this.authService.login(this.loginEmail, this.loginPassword).subscribe({
       next: (response: any) => {
         this.cargando = false;
+        console.log('🔍 Respuesta login:', response);
 
         if (response && response.status === "ok") {
           const rol = response.rol || 'ROLE_CLIENTE';
-          this.authService.saveSession('session_' + Date.now(), response.usuario, rol);
+          const usuario = response.usuario || response.user || {};
+
+          // Guardar sesión
+          this.authService.saveSession(
+            'session_' + Date.now(),
+            usuario.username || usuario.email || this.loginEmail,
+            rol
+          );
+
+          this.authService.saveUser(usuario);
 
           setTimeout(() => {
             this.carritoService.refrescarTotal();
           }, 500);
 
+          // ✅ Redirigir según el rol (NUEVA ESTRUCTURA)
+          console.log(`🔀 Redirigiendo con rol: ${rol}`);
           this.redirigirPorRol(rol);
         } else {
           this.errorLogin = true;
@@ -101,40 +133,30 @@ export class LoginComponent implements OnInit {
         this.errorLogin = true;
         this.errorMessage = err.error?.mensaje || 'Error al iniciar sesión. Intenta de nuevo.';
         this.cargando = false;
+        console.error('❌ Error en login:', err);
       }
     });
   }
 
-  // ✅ MÉTODO LOGOUT CORREGIDO - CON MUCHOS LOGS
   logout(): void {
-    console.log('🔄 ========================================');
-    console.log('🔄 LOGOUT LLAMADO DESDE EL COMPONENTE');
-    console.log('🔄 ========================================');
-    console.log('🔄 isAuthenticated antes:', this.isAuthenticated);
-    console.log('🔄 Token antes:', localStorage.getItem('token'));
+    console.log('🔄 Cerrando sesión...');
 
-    // ✅ 1. Limpiar localStorage inmediatamente
     localStorage.removeItem('token');
     localStorage.removeItem('username');
     localStorage.removeItem('role');
+    localStorage.removeItem('user');
     console.log('✅ localStorage limpiado');
 
-    // ✅ 2. Limpiar carrito
     this.carritoService.limpiarLocal();
     console.log('✅ Carrito limpiado');
 
-    // ✅ 3. Actualizar estado local
     this.isAuthenticated = false;
     this.username = '';
     this.totalCarrito = 0;
-    console.log('✅ Estado local actualizado');
 
-    // ✅ 4. Eliminar cookie manualmente
     document.cookie = 'JSESSIONID=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     document.cookie = 'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    console.log('✅ Cookies eliminadas');
 
-    // ✅ 5. Intentar logout en el backend (no esperar respuesta)
     this.http.post('http://localhost:8080/api/auth/logout', {}, {
       withCredentials: true
     }).subscribe({
@@ -142,33 +164,31 @@ export class LoginComponent implements OnInit {
       error: (err) => console.log('⚠️ Logout backend falló:', err.status)
     });
 
-    // ✅ 6. Mostrar mensaje de éxito
     this.logoutExitoso = true;
     setTimeout(() => {
       this.logoutExitoso = false;
     }, 4000);
 
-    // ✅ 7. Redirigir al login
     console.log('🔄 Redirigiendo al login...');
     this.router.navigate(['/login']);
-
-    // ✅ 8. Recargar la página para limpiar todo
-    setTimeout(() => {
-      console.log('🔄 Recargando página...');
-      window.location.reload();
-    }, 200);
   }
 
+  // ✅ Método de redirección para la NUEVA ESTRUCTURA
   private redirigirPorRol(rol: string | null): void {
-    const rutas: { [key: string]: string } = {
-      'ROLE_ADMIN': '/admin-menu',
-      'ROLE_CAJERO': '/cajero',
-      'ROLE_COCINERO': '/cocinero',
-      'ROLE_DELIVERY': '/delivery',
-      'ROLE_CLIENTE': '/'
-    };
+    console.log(`🔀 Redirigiendo con rol: ${rol}`);
 
-    const ruta = rutas[rol || ''] || '/';
+    // Normalizar el rol
+    let rolNormalizado = rol || '';
+
+    // Si empieza con ROLE_, lo quitamos
+    if (rolNormalizado.startsWith('ROLE_')) {
+      rolNormalizado = rolNormalizado.substring(5);
+    }
+
+    // Buscar la ruta correspondiente
+    let ruta = this.roleRoutes[rolNormalizado] || this.roleRoutes[rol || ''] || '/';
+
+    console.log(`🔀 Navegando a: ${ruta}`);
     this.router.navigate([ruta]);
   }
 }

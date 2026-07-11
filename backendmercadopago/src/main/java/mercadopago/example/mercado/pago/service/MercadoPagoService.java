@@ -37,7 +37,7 @@ public class MercadoPagoService {
 
     public Map<String, Object> crearPreferencia(Map<String, Object> pedidoData, Long pedidoId) {
         try {
-            System.out.println("📝 Creando preferencia para pedido: " + pedidoId);
+            System.out.println(" Creando preferencia para pedido: " + pedidoId);
 
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> itemsData = (List<Map<String, Object>>) pedidoData.get("items");
@@ -58,7 +58,7 @@ public class MercadoPagoService {
             body.put("items", items);
             body.put("external_reference", pedidoId.toString());
 
-            // ✅ Este SÍ debe apuntar al microservicio público (ngrok), porque quien llama es MercadoPago desde internet
+
             String webhookUrl = backendUrl + "/api/pago/webhook";
             body.put("notification_url", webhookUrl);
 
@@ -93,7 +93,7 @@ public class MercadoPagoService {
             }
 
         } catch (Exception e) {
-            System.err.println("❌ Error al crear preferencia: " + e.getMessage());
+            System.err.println(" Error al crear preferencia: " + e.getMessage());
             e.printStackTrace();
             throw new RuntimeException("Error al crear preferencia: " + e.getMessage(), e);
         }
@@ -115,12 +115,12 @@ public class MercadoPagoService {
             String url = sistemaBackendUrl + "/api/pago/confirmar";
 
             Map<String, Object> body = new HashMap<>();
-            // ✅ CORREGIDO: convertir explícitamente Long -> String para que el backend principal
+
             // pueda castearlo con (String) sin lanzar ClassCastException
             body.put("paymentId", payment.getId() != null ? String.valueOf(payment.getId()) : null);
             body.put("status", payment.getStatus());
             body.put("externalReference", externalReference);
-            // ✅ CORREGIDO: convertir explícitamente BigDecimal -> Double
+
             body.put("amount", payment.getTransactionAmount() != null
                     ? payment.getTransactionAmount().doubleValue() : null);
             body.put("paymentMethodId", payment.getPaymentMethodId());
@@ -131,10 +131,10 @@ public class MercadoPagoService {
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
 
             ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
-            System.out.println("✅ Notificado al backend principal: " + response.getStatusCode());
+            System.out.println(" Notificado al backend principal: " + response.getStatusCode());
 
         } catch (Exception e) {
-            System.err.println("❌ Error notificando al backend: " + e.getMessage());
+            System.err.println(" Error notificando al backend: " + e.getMessage());
         }
     }
 
