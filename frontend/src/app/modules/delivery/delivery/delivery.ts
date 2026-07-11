@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
-import { LayoutService } from '../../../core/services/layout.service'; // ✅ Importar LayoutService
+import { LayoutService } from '../../../core/services/layout.service';
 
 interface Pedido {
   id: number;
@@ -63,7 +63,7 @@ export class DeliveryComponent implements OnInit, OnDestroy {
     private http: HttpClient,
     private authService: AuthService,
     private router: Router,
-    private layoutService: LayoutService // ✅ Inyectar LayoutService
+    private layoutService: LayoutService
   ) {}
 
   ngOnInit(): void {
@@ -75,13 +75,13 @@ export class DeliveryComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // ✅ Ocultar header y footer global
+
     this.layoutService.hideHeaderAndFooter();
 
     this.cargarPedidosDelivery();
     this.actualizarHoraYFecha();
 
-    // ✅ Actualizar hora cada segundo
+
     this.intervalId = setInterval(() => {
       this.actualizarHoraYFecha();
     }, 1000);
@@ -93,7 +93,7 @@ export class DeliveryComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // ✅ Restaurar header y footer global
+
     this.layoutService.showHeaderAndFooter();
 
     if (this.intervalId) {
@@ -126,7 +126,7 @@ export class DeliveryComponent implements OnInit, OnDestroy {
   }
 
   cargarPedidosDelivery(): void {
-    console.log('🔄 Cargando pedidos para delivery...');
+    console.log(' Cargando pedidos para delivery...');
 
     // Cargar pedidos pendientes de entrega (LISTO)
     this.http.get(`${this.apiUrl}/delivery/pedidos-para-entrega`, {
@@ -135,11 +135,11 @@ export class DeliveryComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (response: any) => {
         this.pedidosPendientesEntrega = Array.isArray(response) ? response : [];
-        console.log(`📦 Pendientes entrega: ${this.pedidosPendientesEntrega.length}`);
+        console.log(` Pendientes entrega: ${this.pedidosPendientesEntrega.length}`);
         this.estadisticas.pendientesEntrega = this.pedidosPendientesEntrega.length;
       },
       error: (error) => {
-        console.error('❌ Error cargando pedidos pendientes de entrega:', error);
+        console.error(' Error cargando pedidos pendientes de entrega:', error);
       }
     });
 
@@ -150,11 +150,11 @@ export class DeliveryComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (response: any) => {
         this.pedidosEnCamino = Array.isArray(response) ? response : [];
-        console.log(`📦 En camino: ${this.pedidosEnCamino.length}`);
+        console.log(` En camino: ${this.pedidosEnCamino.length}`);
         this.estadisticas.enCamino = this.pedidosEnCamino.length;
       },
       error: (error) => {
-        console.error('❌ Error cargando pedidos en camino:', error);
+        console.error(' Error cargando pedidos en camino:', error);
       }
     });
 
@@ -168,13 +168,13 @@ export class DeliveryComponent implements OnInit, OnDestroy {
       withCredentials: true
     }).subscribe({
       next: (response: any) => {
-        console.log('📊 Métricas delivery:', response);
+        console.log(' Métricas delivery:', response);
         if (response && response.success) {
           this.estadisticas.entregadosHoy = response.totalEntregadosHoy || 0;
         }
       },
       error: (error) => {
-        console.error('❌ Error cargando métricas delivery:', error);
+        console.error(' Error cargando métricas delivery:', error);
       }
     });
   }
@@ -214,7 +214,7 @@ export class DeliveryComponent implements OnInit, OnDestroy {
   }
 
   iniciarEntrega(pedidoId: number): void {
-    console.log(`🚚 Iniciando entrega del pedido ${pedidoId}...`);
+    console.log(` Iniciando entrega del pedido ${pedidoId}...`);
 
     this.http.post(`${this.apiUrl}/delivery/iniciar-entrega/${pedidoId}`, {}, {
       headers: this.getHeaders(),
@@ -222,13 +222,13 @@ export class DeliveryComponent implements OnInit, OnDestroy {
       responseType: 'text'
     }).subscribe({
       next: (response: any) => {
-        console.log('✅ Respuesta:', response);
+        console.log(' Respuesta:', response);
         this.mostrarToastExito('Entrega iniciada correctamente');
         this.cargarPedidosDelivery();
         this.ocultarDetalle();
       },
       error: (error) => {
-        console.error('❌ Error iniciando entrega:', error);
+        console.error(' Error iniciando entrega:', error);
         if (error.status === 401 || error.status === 403) {
           this.mostrarToastError('Sesión expirada. Redirigiendo...');
           setTimeout(() => this.router.navigate(['/login']), 2000);
@@ -264,7 +264,7 @@ export class DeliveryComponent implements OnInit, OnDestroy {
   }
 
   marcarComoEntregado(pedidoId: number): void {
-    console.log(`✅ Marcando pedido ${pedidoId} como ENTREGADO...`);
+    console.log(` Marcando pedido ${pedidoId} como ENTREGADO...`);
 
     this.http.post(`${this.apiUrl}/delivery/marcar-entregado/${pedidoId}`, {}, {
       headers: this.getHeaders(),
@@ -272,13 +272,13 @@ export class DeliveryComponent implements OnInit, OnDestroy {
       responseType: 'text'
     }).subscribe({
       next: (response: any) => {
-        console.log('✅ Respuesta:', response);
+        console.log(' Respuesta:', response);
         this.mostrarToastExito('Pedido marcado como ENTREGADO correctamente');
         this.cargarPedidosDelivery();
         this.ocultarDetalle();
       },
       error: (error) => {
-        console.error('❌ Error marcando como entregado:', error);
+        console.error(' Error marcando como entregado:', error);
         if (error.status === 401 || error.status === 403) {
           this.mostrarToastError('Sesión expirada. Redirigiendo...');
           setTimeout(() => this.router.navigate(['/login']), 2000);

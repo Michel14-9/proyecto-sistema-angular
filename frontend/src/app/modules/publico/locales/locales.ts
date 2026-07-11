@@ -195,7 +195,7 @@ export class LocalesComponent implements OnInit, AfterViewInit {
       this.infoWindow.open(this.mapa, this.marcador);
     }, 1000);
 
-    console.log('✅ Mapa inicializado correctamente');
+    console.log(' Mapa inicializado correctamente');
   }
 
   actualizarEstadoLocal(): void {
@@ -209,7 +209,7 @@ export class LocalesComponent implements OnInit, AfterViewInit {
 
     const estadoElement = document.getElementById('estadoLocal');
     if (estadoElement) {
-      estadoElement.textContent = estaAbierto ? '🟢 Abierto' : '🔴 Cerrado';
+      estadoElement.textContent = estaAbierto ? ' Abierto' : ' Cerrado';
       estadoElement.className = `badge ${estaAbierto ? 'bg-success' : 'bg-danger'}`;
     }
   }
@@ -236,9 +236,9 @@ export class LocalesComponent implements OnInit, AfterViewInit {
     const estaAbierto = horaActual >= 16 && horaActual < 22;
 
     if (estaAbierto) {
-      return { texto: '🟢 Abierto', clase: 'bg-success' };
+      return { texto: ' Abierto', clase: 'bg-success' };
     } else {
-      return { texto: '🔴 Cerrado', clase: 'bg-danger' };
+      return { texto: ' Cerrado', clase: 'bg-danger' };
     }
   }
 

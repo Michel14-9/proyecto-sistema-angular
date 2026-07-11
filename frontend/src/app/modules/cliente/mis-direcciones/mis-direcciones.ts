@@ -99,33 +99,33 @@ export class MisDireccionesComponent implements OnInit {
     this.isLoading = true;
     this.errorMessage = '';
 
-    console.log('🔄 Cargando direcciones...');
+    console.log(' Cargando direcciones...');
 
     this.http.get(`${this.apiUrl}/api/direcciones`, {
       headers: this.getHeaders(),
       withCredentials: true
     }).subscribe({
       next: (response: any) => {
-        console.log('📦 Respuesta del servidor:', response);
+        console.log(' Respuesta del servidor:', response);
         this.isLoading = false;
 
         if (Array.isArray(response)) {
           this.direcciones = response;
-          console.log(`✅ ${this.direcciones.length} direcciones cargadas`);
+          console.log(` ${this.direcciones.length} direcciones cargadas`);
         } else if (response && response.success === true) {
           this.direcciones = response.data || [];
-          console.log(`✅ ${this.direcciones.length} direcciones cargadas`);
+          console.log(` ${this.direcciones.length} direcciones cargadas`);
         } else {
           this.direcciones = [];
           this.errorMessage = response?.message || 'Error al cargar las direcciones';
         }
       },
       error: (error) => {
-        console.error('❌ Error cargando direcciones:', error);
+        console.error(' Error cargando direcciones:', error);
         this.isLoading = false;
 
         if (error.status === 401 || error.status === 403) {
-          this.errorMessage = '⚠️ Debes iniciar sesión para ver tus direcciones';
+          this.errorMessage = '️ Debes iniciar sesión para ver tus direcciones';
           this.isAuthenticated = false;
         } else {
           this.errorMessage = error.error?.message || 'Error al cargar las direcciones';
@@ -147,13 +147,13 @@ export class MisDireccionesComponent implements OnInit {
         }
       },
       error: (error) => {
-        console.error('❌ Error cargando teléfono:', error);
+        console.error(' Error cargando teléfono:', error);
       }
     });
   }
 
   abrirModalNuevaDireccion(): void {
-    console.log('📝 Abriendo modal para NUEVA dirección');
+    console.log('Abriendo modal para NUEVA dirección');
     this.editandoIndex = null;
     this.modalTitulo = 'Agregar Nueva Dirección';
     this.direccionFormData = {
@@ -171,7 +171,7 @@ export class MisDireccionesComponent implements OnInit {
   }
 
   editarDireccion(index: number): void {
-    console.log('✏️ Editando dirección:', index);
+    console.log('️ Editando dirección:', index);
     const direccion = this.direcciones[index];
     if (!direccion) {
       this.mostrarError('No se encontró la dirección para editar');
@@ -219,12 +219,12 @@ export class MisDireccionesComponent implements OnInit {
       // Modo edición
       url = `${this.apiUrl}/api/direcciones/${this.direcciones[this.editandoIndex].id}`;
       method = 'PUT';
-      console.log('📝 Editando dirección existente:', url);
+      console.log(' Editando dirección existente:', url);
     } else {
       // Modo nuevo
       url = `${this.apiUrl}/api/direcciones`;
       method = 'POST';
-      console.log('📝 Creando nueva dirección:', url);
+      console.log(' Creando nueva dirección:', url);
     }
 
     this.http.request(method, url, {
@@ -233,14 +233,14 @@ export class MisDireccionesComponent implements OnInit {
       withCredentials: true
     }).subscribe({
       next: (response: any) => {
-        console.log('✅ Dirección guardada correctamente:', response);
+        console.log('Dirección guardada correctamente:', response);
         this.guardando = false;
         this.cerrarModal();
         this.mostrarExito('Dirección guardada correctamente');
         this.cargarDirecciones();
       },
       error: (error) => {
-        console.error('❌ Error guardando dirección:', error);
+        console.error(' Error guardando dirección:', error);
         this.guardando = false;
         this.mostrarError(error.error?.message || 'Error al guardar la dirección');
       }
@@ -258,19 +258,19 @@ export class MisDireccionesComponent implements OnInit {
       return;
     }
 
-    console.log('🗑️ Eliminando dirección:', direccion);
+    console.log('🗑 Eliminando dirección:', direccion);
 
     this.http.delete(`${this.apiUrl}/api/direcciones/${direccion.id}`, {
       headers: this.getHeaders(),
       withCredentials: true
     }).subscribe({
       next: (response: any) => {
-        console.log('✅ Dirección eliminada correctamente');
+        console.log(' Dirección eliminada correctamente');
         this.mostrarExito('Dirección eliminada correctamente');
         this.cargarDirecciones();
       },
       error: (error) => {
-        console.error('❌ Error eliminando dirección:', error);
+        console.error(' Error eliminando dirección:', error);
         this.mostrarError(error.error?.message || 'Error al eliminar la dirección');
       }
     });
@@ -283,31 +283,31 @@ export class MisDireccionesComponent implements OnInit {
       return;
     }
 
-    console.log('⭐ Marcando como principal:', direccion);
+    console.log(' Marcando como principal:', direccion);
 
     this.http.put(`${this.apiUrl}/api/direcciones/${direccion.id}/predeterminada`, {}, {
       headers: this.getHeaders(),
       withCredentials: true
     }).subscribe({
       next: (response: any) => {
-        console.log('✅ Dirección marcada como principal');
+        console.log(' Dirección marcada como principal');
         this.mostrarExito('Dirección marcada como principal');
         this.cargarDirecciones();
       },
       error: (error) => {
-        console.error('❌ Error marcando como principal:', error);
+        console.error(' Error marcando como principal:', error);
         this.mostrarError(error.error?.message || 'Error al marcar como principal');
       }
     });
   }
 
   mostrarExito(mensaje: string): void {
-    // Puedes usar un servicio de notificaciones aquí
+
     alert(mensaje);
   }
 
   mostrarError(mensaje: string): void {
-    // Puedes usar un servicio de notificaciones aquí
+
     alert(mensaje);
   }
 

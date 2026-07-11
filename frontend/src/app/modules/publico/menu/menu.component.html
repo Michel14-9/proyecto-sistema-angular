@@ -36,7 +36,7 @@
         <div class="row g-3 mb-5">
           <div class="col-md-6 col-lg-4" *ngFor="let producto of getProductos(categoria)">
             <div class="card h-100 product-card">
-              <!-- ✅ CAMBIADO: producto.id en lugar de producto.idProducto -->
+
               <button class="favorite-btn"
                       (click)="toggleFavorito(producto.id, $event)"
                       [class.favorito-activo]="esFavorito(producto.id)">
@@ -54,7 +54,7 @@
                 <p class="card-text product-description flex-grow-1">{{ producto.descripcion || 'Sin descripción' }}</p>
                 <p class="fw-bold text-success price-current">S/ {{ producto.precio | number:'1.2-2' }}</p>
 
-                <!-- ✅ CAMBIADO: producto.id en lugar de producto.idProducto -->
+
                 <button class="btn btn-primary w-100 agregar-carrito-btn"
                         (click)="agregarAlCarrito(producto.id, $event)">
                   <i class="fa-solid fa-cart-plus me-1"></i> Agregar al carrito

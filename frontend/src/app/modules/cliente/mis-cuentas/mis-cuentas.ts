@@ -82,7 +82,7 @@ export class MisCuentasComponent implements OnInit, OnDestroy {
     // Actualizar cada 2 minutos
     this.intervalId = setInterval(() => {
       if (!document.hidden && navigator.onLine) {
-        console.log('🔄 Actualización automática de datos...');
+        console.log(' Actualización automática de datos...');
         this.cargarTodosLosDatos();
       }
     }, 120000);
@@ -106,22 +106,20 @@ export class MisCuentasComponent implements OnInit, OnDestroy {
     this.cargarDirecciones();
   }
 
-  /**
-   * ✅ CORREGIDO: Usar /api/usuarios/perfil en lugar de /api/auth/datos-usuario
-   */
-  cargarDatosUsuario(): void {
-    console.log('🔄 Cargando datos del usuario...');
 
-    // ✅ Cambiar a /api/usuarios/perfil
+  cargarDatosUsuario(): void {
+    console.log(' Cargando datos del usuario...');
+
+
     this.http.get(`${this.apiUrl}/api/usuarios/perfil`, {
       headers: this.getHeaders(),
       withCredentials: true
     }).subscribe({
       next: (response: any) => {
-        console.log('📦 Datos del usuario recibidos:', response);
+        console.log(' Datos del usuario recibidos:', response);
         this.isLoading = false;
 
-        // ✅ La respuesta viene en response.usuario
+
         if (response && response.success && response.usuario) {
           const data = response.usuario;
           this.usuario = {
@@ -138,11 +136,11 @@ export class MisCuentasComponent implements OnInit, OnDestroy {
         }
       },
       error: (error) => {
-        console.error('❌ Error cargando datos del usuario:', error);
+        console.error(' Error cargando datos del usuario:', error);
         this.isLoading = false;
 
         if (error.status === 401 || error.status === 403) {
-          this.errorMessage = '⚠️ Debes iniciar sesión para ver tu información';
+          this.errorMessage = ' Debes iniciar sesión para ver tu información';
           this.isAuthenticated = false;
         } else {
           this.errorMessage = error.error?.message || 'Error al cargar los datos del usuario';
@@ -152,7 +150,7 @@ export class MisCuentasComponent implements OnInit, OnDestroy {
   }
 
   cargarEstadisticas(): void {
-    console.log('📊 Cargando estadísticas...');
+    console.log(' Cargando estadísticas...');
 
     // Cargar contador de favoritos
     this.http.get(`${this.apiUrl}/api/favoritos/count`, {
@@ -165,7 +163,7 @@ export class MisCuentasComponent implements OnInit, OnDestroy {
         }
       },
       error: (error) => {
-        console.error('❌ Error cargando favoritos:', error);
+        console.error(' Error cargando favoritos:', error);
         this.totalFavoritos = 0;
       }
     });
@@ -185,21 +183,21 @@ export class MisCuentasComponent implements OnInit, OnDestroy {
         }
       },
       error: (error) => {
-        console.error('❌ Error cargando pedidos:', error);
+        console.error(' Error cargando pedidos:', error);
         this.totalPedidos = 0;
       }
     });
   }
 
   cargarDirecciones(): void {
-    console.log('📍 Cargando direcciones...');
+    console.log(' Cargando direcciones...');
 
     this.http.get(`${this.apiUrl}/api/direcciones`, {
       headers: this.getHeaders(),
       withCredentials: true
     }).subscribe({
       next: (response: any) => {
-        console.log('📦 Direcciones recibidas:', response);
+        console.log(' Direcciones recibidas:', response);
 
         if (Array.isArray(response)) {
           this.direcciones = response;
@@ -217,11 +215,11 @@ export class MisCuentasComponent implements OnInit, OnDestroy {
         this.direccionEnvio = this.direcciones.find(dir => dir.predeterminada) ||
                             (this.direcciones.length > 0 ? this.direcciones[0] : null);
 
-        console.log('📍 Dirección facturación:', this.direccionFacturacion);
-        console.log('📍 Dirección envío:', this.direccionEnvio);
+        console.log(' Dirección facturación:', this.direccionFacturacion);
+        console.log(' Dirección envío:', this.direccionEnvio);
       },
       error: (error) => {
-        console.error('❌ Error cargando direcciones:', error);
+        console.error(' Error cargando direcciones:', error);
         this.direcciones = [];
         this.direccionFacturacion = null;
         this.direccionEnvio = null;

@@ -73,7 +73,7 @@
                       {{ item.descripcion || 'Sin descripción' }}
                     </p>
                     <p class="producto-precio-unitario fw-bold text-success mb-0">
-                      <!-- ✅ CORREGIDO: usar precioUnitario en lugar de precio -->
+
                       S/ {{ (item.precioUnitario || 0) | number:'1.2-2' }}
                     </p>
                   </div>
@@ -95,7 +95,7 @@
                     <div class="subtotal text-center mt-2">
                       <small class="text-muted-custom">Subtotal:</small>
                       <div class="fw-bold text-success">
-                        <!-- ✅ CORREGIDO: usar precioUnitario en lugar de precio -->
+
                         S/ {{ ((item.precioUnitario || 0) * item.cantidad) | number:'1.2-2' }}
                       </div>
                     </div>

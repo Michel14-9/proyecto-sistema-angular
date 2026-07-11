@@ -25,7 +25,7 @@ export const routes: Routes = [
       .then(m => m.SigueTuPedidoComponent)
   },
 
-  // ====== ADMIN (nueva estructura con rutas hijas) ======
+
   {
     path: 'admin',
     loadChildren: () => import('./modules/admin/admin.routes').then(m => m.ADMIN_ROUTES)

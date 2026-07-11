@@ -46,7 +46,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   direccionSeleccionada: any = null;
   mostrarFormularioDireccion: boolean = true;
 
-  // ✅ Estados simplificados
+
   pagoIniciado: boolean = false;
   pagoExitoso: boolean = false;
   verificandoPago: boolean = false;
@@ -91,7 +91,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       withCredentials: true
     }).subscribe({
       next: (response: any) => {
-        console.log('📦 Datos checkout:', response);
+        console.log(' Datos checkout:', response);
 
         if (response.success) {
           this.usuario = response.usuario || {};
@@ -116,7 +116,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         }
       },
       error: (error) => {
-        console.error('❌ Error cargando checkout:', error);
+        console.error(' Error cargando checkout:', error);
         this.errorMessage = error.error?.message || 'Error al cargar datos del checkout';
         this.isLoading = false;
       }
@@ -159,7 +159,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     return this.subtotal + this.costoEnvio - this.descuento;
   }
 
-  // ✅ CREAR PEDIDO
+
   realizarPago(): void {
     if (!this.direccion || this.direccion.trim() === '') {
       this.errorMessage = 'Por favor ingresa una dirección de entrega';
@@ -199,7 +199,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       withCredentials: true
     }).subscribe({
       next: (response: any) => {
-        console.log('✅ Pedido creado:', response);
+        console.log(' Pedido creado:', response);
 
         if (response.success) {
           this.pedidoId = response.pedidoId;
@@ -212,16 +212,16 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         }
       },
       error: (error) => {
-        console.error('❌ Error creando pedido:', error);
+        console.error(' Error creando pedido:', error);
         this.errorMessage = error.error?.message || 'Error al crear el pedido';
         this.procesandoPago = false;
       }
     });
   }
 
-  // ✅ CREAR PREFERENCIA Y ABRIR VENTANA
+
   crearPreferenciaPago(pedidoId: number): void {
-    console.log('🔄 Creando preferencia para pedido:', pedidoId);
+    console.log(' Creando preferencia para pedido:', pedidoId);
 
     const csrfToken = this.getCsrfToken();
     let headers = new HttpHeaders();
@@ -235,16 +235,16 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       { headers, withCredentials: true }
     ).subscribe({
       next: (response: any) => {
-        console.log('✅ Preferencia creada:', response);
+        console.log(' Preferencia creada:', response);
 
         if (response.initPoint) {
           this.pagoIniciado = true;
           this.procesandoPago = false;
 
-          // ✅ ABRIR EN NUEVA VENTANA
+
           this.abrirVentanaPago(response.initPoint);
 
-          // ✅ INICIAR VERIFICACIÓN AUTOMÁTICA
+
           this.iniciarVerificacionAutomatica();
         } else {
           this.errorMessage = 'Error: No se recibió la URL de pago';
@@ -252,14 +252,14 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         }
       },
       error: (error) => {
-        console.error('❌ Error creando preferencia:', error);
+        console.error(' Error creando preferencia:', error);
         this.errorMessage = error.error?.error || 'Error al iniciar el pago';
         this.procesandoPago = false;
       }
     });
   }
 
-  // ✅ ABRIR VENTANA DE MERCADOPAGO
+
   abrirVentanaPago(url: string): void {
     const ancho = 480;
     const alto = 700;
@@ -273,26 +273,26 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     );
 
     if (this.ventanaPago) {
-      // ✅ Detectar cuando la ventana se cierra
+
       this.intervalId = setInterval(() => {
         if (this.ventanaPago && this.ventanaPago.closed) {
           console.log('🔄 Ventana de pago cerrada');
           clearInterval(this.intervalId);
 
-          // ✅ Verificar el estado cuando cierra la ventana
+
           if (!this.pagoExitoso) {
             this.verificarPago();
           }
         }
       }, 1000);
     } else {
-      // Fallback: si el navegador bloquea el popup
-      console.warn('⚠️ No se pudo abrir nueva ventana, redirigiendo...');
+
+      console.warn('️ No se pudo abrir nueva ventana, redirigiendo...');
       window.location.href = url;
     }
   }
 
-  // ✅ VERIFICAR PAGO (con reintentos)
+
   verificarPago(): void {
     if (this.verificandoPago || this.pagoExitoso) return;
 
@@ -303,7 +303,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     this.realizarVerificacion();
   }
 
- // En checkout.ts - método realizarVerificacion
+
  realizarVerificacion(): void {
      if (!this.pedidoId) {
          this.verificandoPago = false;
@@ -311,37 +311,37 @@ export class CheckoutComponent implements OnInit, OnDestroy {
      }
 
      this.intentosVerificacion++;
-     console.log(`🔍 Verificando pago (intento ${this.intentosVerificacion})...`);
+     console.log(` Verificando pago (intento ${this.intentosVerificacion})...`);
 
      this.http.get(`${this.apiUrl}/api/pedidos/${this.pedidoId}/estado`, {
          withCredentials: true
      }).subscribe({
          next: (response: any) => {
-             console.log('📊 Estado del pedido:', response);
+             console.log(' Estado del pedido:', response);
 
-             // ✅ Verificar que la respuesta tenga el campo 'estado'
+
              if (response && response.estado) {
                  if (response.estado === 'PAGADO' || response.estado === 'CONFIRMADO' || response.estado === 'ENTREGADO') {
                      this.pagoExitoso = true;
                      this.verificandoPago = false;
                      this.errorMessage = '';
 
-                     // ✅ Redirigir a éxito
+
                      setTimeout(() => {
                          this.router.navigate(['/pago-exitoso'], {
                              queryParams: { pedidoId: this.pedidoId }
                          });
                      }, 1000);
                  } else if (response.estado === 'RECHAZADO' || response.estado === 'CANCELADO') {
-                     this.errorMessage = '❌ El pago fue rechazado. Intenta nuevamente.';
+                     this.errorMessage = ' El pago fue rechazado. Intenta nuevamente.';
                      this.verificandoPago = false;
                  } else if (this.intentosVerificacion < this.maxIntentos) {
-                     // ✅ Seguir verificando
+
                      setTimeout(() => {
                          this.realizarVerificacion();
                      }, 3000);
                  } else {
-                     this.errorMessage = '⏰ El pago no se ha confirmado. Verifica en tus pedidos.';
+                     this.errorMessage = ' El pago no se ha confirmado. Verifica en tus pedidos.';
                      this.verificandoPago = false;
                  }
              } else {
@@ -350,28 +350,28 @@ export class CheckoutComponent implements OnInit, OnDestroy {
                  if (estado) {
                      // Procesar similar
                  } else {
-                     console.error('❌ Respuesta sin estado:', response);
+                     console.error(' Respuesta sin estado:', response);
                      this.errorMessage = 'Error al verificar el estado del pedido';
                      this.verificandoPago = false;
                  }
              }
          },
          error: (error) => {
-             console.error('❌ Error verificando pago:', error);
+             console.error(' Error verificando pago:', error);
 
              if (this.intentosVerificacion < this.maxIntentos) {
                  setTimeout(() => {
                      this.realizarVerificacion();
                  }, 3000);
              } else {
-                 this.errorMessage = '⏰ No se pudo verificar el pago. Verifica en tus pedidos.';
+                 this.errorMessage = ' No se pudo verificar el pago. Verifica en tus pedidos.';
                  this.verificandoPago = false;
              }
          }
      });
  }
 
-  // ✅ INICIAR VERIFICACIÓN AUTOMÁTICA
+
   iniciarVerificacionAutomatica(): void {
     // Esperar 5 segundos antes de empezar a verificar
     setTimeout(() => {

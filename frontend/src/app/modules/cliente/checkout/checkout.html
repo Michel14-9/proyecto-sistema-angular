@@ -16,7 +16,7 @@
       <button type="button" class="btn-close" (click)="errorMessage = ''"></button>
     </div>
 
-    <!-- ✅ PAGO EN PROCESO -->
+
     <div *ngIf="pagoIniciado && !pagoExitoso" class="card shadow-sm mb-4 border-warning">
       <div class="card-header bg-warning bg-opacity-10">
         <h5 class="mb-0">
@@ -55,7 +55,7 @@
       </div>
     </div>
 
-    <!-- ✅ PAGO EXITOSO -->
+
     <div *ngIf="pagoExitoso" class="card shadow-sm mb-4 border-success">
       <div class="card-header bg-success text-white">
         <h5 class="mb-0">
