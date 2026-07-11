@@ -1,4 +1,3 @@
-// src/app/modules/cliente/checkout/checkout.ts
 import { Component, OnInit, ViewEncapsulation, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
@@ -6,6 +5,8 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
 import { CarritoService } from '../../../core/services/carrito.service';
+
+import { AlertService } from '../../../core/services/alert.service';
 
 @Component({
   selector: 'app-checkout',
@@ -46,20 +47,24 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   direccionSeleccionada: any = null;
   mostrarFormularioDireccion: boolean = true;
 
-
   pagoIniciado: boolean = false;
   pagoExitoso: boolean = false;
   verificandoPago: boolean = false;
   private ventanaPago: Window | null = null;
   private intervalId: any = null;
   private intentosVerificacion: number = 0;
-  private maxIntentos: number = 30; // 30 intentos = ~90 segundos
+  private maxIntentos: number = 30;
+
+
+  mostrarReintentar: boolean = false;
+  pagoFallido: boolean = false;
 
   constructor(
     private http: HttpClient,
     private authService: AuthService,
     private carritoService: CarritoService,
-    private router: Router
+    private router: Router,
+    private alertService: AlertService
   ) {}
 
   ngOnInit(): void {
@@ -91,7 +96,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       withCredentials: true
     }).subscribe({
       next: (response: any) => {
-        console.log(' Datos checkout:', response);
+        console.log('📦 Datos checkout:', response);
 
         if (response.success) {
           this.usuario = response.usuario || {};
@@ -116,7 +121,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         }
       },
       error: (error) => {
-        console.error(' Error cargando checkout:', error);
+        console.error('❌ Error cargando checkout:', error);
         this.errorMessage = error.error?.message || 'Error al cargar datos del checkout';
         this.isLoading = false;
       }
@@ -160,6 +165,37 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   }
 
 
+  reiniciarPago(): void {
+    this.mostrarReintentar = false;
+    this.pagoFallido = false;
+    this.pagoIniciado = false;
+    this.procesandoPago = false;
+    this.errorMessage = '';
+    this.pagoExitoso = false;
+    this.verificandoPago = false;
+    this.intentosVerificacion = 0;
+
+
+    if (this.ventanaPago && !this.ventanaPago.closed) {
+      this.ventanaPago.close();
+      this.ventanaPago = null;
+    }
+
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+
+    this.alertService.info('🔄 Reintentando pago...');
+
+
+    if (this.pedidoId) {
+      this.crearPreferenciaPago(this.pedidoId);
+    } else {
+      this.realizarPago();
+    }
+  }
+
   realizarPago(): void {
     if (!this.direccion || this.direccion.trim() === '') {
       this.errorMessage = 'Por favor ingresa una dirección de entrega';
@@ -178,6 +214,8 @@ export class CheckoutComponent implements OnInit, OnDestroy {
 
     this.procesandoPago = true;
     this.errorMessage = '';
+    this.mostrarReintentar = false;
+    this.pagoFallido = false;
 
     const pedidoData = {
       metodoPago: this.metodoPago,
@@ -199,7 +237,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       withCredentials: true
     }).subscribe({
       next: (response: any) => {
-        console.log(' Pedido creado:', response);
+        console.log('📦 Pedido creado:', response);
 
         if (response.success) {
           this.pedidoId = response.pedidoId;
@@ -212,16 +250,15 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         }
       },
       error: (error) => {
-        console.error(' Error creando pedido:', error);
+        console.error('❌ Error creando pedido:', error);
         this.errorMessage = error.error?.message || 'Error al crear el pedido';
         this.procesandoPago = false;
       }
     });
   }
 
-
   crearPreferenciaPago(pedidoId: number): void {
-    console.log(' Creando preferencia para pedido:', pedidoId);
+    console.log('📝 Creando preferencia para pedido:', pedidoId);
 
     const csrfToken = this.getCsrfToken();
     let headers = new HttpHeaders();
@@ -235,7 +272,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       { headers, withCredentials: true }
     ).subscribe({
       next: (response: any) => {
-        console.log(' Preferencia creada:', response);
+        console.log('📝 Preferencia creada:', response);
 
         if (response.initPoint) {
           this.pagoIniciado = true;
@@ -252,13 +289,12 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         }
       },
       error: (error) => {
-        console.error(' Error creando preferencia:', error);
+        console.error('❌ Error creando preferencia:', error);
         this.errorMessage = error.error?.error || 'Error al iniciar el pago';
         this.procesandoPago = false;
       }
     });
   }
-
 
   abrirVentanaPago(url: string): void {
     const ancho = 480;
@@ -278,102 +314,124 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         if (this.ventanaPago && this.ventanaPago.closed) {
           console.log('🔄 Ventana de pago cerrada');
           clearInterval(this.intervalId);
+          this.intervalId = null;
 
 
-          if (!this.pagoExitoso) {
-            this.verificarPago();
+          if (!this.pagoExitoso && !this.verificandoPago) {
+            this.handlePagoCancelado();
           }
         }
       }, 1000);
     } else {
-
-      console.warn('️ No se pudo abrir nueva ventana, redirigiendo...');
+      console.warn('⚠️ No se pudo abrir nueva ventana, redirigiendo...');
       window.location.href = url;
     }
   }
 
+
+  handlePagoCancelado(): void {
+    console.log('🔄 Pago cancelado o ventana cerrada');
+    this.pagoIniciado = false;
+    this.procesandoPago = false;
+
+
+    this.alertService.warning(
+      'La ventana de pago fue cerrada. Si tuviste un problema, intenta nuevamente.',
+      'Pago no completado'
+    );
+
+
+    this.mostrarReintentar = true;
+    this.pagoFallido = true;
+    this.errorMessage = 'El pago no se completó. Haz clic en "Reintentar pago" para volver a intentarlo.';
+  }
 
   verificarPago(): void {
     if (this.verificandoPago || this.pagoExitoso) return;
 
     this.verificandoPago = true;
     this.intentosVerificacion = 0;
-
-    // Hacer una verificación inmediata
     this.realizarVerificacion();
   }
 
+  realizarVerificacion(): void {
+    if (!this.pedidoId) {
+      this.verificandoPago = false;
+      return;
+    }
 
- realizarVerificacion(): void {
-     if (!this.pedidoId) {
-         this.verificandoPago = false;
-         return;
-     }
+    this.intentosVerificacion++;
+    console.log(`🔄 Verificando pago (intento ${this.intentosVerificacion})...`);
 
-     this.intentosVerificacion++;
-     console.log(` Verificando pago (intento ${this.intentosVerificacion})...`);
+    this.http.get(`${this.apiUrl}/api/pedidos/${this.pedidoId}/estado`, {
+      withCredentials: true
+    }).subscribe({
+      next: (response: any) => {
+        console.log(' Estado del pedido:', response);
 
-     this.http.get(`${this.apiUrl}/api/pedidos/${this.pedidoId}/estado`, {
-         withCredentials: true
-     }).subscribe({
-         next: (response: any) => {
-             console.log(' Estado del pedido:', response);
+        if (response && response.estado) {
+          if (response.estado === 'PAGADO' || response.estado === 'CONFIRMADO' || response.estado === 'ENTREGADO') {
+            this.pagoExitoso = true;
+            this.verificandoPago = false;
+            this.errorMessage = '';
+            this.mostrarReintentar = false;
 
+            if (this.intervalId) {
+              clearInterval(this.intervalId);
+              this.intervalId = null;
+            }
 
-             if (response && response.estado) {
-                 if (response.estado === 'PAGADO' || response.estado === 'CONFIRMADO' || response.estado === 'ENTREGADO') {
-                     this.pagoExitoso = true;
-                     this.verificandoPago = false;
-                     this.errorMessage = '';
+            this.alertService.success('✅ Pago completado exitosamente');
 
+            setTimeout(() => {
+              this.router.navigate(['/pago-exitoso'], {
+                queryParams: { pedidoId: this.pedidoId }
+              });
+            }, 1000);
 
-                     setTimeout(() => {
-                         this.router.navigate(['/pago-exitoso'], {
-                             queryParams: { pedidoId: this.pedidoId }
-                         });
-                     }, 1000);
-                 } else if (response.estado === 'RECHAZADO' || response.estado === 'CANCELADO') {
-                     this.errorMessage = ' El pago fue rechazado. Intenta nuevamente.';
-                     this.verificandoPago = false;
-                 } else if (this.intentosVerificacion < this.maxIntentos) {
+          } else if (response.estado === 'RECHAZADO' || response.estado === 'CANCELADO') {
+            this.errorMessage = '❌ El pago fue rechazado. Intenta nuevamente.';
+            this.verificandoPago = false;
+            this.mostrarReintentar = true;
+            this.pagoFallido = true;
 
-                     setTimeout(() => {
-                         this.realizarVerificacion();
-                     }, 3000);
-                 } else {
-                     this.errorMessage = ' El pago no se ha confirmado. Verifica en tus pedidos.';
-                     this.verificandoPago = false;
-                 }
-             } else {
-                 // Si la respuesta no tiene 'estado', intentar con 'data.estado'
-                 const estado = response.data?.estado || response.estado;
-                 if (estado) {
-                     // Procesar similar
-                 } else {
-                     console.error(' Respuesta sin estado:', response);
-                     this.errorMessage = 'Error al verificar el estado del pedido';
-                     this.verificandoPago = false;
-                 }
-             }
-         },
-         error: (error) => {
-             console.error(' Error verificando pago:', error);
+          } else if (this.intentosVerificacion < this.maxIntentos) {
 
-             if (this.intentosVerificacion < this.maxIntentos) {
-                 setTimeout(() => {
-                     this.realizarVerificacion();
-                 }, 3000);
-             } else {
-                 this.errorMessage = ' No se pudo verificar el pago. Verifica en tus pedidos.';
-                 this.verificandoPago = false;
-             }
-         }
-     });
- }
+            setTimeout(() => {
+              this.realizarVerificacion();
+            }, 3000);
+          } else {
 
+            this.verificandoPago = false;
+            this.errorMessage = '⏳ El pago está en proceso. Puedes verificar en "Mis Pedidos" o reintentar.';
+            this.mostrarReintentar = true;
+            this.pagoFallido = true;
+
+            this.alertService.warning(
+              'El pago está en proceso de verificación. Puedes reintentar o revisar tus pedidos.',
+              'Pago en proceso'
+            );
+          }
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error verificando pago:', error);
+
+        if (this.intentosVerificacion < this.maxIntentos) {
+          setTimeout(() => {
+            this.realizarVerificacion();
+          }, 3000);
+        } else {
+          this.verificandoPago = false;
+          this.errorMessage = '⚠️ Error al verificar el pago. Reintenta o revisa tus pedidos.';
+          this.mostrarReintentar = true;
+          this.pagoFallido = true;
+        }
+      }
+    });
+  }
 
   iniciarVerificacionAutomatica(): void {
-    // Esperar 5 segundos antes de empezar a verificar
     setTimeout(() => {
       if (!this.pagoExitoso) {
         this.verificarPago();

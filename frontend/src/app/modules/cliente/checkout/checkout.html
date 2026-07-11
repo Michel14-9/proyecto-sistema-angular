@@ -1,4 +1,3 @@
-<!-- src/app/modules/cliente/checkout/checkout.html -->
 <main class="checkout-page py-5">
   <div class="container">
     <!-- Loading -->
@@ -16,8 +15,41 @@
       <button type="button" class="btn-close" (click)="errorMessage = ''"></button>
     </div>
 
+    <!--  Pago fallido - Mostrar botón de reintentar -->
+    <div *ngIf="pagoFallido" class="card shadow-sm mb-4 border-danger">
+      <div class="card-header bg-danger text-white">
+        <h5 class="mb-0">
+          <i class="fas fa-times-circle me-2"></i>
+          Pago no completado
+        </h5>
+      </div>
+      <div class="card-body text-center py-4">
+        <i class="fas fa-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
+        <h5 class="mt-3">El pago no se pudo completar</h5>
+        <p class="text-muted">
+          La ventana de pago se cerró antes de finalizar el proceso.
+          <br>
+          Puedes reintentar el pago sin problemas.
+        </p>
+        <div class="d-flex gap-3 justify-content-center mt-3 flex-wrap">
+          <button class="btn btn-warning btn-lg" (click)="reiniciarPago()">
+            <i class="fas fa-sync-alt me-2"></i>
+            Reintentar pago
+          </button>
+          <button class="btn btn-outline-secondary" (click)="volverAlCarrito()">
+            <i class="fas fa-arrow-left me-2"></i>
+            Volver al carrito
+          </button>
+        </div>
+        <div class="mt-3 text-muted small">
+          <i class="fas fa-info-circle me-1"></i>
+          Pedido #{{ pedidoId }} - Tu carrito está guardado
+        </div>
+      </div>
+    </div>
 
-    <div *ngIf="pagoIniciado && !pagoExitoso" class="card shadow-sm mb-4 border-warning">
+    <!-- Pago en proceso -->
+    <div *ngIf="pagoIniciado && !pagoExitoso && !pagoFallido" class="card shadow-sm mb-4 border-warning">
       <div class="card-header bg-warning bg-opacity-10">
         <h5 class="mb-0">
           <i class="fas fa-clock me-2 text-warning"></i>
@@ -55,7 +87,7 @@
       </div>
     </div>
 
-
+    <!--  Pago Exitoso -->
     <div *ngIf="pagoExitoso" class="card shadow-sm mb-4 border-success">
       <div class="card-header bg-success text-white">
         <h5 class="mb-0">
@@ -73,8 +105,8 @@
       </div>
     </div>
 
-    <!-- Contenido principal (oculto cuando el pago está en proceso) -->
-    <div *ngIf="!pagoIniciado && !pagoExitoso" class="row">
+    <!-- Contenido principal (oculto cuando el pago está en proceso o falló) -->
+    <div *ngIf="!pagoIniciado && !pagoExitoso && !pagoFallido" class="row">
       <div class="col-lg-8">
         <!-- Header -->
         <div class="d-flex justify-content-between align-items-center mb-4">

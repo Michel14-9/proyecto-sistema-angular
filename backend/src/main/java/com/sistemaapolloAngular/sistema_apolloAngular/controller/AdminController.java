@@ -652,16 +652,42 @@ public class AdminController {
         }
     }
 
+    // ============================================================
+    // ✅ PDF USUARIOS CORREGIDO - INCLUYE CLIENTES PRESENCIALES
+    // ============================================================
+
     private void generarPDFUsuarios(Document document, List<Pedido> pedidos, List<Usuario> usuarios) {
         try {
             document.add(new Paragraph("👥 ACTIVIDAD DE USUARIOS").setBold().setFontSize(12));
             document.add(new Paragraph(" "));
 
             Map<String, Integer> pedidosPorUsuario = new HashMap<>();
+
+            // ✅ 1. Contar pedidos de usuarios registrados
             for (Pedido pedido : pedidos) {
                 if (pedido.getUsuario() != null) {
                     String nombre = getNombreCliente(pedido);
                     pedidosPorUsuario.put(nombre, pedidosPorUsuario.getOrDefault(nombre, 0) + 1);
+                }
+            }
+
+            // ✅ 2. Contar pedidos de clientes presenciales (cajero)
+            for (Pedido pedido : pedidos) {
+                if (pedido.getUsuario() == null && pedido.getNombreCliente() != null
+                        && !pedido.getNombreCliente().isEmpty()) {
+                    String nombre = pedido.getNombreCliente().trim();
+                    pedidosPorUsuario.put(nombre, pedidosPorUsuario.getOrDefault(nombre, 0) + 1);
+                }
+            }
+
+            // ✅ 3. Asegurar que todos los usuarios registrados aparezcan (incluso sin pedidos)
+            for (Usuario usuario : usuarios) {
+                String nombre = (usuario.getNombres() != null ? usuario.getNombres() : "") + " " +
+                        (usuario.getApellidos() != null ? usuario.getApellidos() : "");
+                nombre = nombre.trim().isEmpty() ? usuario.getUsername() : nombre.trim();
+
+                if (!pedidosPorUsuario.containsKey(nombre)) {
+                    pedidosPorUsuario.put(nombre, 0);
                 }
             }
 
@@ -673,11 +699,11 @@ public class AdminController {
             table.setWidth(UnitValue.createPercentValue(100));
 
             table.addHeaderCell(new Paragraph("#").setBold());
-            table.addHeaderCell(new Paragraph("Usuario").setBold());
+            table.addHeaderCell(new Paragraph("Usuario / Cliente").setBold());
             table.addHeaderCell(new Paragraph("Pedidos Realizados").setBold());
 
             int i = 1;
-            for (Map.Entry<String, Integer> entry : sorted.stream().limit(20).collect(Collectors.toList())) {
+            for (Map.Entry<String, Integer> entry : sorted.stream().limit(50).collect(Collectors.toList())) {
                 table.addCell(new Paragraph(String.valueOf(i++)));
                 table.addCell(new Paragraph(entry.getKey()));
                 table.addCell(new Paragraph(String.valueOf(entry.getValue())));
@@ -685,10 +711,85 @@ public class AdminController {
 
             document.add(table);
             document.add(new Paragraph(" "));
-            document.add(new Paragraph("Total de Usuarios Activos: " + pedidosPorUsuario.size()));
+            document.add(new Paragraph("Total de Clientes: " + pedidosPorUsuario.size()));
+            document.add(new Paragraph("Total de Pedidos: " + pedidos.size()));
 
         } catch (Exception e) {
             log.error("❌ Error generando PDF Usuarios: {}", e.getMessage(), e);
+        }
+    }
+
+    // ============================================================
+    // ✅ EXCEL USUARIOS CORREGIDO - INCLUYE CLIENTES PRESENCIALES
+    // ============================================================
+
+    private void generarExcelUsuarios(Workbook workbook, List<Pedido> pedidos, List<Usuario> usuarios) {
+        Sheet sheet = workbook.createSheet("Actividad de Usuarios");
+        CellStyle headerStyle = crearEstiloCabecera(workbook);
+
+        Map<String, Integer> pedidosPorUsuario = new HashMap<>();
+
+        // ✅ 1. Contar pedidos de usuarios registrados
+        for (Pedido pedido : pedidos) {
+            if (pedido.getUsuario() != null) {
+                String nombre = getNombreCliente(pedido);
+                pedidosPorUsuario.put(nombre, pedidosPorUsuario.getOrDefault(nombre, 0) + 1);
+            }
+        }
+
+        // ✅ 2. Contar pedidos de clientes presenciales (cajero)
+        for (Pedido pedido : pedidos) {
+            if (pedido.getUsuario() == null && pedido.getNombreCliente() != null
+                    && !pedido.getNombreCliente().isEmpty()) {
+                String nombre = pedido.getNombreCliente().trim();
+                pedidosPorUsuario.put(nombre, pedidosPorUsuario.getOrDefault(nombre, 0) + 1);
+            }
+        }
+
+        // ✅ 3. Asegurar que todos los usuarios registrados aparezcan
+        for (Usuario usuario : usuarios) {
+            String nombre = (usuario.getNombres() != null ? usuario.getNombres() : "") + " " +
+                    (usuario.getApellidos() != null ? usuario.getApellidos() : "");
+            nombre = nombre.trim().isEmpty() ? usuario.getUsername() : nombre.trim();
+
+            if (!pedidosPorUsuario.containsKey(nombre)) {
+                pedidosPorUsuario.put(nombre, 0);
+            }
+        }
+
+        List<Map.Entry<String, Integer>> sorted = new ArrayList<>(pedidosPorUsuario.entrySet());
+        sorted.sort((a, b) -> b.getValue().compareTo(a.getValue()));
+
+        String[] headers = {"#", "Usuario / Cliente", "Pedidos Realizados"};
+        Row headerRow = sheet.createRow(0);
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+            sheet.setColumnWidth(i, 5000);
+        }
+
+        int rowNum = 1;
+        for (Map.Entry<String, Integer> entry : sorted) {
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(rowNum - 1);
+            row.createCell(1).setCellValue(entry.getKey());
+            row.createCell(2).setCellValue(entry.getValue());
+        }
+
+        // ✅ Totales al final
+        Row totalRow = sheet.createRow(rowNum);
+        totalRow.createCell(0).setCellValue("TOTAL:");
+        totalRow.createCell(1).setCellValue(pedidosPorUsuario.size() + " clientes");
+        totalRow.createCell(2).setCellValue(pedidos.size() + " pedidos");
+
+        // ✅ Aplicar estilo negrita a la fila de totales
+        CellStyle totalStyle = workbook.createCellStyle();
+        Font totalFont = workbook.createFont();
+        totalFont.setBold(true);
+        totalStyle.setFont(totalFont);
+        for (int i = 0; i < 3; i++) {
+            totalRow.getCell(i).setCellStyle(totalStyle);
         }
     }
 
@@ -886,7 +987,7 @@ public class AdminController {
     }
 
     // ============================================================
-    // MÉTODOS AUXILIARES PARA EXCEL
+    // MÉTODOS AUXILIARES PARA EXCEL (resto sin cambios)
     // ============================================================
 
     private void generarExcelVentas(Workbook workbook, List<Pedido> pedidos) {
@@ -956,39 +1057,6 @@ public class AdminController {
             row.createCell(1).setCellValue(entry.getKey());
             row.createCell(2).setCellValue(entry.getValue());
             row.createCell(3).setCellValue(montosPorProducto.get(entry.getKey()));
-        }
-    }
-
-    private void generarExcelUsuarios(Workbook workbook, List<Pedido> pedidos, List<Usuario> usuarios) {
-        Sheet sheet = workbook.createSheet("Actividad de Usuarios");
-        CellStyle headerStyle = crearEstiloCabecera(workbook);
-
-        Map<String, Integer> pedidosPorUsuario = new HashMap<>();
-        for (Pedido pedido : pedidos) {
-            if (pedido.getUsuario() != null) {
-                String nombre = getNombreCliente(pedido);
-                pedidosPorUsuario.put(nombre, pedidosPorUsuario.getOrDefault(nombre, 0) + 1);
-            }
-        }
-
-        List<Map.Entry<String, Integer>> sorted = new ArrayList<>(pedidosPorUsuario.entrySet());
-        sorted.sort((a, b) -> b.getValue().compareTo(a.getValue()));
-
-        String[] headers = {"#", "Usuario", "Pedidos Realizados"};
-        Row headerRow = sheet.createRow(0);
-        for (int i = 0; i < headers.length; i++) {
-            Cell cell = headerRow.createCell(i);
-            cell.setCellValue(headers[i]);
-            cell.setCellStyle(headerStyle);
-            sheet.setColumnWidth(i, 4000);
-        }
-
-        int rowNum = 1;
-        for (Map.Entry<String, Integer> entry : sorted) {
-            Row row = sheet.createRow(rowNum++);
-            row.createCell(0).setCellValue(rowNum - 1);
-            row.createCell(1).setCellValue(entry.getKey());
-            row.createCell(2).setCellValue(entry.getValue());
         }
     }
 
@@ -1159,15 +1227,20 @@ public class AdminController {
     // ============================================================
 
     private String getNombreCliente(Pedido pedido) {
+        // ✅ Si tiene usuario registrado
         if (pedido.getUsuario() != null) {
             String nombre = (pedido.getUsuario().getNombres() != null ? pedido.getUsuario().getNombres() : "") + " " +
                     (pedido.getUsuario().getApellidos() != null ? pedido.getUsuario().getApellidos() : "");
             return nombre.trim().isEmpty() ? pedido.getUsuario().getUsername() : nombre.trim();
         }
 
-        return pedido.getNombreCliente() != null && !pedido.getNombreCliente().isEmpty()
-                ? pedido.getNombreCliente()
-                : "Cliente general";
+        // ✅ Si es cliente presencial (cajero)
+        if (pedido.getNombreCliente() != null && !pedido.getNombreCliente().isEmpty()) {
+            return pedido.getNombreCliente().trim();
+        }
+
+        // ✅ Cliente general (fallback)
+        return "Cliente general";
     }
 
     private CellStyle crearEstiloCabecera(Workbook workbook) {
