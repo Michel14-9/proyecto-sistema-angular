@@ -82,8 +82,6 @@ export class DeliveryComponent implements OnInit, OnDestroy {
 
     if (!this.isAuthenticated) { this.router.navigate(['/login']); return; }
 
-
-
     this.layoutService.hideHeaderAndFooter();
     this.cargarPedidosDelivery();
     this.actualizarHoraYFecha();
@@ -93,7 +91,6 @@ export class DeliveryComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-
     this.layoutService.showHeaderAndFooter();
     this.detenerGPS();
     clearInterval(this.intervalReloj);
@@ -196,22 +193,20 @@ export class DeliveryComponent implements OnInit, OnDestroy {
   // ─── CARGA DE PEDIDOS ─────────────────────────────────────────────────────
 
   cargarPedidosDelivery(): void {
-    console.log(' Cargando pedidos para delivery...');
+    console.log('📦 Cargando pedidos para delivery...');
 
     // Cargar pedidos pendientes de entrega (LISTO)
-
     this.http.get(`${this.apiUrl}/delivery/pedidos-para-entrega`, {
       headers: this.getHeaders(), withCredentials: true
     }).subscribe({
       next: (response: any) => {
         this.pedidosPendientesEntrega = Array.isArray(response) ? response : [];
-        console.log(` Pendientes entrega: ${this.pedidosPendientesEntrega.length}`);
+        console.log(`📋 Pendientes entrega: ${this.pedidosPendientesEntrega.length}`);
         this.estadisticas.pendientesEntrega = this.pedidosPendientesEntrega.length;
       },
       error: (error) => {
-        console.error(' Error cargando pedidos pendientes de entrega:', error);
+        console.error('❌ Error cargando pedidos pendientes de entrega:', error);
       }
-
     });
 
     this.http.get(`${this.apiUrl}/delivery/pedidos-en-camino`, {
@@ -219,13 +214,12 @@ export class DeliveryComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (response: any) => {
         this.pedidosEnCamino = Array.isArray(response) ? response : [];
-        console.log(` En camino: ${this.pedidosEnCamino.length}`);
+        console.log(`🚚 En camino: ${this.pedidosEnCamino.length}`);
         this.estadisticas.enCamino = this.pedidosEnCamino.length;
       },
       error: (error) => {
-        console.error(' Error cargando pedidos en camino:', error);
+        console.error('❌ Error cargando pedidos en camino:', error);
       }
-
     });
 
     this.cargarMetricasDelivery();
@@ -236,15 +230,14 @@ export class DeliveryComponent implements OnInit, OnDestroy {
       headers: this.getHeaders(), withCredentials: true
     }).subscribe({
       next: (response: any) => {
-        console.log(' Métricas delivery:', response);
+        console.log('📊 Métricas delivery:', response);
         if (response && response.success) {
           this.estadisticas.entregadosHoy = response.totalEntregadosHoy || 0;
         }
       },
       error: (error) => {
-        console.error(' Error cargando métricas delivery:', error);
+        console.error('❌ Error cargando métricas delivery:', error);
       }
-
     });
   }
 
@@ -290,23 +283,29 @@ export class DeliveryComponent implements OnInit, OnDestroy {
   }
 
   iniciarEntrega(pedidoId: number): void {
-    console.log(` Iniciando entrega del pedido ${pedidoId}...`);
+    console.log(`🚚 Iniciando entrega del pedido ${pedidoId}...`);
 
     const pedido = this.pedidoSeleccionado;
 
     if (!pedido) {
+      this.mostrarToastError('No hay pedido seleccionado');
       return;
     }
 
+    // ✅ CORREGIDO: Eliminar responseType: 'text' para recibir JSON
     this.http.post(`${this.apiUrl}/delivery/iniciar-entrega/${pedidoId}`, {}, {
       headers: this.getHeaders(),
-      withCredentials: true,
-      responseType: 'text'
+      withCredentials: true
     }).subscribe({
       next: (response: any) => {
-        console.log(' Respuesta:', response);
-        this.mostrarToastExito('Entrega iniciada correctamente');
+        console.log('✅ Respuesta del servidor:', response);
+        console.log('📋 Estado:', response.status);
+        console.log('💬 Mensaje:', response.message);
+        console.log('🔢 Número pedido:', response.numeroPedido);
 
+        this.mostrarToastExito(response.message || 'Entrega iniciada correctamente');
+
+        // Recargar la lista de pedidos
         this.cargarPedidosDelivery();
 
         // Crear sesión de tracking en el microservicio
@@ -316,25 +315,46 @@ export class DeliveryComponent implements OnInit, OnDestroy {
           direccionCliente: pedido.direccionEntrega,
           nombreRepartidor: this.username
         };
+
         this.http.post<TrackingInfo>(
           `${this.trackingUrl}/api/tracking/crear`, trackingBody
         ).subscribe({
           next: (t) => {
+            console.log('✅ Tracking creado:', t);
             this.trackingActivo = t;
             // Iniciar envío automático de GPS
             this.iniciarEnvioGPS(pedido.numeroPedido);
           },
-          error: () => console.warn('Tracking no disponible, continúa sin GPS')
+          error: (err) => {
+            console.warn('⚠️ Tracking no disponible, continúa sin GPS:', err);
+            this.mostrarToastError('Pedido iniciado pero sin seguimiento GPS');
+          }
         });
       },
       error: (error) => {
-        console.error(' Error iniciando entrega:', error);
-        if (error.status === 401 || error.status === 403) {
-          this.mostrarToastError('Sesión expirada. Redirigiendo...');
+        console.error('❌ Error iniciando entrega:', error);
+        console.error('📋 Status:', error.status);
+        console.error('💬 Mensaje:', error.error?.message || error.message);
+        console.error('📦 Error completo:', error.error);
 
+        // Manejar errores específicos
+        if (error.status === 400) {
+          // Error de validación de negocio - el pedido no está LISTO
+          const mensaje = error.error?.message || 'El pedido no está en estado LISTO';
+          this.mostrarToastError(mensaje);
+          // Recargar pedidos para actualizar el estado
+          setTimeout(() => this.cargarPedidosDelivery(), 2000);
+        } else if (error.status === 401 || error.status === 403) {
+          this.mostrarToastError('Sesión expirada. Redirigiendo...');
           setTimeout(() => this.router.navigate(['/login']), 2000);
+        } else if (error.status === 404) {
+          this.mostrarToastError('Pedido no encontrado');
+        } else if (error.status === 500) {
+          this.mostrarToastError('Error interno del servidor. Intente nuevamente.');
         } else {
-          this.mostrarToastError(error.error || 'Error al iniciar entrega');
+          // Error genérico
+          const mensaje = error.error?.message || error.message || 'Error al iniciar entrega';
+          this.mostrarToastError(mensaje);
         }
       }
     });
@@ -359,27 +379,44 @@ export class DeliveryComponent implements OnInit, OnDestroy {
   }
 
   marcarComoEntregado(pedidoId: number): void {
-    console.log(` Marcando pedido ${pedidoId} como ENTREGADO...`);
+    console.log(`✅ Marcando pedido ${pedidoId} como ENTREGADO...`);
+
 
     this.http.post(`${this.apiUrl}/delivery/marcar-entregado/${pedidoId}`, {}, {
       headers: this.getHeaders(),
-      withCredentials: true,
-      responseType: 'text'
+      withCredentials: true
     }).subscribe({
       next: (response: any) => {
-        console.log(' Respuesta:', response);
-        this.mostrarToastExito('Pedido marcado como ENTREGADO correctamente');
+        console.log(' Respuesta del servidor:', response);
+        console.log(' Estado:', response.status);
+        console.log(' Mensaje:', response.message);
+        console.log(' Número pedido:', response.numeroPedido);
+
+        this.mostrarToastExito(response.message || 'Pedido marcado como ENTREGADO correctamente');
         this.cargarPedidosDelivery();
         this.ocultarDetalle();
       },
       error: (error) => {
         console.error(' Error marcando como entregado:', error);
-        if (error.status === 401 || error.status === 403) {
-          this.mostrarToastError('Sesión expirada. Redirigiendo...');
+        console.error(' Status:', error.status);
+        console.error(' Mensaje:', error.error?.message || error.message);
 
+        if (error.status === 400) {
+          // El pedido no está en estado EN_CAMINO
+          const mensaje = error.error?.message || 'El pedido no está en estado EN_CAMINO';
+          this.mostrarToastError(mensaje);
+          // Recargar pedidos para actualizar el estado
+          setTimeout(() => this.cargarPedidosDelivery(), 2000);
+        } else if (error.status === 401 || error.status === 403) {
+          this.mostrarToastError('Sesión expirada. Redirigiendo...');
           setTimeout(() => this.router.navigate(['/login']), 2000);
+        } else if (error.status === 404) {
+          this.mostrarToastError('Pedido no encontrado');
+        } else if (error.status === 500) {
+          this.mostrarToastError('Error interno del servidor. Intente nuevamente.');
         } else {
-          this.mostrarToastError(error.error || 'Error al marcar como entregado');
+          const mensaje = error.error?.message || error.message || 'Error al marcar como entregado';
+          this.mostrarToastError(mensaje);
         }
       }
     });
@@ -453,7 +490,22 @@ export class DeliveryComponent implements OnInit, OnDestroy {
     }
   }
 
-  mostrarToastExito(msg: string): void { this.mensajeToast = msg; this.tipoToast = 'success'; this.mostrarToast = true; setTimeout(() => this.cerrarToast(), 5000); }
-  mostrarToastError(msg: string): void { this.mensajeToast = msg; this.tipoToast = 'error'; this.mostrarToast = true; setTimeout(() => this.cerrarToast(), 5000); }
-  cerrarToast(): void { this.mostrarToast = false; this.mensajeToast = ''; }
+  mostrarToastExito(msg: string): void {
+    this.mensajeToast = msg;
+    this.tipoToast = 'success';
+    this.mostrarToast = true;
+    setTimeout(() => this.cerrarToast(), 5000);
+  }
+
+  mostrarToastError(msg: string): void {
+    this.mensajeToast = msg;
+    this.tipoToast = 'error';
+    this.mostrarToast = true;
+    setTimeout(() => this.cerrarToast(), 5000);
+  }
+
+  cerrarToast(): void {
+    this.mostrarToast = false;
+    this.mensajeToast = '';
+  }
 }
