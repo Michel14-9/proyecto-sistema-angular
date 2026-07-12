@@ -305,7 +305,7 @@
   }
 }
 
-/* ======= ANIMACIÓN DE CARRITO FLOTANTE ======= */
+
 .carrito-flotante {
   position: fixed;
   pointer-events: none;

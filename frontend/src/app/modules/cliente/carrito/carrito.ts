@@ -38,7 +38,7 @@ export class CarritoComponent implements OnInit {
       this.cargarCarrito();
     } else {
       this.isLoading = false;
-      this.errorMessage = '⚠️ Debes iniciar sesión para ver tu carrito';
+      this.errorMessage = ' Debes iniciar sesión para ver tu carrito';
     }
   }
 
@@ -48,7 +48,7 @@ export class CarritoComponent implements OnInit {
 
     this.carritoService.obtenerCarrito().subscribe({
       next: (response: any) => {
-        console.log('📦 Respuesta carrito:', response);
+        console.log(' Respuesta carrito:', response);
         if (response && response.items) {
           this.carritoItems = response.items || [];
           this.total = response.total || 0;
@@ -60,7 +60,7 @@ export class CarritoComponent implements OnInit {
         console.log('🛒 Carrito cargado:', this.carritoItems);
       },
       error: (error: any) => {
-        console.error('❌ Error cargando carrito:', error);
+        console.error(' Error cargando carrito:', error);
         this.errorMessage = 'Error al cargar el carrito';
         this.isLoading = false;
       }
@@ -94,16 +94,16 @@ export class CarritoComponent implements OnInit {
     this.carritoService.actualizarCantidad(itemId, nuevaCantidad).subscribe({
       next: (response: any) => {
         if (response && response.success !== false) {
-          this.mostrarNotificacion('✅ Cantidad actualizada', 'success');
+          this.mostrarNotificacion(' Cantidad actualizada', 'success');
           this.cargarCarrito();
           this.carritoService.refrescarTotal();
         } else {
-          this.mostrarNotificacion('❌ Error al actualizar cantidad', 'error');
+          this.mostrarNotificacion(' Error al actualizar cantidad', 'error');
         }
       },
       error: (error: any) => {
-        console.error('❌ Error actualizando cantidad:', error);
-        this.mostrarNotificacion('❌ Error al actualizar cantidad', 'error');
+        console.error('Error actualizando cantidad:', error);
+        this.mostrarNotificacion(' Error al actualizar cantidad', 'error');
       }
     });
   }
@@ -112,16 +112,16 @@ export class CarritoComponent implements OnInit {
     this.carritoService.eliminarProducto(itemId).subscribe({
       next: (response: any) => {
         if (response && response.success !== false) {
-          this.mostrarNotificacion('🗑️ Producto eliminado', 'success');
+          this.mostrarNotificacion('Producto eliminado', 'success');
           this.cargarCarrito();
           this.carritoService.refrescarTotal();
         } else {
-          this.mostrarNotificacion('❌ Error al eliminar producto', 'error');
+          this.mostrarNotificacion(' Error al eliminar producto', 'error');
         }
       },
       error: (error: any) => {
-        console.error('❌ Error eliminando item:', error);
-        this.mostrarNotificacion('❌ Error al eliminar producto', 'error');
+        console.error(' Error eliminando item:', error);
+        this.mostrarNotificacion(' Error al eliminar producto', 'error');
       }
     });
   }
@@ -158,15 +158,15 @@ export class CarritoComponent implements OnInit {
         if (response && response.success !== false) {
           this.carritoItems = [];
           this.total = 0;
-          this.mostrarNotificacion('🗑️ Carrito vaciado', 'success');
+          this.mostrarNotificacion(' Carrito vaciado', 'success');
           this.carritoService.refrescarTotal();
         } else {
-          this.mostrarNotificacion('❌ Error al vaciar carrito', 'error');
+          this.mostrarNotificacion(' Error al vaciar carrito', 'error');
         }
       },
       error: (error: any) => {
-        console.error('❌ Error vaciando carrito:', error);
-        this.mostrarNotificacion('❌ Error al vaciar carrito', 'error');
+        console.error(' Error vaciando carrito:', error);
+        this.mostrarNotificacion(' Error al vaciar carrito', 'error');
       }
     });
   }

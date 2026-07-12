@@ -33,4 +33,26 @@ public interface FavoritoRepository extends JpaRepository<Favorito, Long> {
 
     @Query("SELECT COUNT(f) FROM Favorito f WHERE f.usuario.id = :usuarioId AND f.activo = true")
     int countByUsuarioIdAndActivoTrue(@Param("usuarioId") Long usuarioId);
+
+    // ============================================================
+    // ✅ NUEVOS MÉTODOS PARA EL ADMIN CONTROLLER
+    // ============================================================
+
+    /**
+     * Obtener todos los favoritos con usuario y producto (para Python)
+     */
+    @Query("SELECT f FROM Favorito f JOIN FETCH f.usuario u JOIN FETCH f.producto p WHERE f.activo = true ORDER BY f.fechaAgregado DESC")
+    List<Favorito> findAllWithUsuarioAndProducto();
+
+    /**
+     * Obtener favoritos por ID de usuario con producto
+     */
+    @Query("SELECT f FROM Favorito f JOIN FETCH f.producto WHERE f.usuario.id = :usuarioId AND f.activo = true")
+    List<Favorito> findFavoritosByUsuarioId(@Param("usuarioId") Long usuarioId);
+
+    /**
+     * Contar favoritos por producto
+     */
+    @Query("SELECT COUNT(f) FROM Favorito f WHERE f.producto.id = :productoId AND f.activo = true")
+    long countByProductoId(@Param("productoId") Long productoId);
 }

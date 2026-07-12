@@ -20,7 +20,7 @@
 <section class="combos-section">
   <div class="container">
     <div class="section-header text-center mb-5">
-      <h2 class="section-title">🔥 Nuestros Combos</h2>
+      <h2 class="section-title"> Nuestros Combos</h2>
       <p class="section-subtitle">Los mejores combos para compartir en familia</p>
     </div>
 
@@ -37,7 +37,7 @@
         <div *ngFor="let combo of combos; let i = index"
              class="carousel-item combo-slide" [class.active]="i === 0">
 
-          <!-- ✅ Imagen completa - SIN RECORTAR -->
+
           <div class="combo-image-wrapper">
             <img [src]="combo.imagenUrl || 'assets/imagenes/default-combo.jpg'"
                  class="d-block w-100 combo-image-full"
@@ -51,7 +51,7 @@
           <!-- Contenido sobre la imagen -->
           <div class="combo-content-overlay">
             <div class="combo-badge">
-              <span class="badge-hot">🔥 Combo Especial</span>
+              <span class="badge-hot"> Combo Especial</span>
             </div>
             <h3 class="combo-title">{{ combo.nombre }}</h3>
             <p class="combo-description">{{ combo.descripcion }}</p>

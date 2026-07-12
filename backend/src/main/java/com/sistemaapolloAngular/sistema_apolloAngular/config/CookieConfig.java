@@ -30,7 +30,7 @@ public class CookieConfig {
             // Path de la cookie
             sessionCookieConfig.setPath("/");
 
-            // ✅ Nombre de la cookie - USAR JSESSIONID (estándar de Spring Security)
+
             sessionCookieConfig.setName("JSESSIONID");
 
             // SameSite: "Lax" para Angular en desarrollo

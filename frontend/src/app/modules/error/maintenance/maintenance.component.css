@@ -1,0 +1,161 @@
+.maintenance-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  padding: 20px;
+}
+
+.maintenance-content {
+  background: white;
+  border-radius: 20px;
+  padding: 60px 50px;
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.maintenance-icon {
+  font-size: 80px;
+  margin-bottom: 20px;
+  animation: spin 4s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.maintenance-code {
+  font-size: 60px;
+  font-weight: 900;
+  color: #e74c3c;
+  line-height: 1;
+  margin-bottom: 10px;
+}
+
+.maintenance-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 15px;
+}
+
+.maintenance-message {
+  font-size: 16px;
+  color: #7f8c8d;
+  margin-bottom: 30px;
+  line-height: 1.6;
+}
+
+.maintenance-status {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 15px 20px;
+  margin-bottom: 30px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+  background: #f1c40f;
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.status-text {
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.maintenance-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 25px;
+}
+
+.maintenance-actions .btn {
+  padding: 12px 30px;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.maintenance-actions .btn-primary {
+  background: #e74c3c;
+  border-color: #e74c3c;
+}
+
+.maintenance-actions .btn-primary:hover {
+  background: #c0392b;
+  border-color: #c0392b;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(231, 76, 60, 0.3);
+}
+
+.maintenance-info {
+  border-top: 1px solid #ecf0f1;
+  padding-top: 20px;
+}
+
+.maintenance-info p {
+  margin-bottom: 5px;
+}
+
+@media (max-width: 576px) {
+  .maintenance-content {
+    padding: 40px 25px;
+  }
+
+  .maintenance-code {
+    font-size: 40px;
+  }
+
+  .maintenance-title {
+    font-size: 22px;
+  }
+
+  .maintenance-actions .btn {
+    width: 100%;
+  }
+
+  .status-indicator {
+    flex-direction: column;
+  }
+}

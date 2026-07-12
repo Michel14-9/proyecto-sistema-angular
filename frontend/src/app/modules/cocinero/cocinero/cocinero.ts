@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
-import { LayoutService } from '../../../core/services/layout.service'; // ✅ Importar LayoutService
+import { LayoutService } from '../../../core/services/layout.service';
 
 interface Pedido {
   id: number;
@@ -65,7 +65,7 @@ export class CocineroComponent implements OnInit, OnDestroy {
     private http: HttpClient,
     private authService: AuthService,
     private router: Router,
-    private layoutService: LayoutService // ✅ Inyectar LayoutService
+    private layoutService: LayoutService
   ) {}
 
   ngOnInit(): void {
@@ -77,25 +77,25 @@ export class CocineroComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // ✅ Ocultar header y footer global
+
     this.layoutService.hideHeaderAndFooter();
 
     this.cargarPedidosCocina();
     this.actualizarHoraYFecha();
 
-    // ✅ Actualizar hora cada segundo
+
     this.intervalId = setInterval(() => {
       this.actualizarHoraYFecha();
     }, 1000);
 
-    // Recargar pedidos cada 30 segundos
+
     this.recargaId = setInterval(() => {
       this.cargarPedidosCocina();
     }, 30000);
   }
 
   ngOnDestroy(): void {
-    // ✅ Restaurar header y footer global
+
     this.layoutService.showHeaderAndFooter();
 
     if (this.intervalId) {
@@ -128,7 +128,7 @@ export class CocineroComponent implements OnInit, OnDestroy {
   }
 
   cargarPedidosCocina(): void {
-    console.log('🔄 Cargando pedidos de cocina...');
+    console.log(' Cargando pedidos de cocina...');
 
     // Cargar pedidos por preparar (PAGADOS)
     this.http.get(`${this.apiUrl}/cocinero/pedidos-por-preparar`, {
@@ -137,11 +137,11 @@ export class CocineroComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (response: any) => {
         this.pedidosPorPreparar = Array.isArray(response) ? response : [];
-        console.log(`📦 Por preparar: ${this.pedidosPorPreparar.length}`);
+        console.log(` Por preparar: ${this.pedidosPorPreparar.length}`);
         this.estadisticas.porPreparar = this.pedidosPorPreparar.length;
       },
       error: (error) => {
-        console.error('❌ Error cargando pedidos por preparar:', error);
+        console.error(' Error cargando pedidos por preparar:', error);
       }
     });
 
@@ -152,11 +152,11 @@ export class CocineroComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (response: any) => {
         this.pedidosEnPreparacion = Array.isArray(response) ? response : [];
-        console.log(`📦 En preparación: ${this.pedidosEnPreparacion.length}`);
+        console.log(` En preparación: ${this.pedidosEnPreparacion.length}`);
         this.estadisticas.enPreparacion = this.pedidosEnPreparacion.length;
       },
       error: (error) => {
-        console.error('❌ Error cargando pedidos en preparación:', error);
+        console.error(' Error cargando pedidos en preparación:', error);
       }
     });
 
@@ -167,12 +167,12 @@ export class CocineroComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (response: any) => {
         this.pedidosListos = Array.isArray(response) ? response : [];
-        console.log(`📦 Listos: ${this.pedidosListos.length}`);
+        console.log(` Listos: ${this.pedidosListos.length}`);
         this.estadisticas.listos = this.pedidosListos.length;
         this.calcularTiempoPromedio();
       },
       error: (error) => {
-        console.error('❌ Error cargando pedidos listos:', error);
+        console.error(' Error cargando pedidos listos:', error);
       }
     });
   }
@@ -205,7 +205,7 @@ export class CocineroComponent implements OnInit, OnDestroy {
     });
 
     this.estadisticas.tiempoPromedio = pedidosConTiempo > 0 ? Math.round(totalMinutos / pedidosConTiempo) : 0;
-    console.log(`⏱️ Tiempo promedio: ${this.estadisticas.tiempoPromedio} min`);
+    console.log(` Tiempo promedio: ${this.estadisticas.tiempoPromedio} min`);
   }
 
   mostrarDetallePedido(pedido: Pedido, estado: string): void {
@@ -243,7 +243,7 @@ export class CocineroComponent implements OnInit, OnDestroy {
   }
 
   iniciarPreparacion(pedidoId: number): void {
-    console.log(`🍳 Iniciando preparación del pedido ${pedidoId}...`);
+    console.log(` Iniciando preparación del pedido ${pedidoId}...`);
 
     this.http.post(`${this.apiUrl}/cocinero/iniciar-preparacion/${pedidoId}`, {}, {
       headers: this.getHeaders(),
@@ -251,13 +251,13 @@ export class CocineroComponent implements OnInit, OnDestroy {
       responseType: 'text'
     }).subscribe({
       next: (response: any) => {
-        console.log('✅ Respuesta:', response);
+        console.log(' Respuesta:', response);
         this.mostrarToastExito('Preparación iniciada correctamente');
         this.cargarPedidosCocina();
         this.ocultarDetalle();
       },
       error: (error) => {
-        console.error('❌ Error iniciando preparación:', error);
+        console.error(' Error iniciando preparación:', error);
         if (error.status === 401 || error.status === 403) {
           this.mostrarToastError('Sesión expirada. Redirigiendo...');
           setTimeout(() => this.router.navigate(['/login']), 2000);
@@ -293,7 +293,7 @@ export class CocineroComponent implements OnInit, OnDestroy {
   }
 
   marcarComoListo(pedidoId: number): void {
-    console.log(`✅ Marcando pedido ${pedidoId} como LISTO...`);
+    console.log(` Marcando pedido ${pedidoId} como LISTO...`);
 
     this.http.post(`${this.apiUrl}/cocinero/marcar-listo/${pedidoId}`, {}, {
       headers: this.getHeaders(),
@@ -301,13 +301,13 @@ export class CocineroComponent implements OnInit, OnDestroy {
       responseType: 'text'
     }).subscribe({
       next: (response: any) => {
-        console.log('✅ Respuesta:', response);
+        console.log(' Respuesta:', response);
         this.mostrarToastExito('Pedido marcado como LISTO correctamente');
         this.cargarPedidosCocina();
         this.ocultarDetalle();
       },
       error: (error) => {
-        console.error('❌ Error marcando como listo:', error);
+        console.error(' Error marcando como listo:', error);
         if (error.status === 401 || error.status === 403) {
           this.mostrarToastError('Sesión expirada. Redirigiendo...');
           setTimeout(() => this.router.navigate(['/login']), 2000);

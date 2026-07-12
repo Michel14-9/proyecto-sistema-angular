@@ -13,12 +13,18 @@ export class LayoutService {
   showFooter$ = this.showFooterSubject.asObservable();
 
   hideHeaderAndFooter(): void {
-    this.showHeaderSubject.next(false);
-    this.showFooterSubject.next(false);
+    // ✅ Usar setTimeout para evitar el error de ExpressionChangedAfterItHasBeenChecked
+    setTimeout(() => {
+      this.showHeaderSubject.next(false);
+      this.showFooterSubject.next(false);
+    });
   }
 
   showHeaderAndFooter(): void {
-    this.showHeaderSubject.next(true);
-    this.showFooterSubject.next(true);
+    // ✅ Usar setTimeout para evitar el error de ExpressionChangedAfterItHasBeenChecked
+    setTimeout(() => {
+      this.showHeaderSubject.next(true);
+      this.showFooterSubject.next(true);
+    });
   }
 }

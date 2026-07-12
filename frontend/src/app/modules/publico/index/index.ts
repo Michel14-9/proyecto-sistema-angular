@@ -2,7 +2,7 @@
 
 import { Component, OnInit, AfterViewInit, ViewEncapsulation, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { CarritoService } from '../../../core/services/carrito.service';
 import { ComboService } from '../../../core/services/combo.service';
@@ -13,7 +13,7 @@ declare var bootstrap: any;
   selector: 'app-index',
   standalone: true,
   imports: [CommonModule, RouterModule],
-  templateUrl: './index.html',  // ← Usar index.html
+  templateUrl: './index.html',
   styleUrls: ['./index.css'],
   encapsulation: ViewEncapsulation.None
 })
@@ -27,10 +27,20 @@ export class IndexComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     private authService: AuthService,
     private carritoService: CarritoService,
-    private comboService: ComboService
+    private comboService: ComboService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
+
+    if (this.authService.isAuthenticated()) {
+      const rol = this.authService.getRole();
+      console.log('🔍 Index - Usuario autenticado, rol:', rol);
+      this.redirigirPorRol(rol);
+      return;
+    }
+
+
     this.isAuthenticated = this.authService.isAuthenticated();
     this.username = this.authService.getUsername();
 
@@ -42,20 +52,19 @@ export class IndexComponent implements OnInit, AfterViewInit, OnDestroy {
 
         if (response && response.success) {
           this.combos = response.data || [];
-          console.log('✅ Combos cargados:', this.combos.length);
-          console.log('📋 Primer combo:', this.combos[0]);
+          console.log(' Combos cargados:', this.combos.length);
+          console.log(' Primer combo:', this.combos[0]);
 
-          // ✅ Inicializar carrusel DESPUÉS de cargar datos
           setTimeout(() => {
             this.inicializarCarousel();
           }, 300);
         } else {
-          console.warn('⚠️ Respuesta sin success:', response);
+          console.warn('️ Respuesta sin success:', response);
           this.combos = response || [];
         }
       },
       error: (err: any) => {
-        console.error('❌ Error cargando combos:', err);
+        console.error(' Error cargando combos:', err);
         this.combos = [];
       }
     });
@@ -71,17 +80,48 @@ export class IndexComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+
+  private redirigirPorRol(rol: string | null): void {
+    if (!rol) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    // Normalizar el rol
+    let rolNormalizado = rol;
+    if (rolNormalizado.startsWith('ROLE_')) {
+      rolNormalizado = rolNormalizado.substring(5);
+    }
+    rolNormalizado = rolNormalizado.toLowerCase();
+
+    // Mapeo de roles a rutas
+    const roleRoutes: { [key: string]: string } = {
+      'admin': '/admin/dashboard',
+      'cajero': '/cajero',
+      'cocinero': '/cocinero',
+      'delivery': '/delivery',
+      'cliente': '/'
+    };
+
+    const ruta = roleRoutes[rolNormalizado] || '/';
+
+
+    if (ruta !== '/') {
+      console.log(`🔀 Index - Redirigiendo a: ${ruta}`);
+      this.router.navigate([ruta]);
+    }
+  }
+
   ngAfterViewInit(): void {
-    console.log('🔄 ngAfterViewInit - Verificando carrusel...');
+    console.log(' ngAfterViewInit - Verificando carrusel...');
     if (this.combos && this.combos.length > 0) {
       this.inicializarCarousel();
     } else {
-      console.log('⏳ Esperando combos para inicializar carrusel...');
+      console.log(' Esperando combos para inicializar carrusel...');
     }
   }
 
   ngOnDestroy(): void {
-    // Limpiar carrusel al destruir el componente
     if (this.carouselInstance) {
       try {
         this.carouselInstance.dispose();
@@ -93,45 +133,42 @@ export class IndexComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   inicializarCarousel(): void {
-    console.log('🔍 Inicializando carrusel...');
+    console.log(' Inicializando carrusel...');
 
     const carouselElement = document.getElementById('combosCarousel');
-    console.log('🔍 Elemento carrusel:', carouselElement);
+    console.log(' Elemento carrusel:', carouselElement);
 
     if (!carouselElement) {
-      console.warn('⚠️ No se encontró #combosCarousel en el DOM');
+      console.warn(' No se encontró #combosCarousel en el DOM');
       return;
     }
 
     if (typeof bootstrap === 'undefined') {
-      console.warn('⚠️ Bootstrap no está disponible');
+      console.warn(' Bootstrap no está disponible');
       return;
     }
 
     try {
-      // Destruir carrusel existente
       if (this.carouselInstance) {
         this.carouselInstance.dispose();
-        console.log('♻️ Carrusel existente destruido');
+        console.log(' Carrusel existente destruido');
       }
 
-      // Crear nuevo carrusel
       this.carouselInstance = new bootstrap.Carousel(carouselElement, {
         interval: 5000,
         wrap: true,
         pause: 'hover'
       });
 
-      console.log('✅ Carrusel creado exitosamente');
+      console.log(' Carrusel creado exitosamente');
 
-      // Iniciar el carrusel
       setTimeout(() => {
         this.carouselInstance.cycle();
-        console.log('🔄 Carrusel iniciado');
+        console.log(' Carrusel iniciado');
       }, 100);
 
     } catch (error) {
-      console.error('❌ Error creando carrusel:', error);
+      console.error(' Error creando carrusel:', error);
     }
   }
 
@@ -141,14 +178,14 @@ export class IndexComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (response: any) => {
         console.log('Respuesta:', response);
         this.carritoService.actualizarTotal();
-        alert(`✅ ${combo.nombre} agregado al carrito`);
+        alert(` ${combo.nombre} agregado al carrito`);
       },
       error: (err: any) => {
         console.error('Error:', err);
         if (err.status === 401 || err.status === 403) {
-          alert('⚠️ Debes iniciar sesión primero');
+          alert(' Debes iniciar sesión primero');
         } else {
-          alert('❌ Error al agregar al carrito');
+          alert(' Error al agregar al carrito');
         }
       }
     });

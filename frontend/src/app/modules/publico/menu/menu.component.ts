@@ -1,4 +1,3 @@
-// src/app/modules/publico/menu/menu.component.ts
 import { Component, OnInit, AfterViewInit, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
@@ -6,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
 import { CarritoService } from '../../../core/services/carrito.service';
+import { AlertService } from '../../../core/services/alert.service';
 
 @Component({
   selector: 'app-menu',
@@ -29,7 +29,8 @@ export class MenuComponent implements OnInit, AfterViewInit {
     private authService: AuthService,
     private carritoService: CarritoService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private alertService: AlertService // ✅ INYECTADO
   ) {}
 
   private getCsrfToken(): string | null {
@@ -160,7 +161,11 @@ export class MenuComponent implements OnInit, AfterViewInit {
           console.log('❤️ Favoritos cargados:', this.favoritos);
         }
       },
-      error: (error) => console.error('Error cargando favoritos:', error)
+      error: (error) => {
+        console.error('Error cargando favoritos:', error);
+        // ✅ Usar AlertService
+        this.alertService.error('Error al cargar favoritos');
+      }
     });
   }
 
@@ -193,18 +198,19 @@ export class MenuComponent implements OnInit, AfterViewInit {
 
     if (!productId) {
       console.error('❌ Error: productId es undefined');
-      this.mostrarNotificacion('Error: Producto no válido', 'error');
+      // ✅ Usar AlertService
+      this.alertService.error('Error: Producto no válido');
       return;
     }
 
     if (!this.authService.isAuthenticated()) {
-      this.mostrarNotificacion('Debes iniciar sesión para agregar favoritos', 'warning');
+      // ✅ Usar AlertService
+      this.alertService.warning('Debes iniciar sesión para agregar favoritos');
       return;
     }
 
     console.log('🔄 Toggle favorito - Producto ID:', productId);
 
-    // ✅ Animación del botón favorito
     const boton = event.target as HTMLElement;
     boton.classList.add('animando');
 
@@ -230,10 +236,12 @@ export class MenuComponent implements OnInit, AfterViewInit {
           if (response.agregado) {
             this.favoritos.add(productId);
             this.mostrarCorazonFlotante(event);
-            this.mostrarNotificacion('❤️ Agregado a favoritos', 'success');
+            // ✅ Usar AlertService
+            this.alertService.success('❤️ Agregado a favoritos');
           } else {
             this.favoritos.delete(productId);
-            this.mostrarNotificacion('💔 Eliminado de favoritos', 'info');
+            // ✅ Usar AlertService
+            this.alertService.info('💔 Eliminado de favoritos');
           }
           boton.classList.remove('animando');
         }
@@ -241,12 +249,13 @@ export class MenuComponent implements OnInit, AfterViewInit {
       error: (error) => {
         console.error('Error toggle favorito:', error);
         boton.classList.remove('animando');
+        // ✅ Usar AlertService
         if (error.status === 403) {
-          this.mostrarNotificacion('Error de seguridad. Recarga la página.', 'error');
+          this.alertService.error('Error de seguridad. Recarga la página.');
         } else if (error.status === 400) {
-          this.mostrarNotificacion('Error: Producto no válido', 'error');
+          this.alertService.error('Error: Producto no válido');
         } else {
-          this.mostrarNotificacion('Error al actualizar favoritos', 'error');
+          this.alertService.error('Error al actualizar favoritos');
         }
       }
     });
@@ -262,13 +271,13 @@ export class MenuComponent implements OnInit, AfterViewInit {
 
     if (!productoId) {
       console.error('❌ Error: productoId es undefined');
-      this.mostrarNotificacion('Error: Producto no válido', 'error');
+      // ✅ Usar AlertService
+      this.alertService.error('Error: Producto no válido');
       return;
     }
 
     console.log('🛒 Agregando al carrito - Producto ID:', productoId);
 
-    // ✅ Animación del botón agregar
     const boton = event.target as HTMLElement;
     const textoOriginal = boton.innerHTML;
     boton.classList.add('animando');
@@ -298,7 +307,9 @@ export class MenuComponent implements OnInit, AfterViewInit {
           boton.classList.add('agregado');
           boton.innerHTML = '<i class="fas fa-check me-1"></i> ¡Agregado!';
 
-          this.mostrarNotificacion(`✅ ${response.message || 'Producto agregado'}`, 'success');
+          // ✅ Usar AlertService
+          this.alertService.success(`✅ ${response.message || 'Producto agregado'}`);
+
           this.carritoService.refrescarTotal();
           this.carritoService.getTotal().subscribe(total => {
             this.totalCarrito = total;
@@ -314,57 +325,22 @@ export class MenuComponent implements OnInit, AfterViewInit {
         console.error('Error agregar al carrito:', error);
         boton.classList.remove('animando');
         boton.innerHTML = textoOriginal;
+        // ✅ Usar AlertService
         if (error.status === 400) {
-          this.mostrarNotificacion('Error: Producto no disponible o datos incorrectos', 'error');
+          this.alertService.error('Error: Producto no disponible o datos incorrectos');
         } else if (error.status === 403) {
-          this.mostrarNotificacion('Error de seguridad. Recarga la página.', 'error');
+          this.alertService.error('Error de seguridad. Recarga la página.');
         } else {
-          this.mostrarNotificacion('❌ Error al agregar al carrito', 'error');
+          this.alertService.error('❌ Error al agregar al carrito');
         }
       }
     });
   }
 
-  mostrarNotificacion(mensaje: string, tipo: string = 'info'): void {
-    const notificacion = document.createElement('div');
-    notificacion.className = `notificacion-flotante notificacion-${tipo}`;
-
-    const iconos: { [key: string]: string } = {
-      success: '✅',
-      error: '❌',
-      warning: '⚠️',
-      info: 'ℹ️'
-    };
-    const icono = iconos[tipo] || '';
-
-    notificacion.innerHTML = `
-      <div class="notificacion-contenido">
-        <span><span class="notificacion-icono">${icono}</span>${mensaje}</span>
-        <button class="notificacion-cerrar">&times;</button>
-      </div>
-    `;
-
-    document.body.appendChild(notificacion);
-
-    setTimeout(() => {
-      notificacion.classList.add('notificacion-visible');
-    }, 10);
-
-    const btnCerrar = notificacion.querySelector('.notificacion-cerrar');
-    btnCerrar?.addEventListener('click', () => {
-      notificacion.classList.remove('notificacion-visible');
-      notificacion.classList.add('notificacion-salida');
-      setTimeout(() => notificacion.remove(), 400);
-    });
-
-    setTimeout(() => {
-      if (notificacion.parentNode) {
-        notificacion.classList.remove('notificacion-visible');
-        notificacion.classList.add('notificacion-salida');
-        setTimeout(() => notificacion.remove(), 400);
-      }
-    }, 4000);
-  }
+  // ❌ ELIMINAR este método (ya no es necesario)
+  // mostrarNotificacion(mensaje: string, tipo: string = 'info'): void {
+  //   ... ya no se usa
+  // }
 
   configurarAnimaciones(): void {
     const observer = new IntersectionObserver((entries) => {

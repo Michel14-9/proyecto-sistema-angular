@@ -74,13 +74,15 @@ export class DeliveryComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private router: Router,
     private layoutService: LayoutService
-  ) { }
+  ) {}
 
   ngOnInit(): void {
     this.isAuthenticated = this.authService.isAuthenticated();
     this.username = this.authService.getUsername();
 
     if (!this.isAuthenticated) { this.router.navigate(['/login']); return; }
+
+
 
     this.layoutService.hideHeaderAndFooter();
     this.cargarPedidosDelivery();
@@ -91,6 +93,7 @@ export class DeliveryComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+
     this.layoutService.showHeaderAndFooter();
     this.detenerGPS();
     clearInterval(this.intervalReloj);
@@ -193,24 +196,36 @@ export class DeliveryComponent implements OnInit, OnDestroy {
   // ─── CARGA DE PEDIDOS ─────────────────────────────────────────────────────
 
   cargarPedidosDelivery(): void {
+    console.log(' Cargando pedidos para delivery...');
+
+    // Cargar pedidos pendientes de entrega (LISTO)
+
     this.http.get(`${this.apiUrl}/delivery/pedidos-para-entrega`, {
       headers: this.getHeaders(), withCredentials: true
     }).subscribe({
-      next: (r: any) => {
-        this.pedidosPendientesEntrega = Array.isArray(r) ? r : [];
+      next: (response: any) => {
+        this.pedidosPendientesEntrega = Array.isArray(response) ? response : [];
+        console.log(` Pendientes entrega: ${this.pedidosPendientesEntrega.length}`);
         this.estadisticas.pendientesEntrega = this.pedidosPendientesEntrega.length;
       },
-      error: (e) => console.error('Error pedidos pendientes:', e)
+      error: (error) => {
+        console.error(' Error cargando pedidos pendientes de entrega:', error);
+      }
+
     });
 
     this.http.get(`${this.apiUrl}/delivery/pedidos-en-camino`, {
       headers: this.getHeaders(), withCredentials: true
     }).subscribe({
-      next: (r: any) => {
-        this.pedidosEnCamino = Array.isArray(r) ? r : [];
+      next: (response: any) => {
+        this.pedidosEnCamino = Array.isArray(response) ? response : [];
+        console.log(` En camino: ${this.pedidosEnCamino.length}`);
         this.estadisticas.enCamino = this.pedidosEnCamino.length;
       },
-      error: (e) => console.error('Error pedidos en camino:', e)
+      error: (error) => {
+        console.error(' Error cargando pedidos en camino:', error);
+      }
+
     });
 
     this.cargarMetricasDelivery();
@@ -220,10 +235,16 @@ export class DeliveryComponent implements OnInit, OnDestroy {
     this.http.get(`${this.apiUrl}/delivery/metricas-delivery`, {
       headers: this.getHeaders(), withCredentials: true
     }).subscribe({
-      next: (r: any) => {
-        if (r?.success) this.estadisticas.entregadosHoy = r.totalEntregadosHoy || 0;
+      next: (response: any) => {
+        console.log(' Métricas delivery:', response);
+        if (response && response.success) {
+          this.estadisticas.entregadosHoy = response.totalEntregadosHoy || 0;
+        }
       },
-      error: () => { }
+      error: (error) => {
+        console.error(' Error cargando métricas delivery:', error);
+      }
+
     });
   }
 
@@ -268,12 +289,18 @@ export class DeliveryComponent implements OnInit, OnDestroy {
     this.iniciarEntrega(this.pedidoSeleccionado);
   }
 
-  iniciarEntrega(pedido: Pedido): void {
-    this.http.post(`${this.apiUrl}/delivery/iniciar-entrega/${pedido.id}`, {}, {
-      headers: this.getHeaders(), withCredentials: true, responseType: 'text'
+  iniciarEntrega(pedidoId: number): void {
+    console.log(` Iniciando entrega del pedido ${pedidoId}...`);
+
+    this.http.post(`${this.apiUrl}/delivery/iniciar-entrega/${pedidoId}`, {}, {
+      headers: this.getHeaders(),
+      withCredentials: true,
+      responseType: 'text'
     }).subscribe({
-      next: () => {
-        this.mostrarToastExito('Entrega iniciada');
+      next: (response: any) => {
+        console.log(' Respuesta:', response);
+        this.mostrarToastExito('Entrega iniciada correctamente');
+
         this.cargarPedidosDelivery();
 
         // Crear sesión de tracking en el microservicio
@@ -294,9 +321,11 @@ export class DeliveryComponent implements OnInit, OnDestroy {
           error: () => console.warn('Tracking no disponible, continúa sin GPS')
         });
       },
-      error: (e) => {
-        if (e.status === 401 || e.status === 403) {
-          this.mostrarToastError('Sesión expirada');
+      error: (error) => {
+        console.error(' Error iniciando entrega:', error);
+        if (error.status === 401 || error.status === 403) {
+          this.mostrarToastError('Sesión expirada. Redirigiendo...');
+
           setTimeout(() => this.router.navigate(['/login']), 2000);
         } else {
           this.mostrarToastError(e.error || 'Error al iniciar entrega');
@@ -323,24 +352,25 @@ export class DeliveryComponent implements OnInit, OnDestroy {
     this.marcarComoEntregado(this.pedidoSeleccionado);
   }
 
-  marcarComoEntregado(pedido: Pedido): void {
-    this.http.post(`${this.apiUrl}/delivery/marcar-entregado/${pedido.id}`, {}, {
-      headers: this.getHeaders(), withCredentials: true, responseType: 'text'
-    }).subscribe({
-      next: () => {
-        // Completar tracking en el microservicio
-        this.http.put(
-          `${this.trackingUrl}/api/tracking/${pedido.numeroPedido}/completar`, {}
-        ).subscribe({ error: () => { } });
+  marcarComoEntregado(pedidoId: number): void {
+    console.log(` Marcando pedido ${pedidoId} como ENTREGADO...`);
 
-        this.detenerGPS();
-        this.mostrarToastExito('Pedido marcado como ENTREGADO');
+    this.http.post(`${this.apiUrl}/delivery/marcar-entregado/${pedidoId}`, {}, {
+      headers: this.getHeaders(),
+      withCredentials: true,
+      responseType: 'text'
+    }).subscribe({
+      next: (response: any) => {
+        console.log(' Respuesta:', response);
+        this.mostrarToastExito('Pedido marcado como ENTREGADO correctamente');
         this.cargarPedidosDelivery();
         this.ocultarDetalle();
       },
-      error: (e) => {
-        if (e.status === 401 || e.status === 403) {
-          this.mostrarToastError('Sesión expirada');
+      error: (error) => {
+        console.error(' Error marcando como entregado:', error);
+        if (error.status === 401 || error.status === 403) {
+          this.mostrarToastError('Sesión expirada. Redirigiendo...');
+
           setTimeout(() => this.router.navigate(['/login']), 2000);
         } else {
           this.mostrarToastError(e.error || 'Error al marcar como entregado');

@@ -1,0 +1,287 @@
+<!-- src/app/modules/admin/admin-dashboard/admin-dashboard.html -->
+<div class="row">
+  <div class="col-md-3">
+    <app-stat-card
+      [value]="estadisticas.totalProductos"
+      label="Productos"
+      icon="concierge-bell"
+      color="primary">
+    </app-stat-card>
+  </div>
+  <div class="col-md-3">
+    <app-stat-card
+      [value]="estadisticas.totalUsuarios"
+      label="Usuarios Registrados"
+      icon="users"
+      color="success">
+    </app-stat-card>
+  </div>
+  <div class="col-md-3">
+    <app-stat-card
+      [value]="estadisticas.pedidosHoy"
+      label="Pedidos Hoy"
+      icon="shopping-cart"
+      color="warning">
+    </app-stat-card>
+  </div>
+  <div class="col-md-3">
+    <app-stat-card
+      [value]="estadisticas.ingresosHoy"
+      label="Ingresos Hoy"
+      icon="soles"
+      color="info"
+      prefix="S/ "
+      [isCurrency]="true">
+    </app-stat-card>
+  </div>
+</div>
+
+<div class="row mt-4">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Estadísticas de Ventas</h5>
+      </div>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="salesChart"></canvas>
+        </div>
+        <div *ngIf="!tieneDatosVentas" class="empty-state text-center py-5">
+          <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+          <h4 class="text-muted">No hay datos de ventas</h4>
+          <p class="text-muted">El gráfico se actualizará cuando se registren las primeras ventas.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">Resumen de Ventas</h5>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <small class="text-muted">Ventas Totales del Mes</small>
+          <h4>S/ {{ (estadisticas.ventasMesTotal || 0) | number:'1.2-2' }}</h4>
+        </div>
+        <div class="mb-3">
+          <small class="text-muted">Promedio Diario</small>
+          <h4>S/ {{ (estadisticas.promedioDiario || 0) | number:'1.2-2' }}</h4>
+        </div>
+        <div class="mb-3">
+          <small class="text-muted">Venta Más Alta</small>
+          <h4>S/ {{ (estadisticas.ventaMaxima || 0) | number:'1.2-2' }}</h4>
+        </div>
+        <div>
+          <small class="text-muted">Total de Pedidos</small>
+          <h4>{{ estadisticas.totalPedidos || 0 }}</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">Ventas Recientes</h5>
+        <button class="btn btn-sm btn-outline-primary" (click)="cargarDashboard()">
+          <i class="fas fa-sync-alt"></i> Actualizar
+        </button>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+            <tr>
+              <th>Pedido ID</th>
+              <th>Cliente</th>
+              <th>Productos</th>
+              <th>Total</th>
+              <th>Fecha</th>
+              <th>Estado</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr *ngFor="let pedido of ventasRecientes">
+              <td>{{ pedido.numeroPedido || pedido.id }}</td>
+              <td>{{ pedido.cliente || 'Cliente general' }}</td>
+              <td>
+                  <span *ngFor="let item of pedido.items; let i = index">
+                    {{ item.nombreProducto || item.nombre }} (x{{ item.cantidad }})<span *ngIf="i < pedido.items.length - 1">, </span>
+                  </span>
+                <span *ngIf="!pedido.items?.length">Sin productos</span>
+              </td>
+              <td><strong>S/ {{ (pedido.total || 0) | number:'1.2-2' }}</strong></td>
+              <td>{{ formatearFecha(pedido.fecha) }}</td>
+              <td><span class="badge" [class]="getEstadoBadgeClass(pedido.estado)">{{ pedido.estado || 'PENDIENTE' }}</span></td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+        <div *ngIf="!ventasRecientes.length" class="text-center py-5">
+          <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+          <h4 class="text-muted">No hay ventas registradas</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PREDICCIONES DE VENTAS
+     ============================================================ -->
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+        <h5 class="card-title mb-0">
+          <i class="fas fa-brain me-2"></i>Predicciones de Ventas
+          <small class="text-muted" style="font-size: 0.7rem; font-weight: normal;">
+            (Proyección de ventas futuras)
+          </small>
+        </h5>
+        <div class="d-flex gap-2 mt-2 mt-sm-0 flex-wrap">
+          <select class="form-select form-select-sm" style="width: auto;" [(ngModel)]="diasPrediccion" (change)="cargarPredicciones()" title="Selecciona cuántos días quieres predecir">
+            <option value="3">3 días</option>
+            <option value="7" selected>7 días</option>
+            <option value="15">15 días</option>
+            <option value="30">30 días</option>
+          </select>
+          <button class="btn btn-sm btn-outline-primary" (click)="cargarPredicciones()" [disabled]="!modeloEntrenado" title="Actualizar las predicciones">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+          <button class="btn btn-sm btn-primary" (click)="entrenarModelo()" [disabled]="entrenandoModelo" title="Entrenar el modelo con los datos históricos de ventas para mejorar las predicciones">
+            <span *ngIf="!entrenandoModelo"><i class="fas fa-robot me-1"></i>Entrenar</span>
+            <span *ngIf="entrenandoModelo"><span class="spinner-border spinner-border-sm me-1"></span>Entrenando...</span>
+          </button>
+          <small class="text-muted align-self-center" style="font-size: 0.7rem;">
+            <i class="fas fa-info-circle"></i> El botón "Entrenar" analiza las ventas pasadas para predecir las futuras
+          </small>
+        </div>
+      </div>
+      <div class="card-body">
+
+
+        <div class="alert" [class.alert-success]="modeloEntrenado" [class.alert-warning]="!modeloEntrenado">
+          <i class="fas" [class.fa-check-circle]="modeloEntrenado" [class.fa-exclamation-triangle]="!modeloEntrenado"></i>
+          <span *ngIf="modeloEntrenado">
+            <strong>✅ Predicciones disponibles</strong>
+            <br>
+            <small>
+              Basadas en {{ tendencias?.total_dias || 0 }} días de ventas históricas.
+              <span *ngIf="tendencias">
+                <span class="badge ms-1"
+                      [class.bg-success]="tendencias.tendencia === 'creciente'"
+                      [class.bg-warning]="tendencias.tendencia === 'estable'"
+                      [class.bg-danger]="tendencias.tendencia === 'decreciente'">
+                  {{ tendencias.tendencia === 'creciente' ? '📈 Tendencia al alza' : tendencias.tendencia === 'decreciente' ? '📉 Tendencia a la baja' : '➡️ Tendencia estable' }}
+                </span>
+              </span>
+              <span class="ms-2 text-muted">
+                <i class="fas fa-lightbulb"></i> Las predicciones se actualizan con nuevos datos
+              </span>
+            </small>
+          </span>
+          <span *ngIf="!modeloEntrenado">
+            <strong>⚠️ Predicciones no disponibles</strong>
+            <br>
+            <small>
+              Para generar predicciones, haz clic en el botón
+              <strong class="text-primary">"Entrenar"</strong>
+              (esto analizará tus ventas históricas y creará un modelo de predicción).
+            </small>
+          </span>
+        </div>
+
+
+        <div *ngIf="prediccionesCargadas && predicciones.length" class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Día</th>
+              <th>Ventas Estimadas</th>
+              <th>Confianza</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr *ngFor="let pred of predicciones">
+              <td>{{ pred.fecha | date:'dd/MM/yyyy' }}</td>
+              <td>{{ pred.dia }}</td>
+              <td>
+                <strong>S/ {{ pred.ventas_estimadas | number:'1.2-2' }}</strong>
+                <span class="badge ms-2"
+                      [class.bg-success]="pred.ventas_estimadas > 100"
+                      [class.bg-warning]="pred.ventas_estimadas > 50 && pred.ventas_estimadas <= 100"
+                      [class.bg-secondary]="pred.ventas_estimadas <= 50">
+                    {{ pred.ventas_estimadas > 100 ? 'Alta' : pred.ventas_estimadas > 50 ? 'Media' : 'Baja' }}
+                  </span>
+              </td>
+              <td><span class="badge bg-info">{{ pred.confianza }}</span></td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+
+
+        <div *ngIf="predicciones.length" class="row mt-3">
+          <div class="col-md-4">
+            <app-stat-card
+              [value]="predicciones.length"
+              label="Días Pronosticados"
+              icon="calendar-alt"
+              color="info">
+            </app-stat-card>
+          </div>
+          <div class="col-md-4">
+            <app-stat-card
+              [value]="calcularTotalEstimado()"
+              label="Total Estimado"
+              icon="soles"
+              color="success"
+              prefix="S/ "
+              [isCurrency]="true">
+            </app-stat-card>
+          </div>
+          <div class="col-md-4">
+            <app-stat-card
+              [value]="calcularPromedioEstimado()"
+              label="Promedio Diario"
+              icon="soles"
+              color="warning"
+              prefix="S/ "
+              [isCurrency]="true">
+            </app-stat-card>
+          </div>
+        </div>
+
+
+        <div *ngIf="predicciones.length" class="mt-3">
+          <div class="chart-container">
+            <canvas id="predictionChart"></canvas>
+          </div>
+        </div>
+
+
+        <div *ngIf="!prediccionesCargadas && !modeloEntrenado" class="text-center py-5">
+          <i class="fas fa-brain fa-4x text-muted mb-3"></i>
+          <h5 class="text-muted">Sin predicciones disponibles</h5>
+          <p class="text-muted">
+            Para comenzar a ver predicciones, haz clic en el botón
+            <strong class="text-primary">"Entrenar"</strong>.
+            <br>
+            <small class="text-muted">
+              El sistema analizará tus ventas históricas y generará un pronóstico de ventas futuras.
+            </small>
+          </p>
+          <button class="btn btn-primary mt-2" (click)="entrenarModelo()" [disabled]="entrenandoModelo">
+            <i class="fas fa-robot me-2"></i>Entrenar modelo ahora
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>

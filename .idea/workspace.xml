@@ -6,18 +6,12 @@
   <component name="ChangeListManager">
     <list default="true" id="4e10dce1-a503-4051-8fa1-2dbc492f7fbc" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backendmercadopago/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/backendmercadopago/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backendmercadopago/src/main/java/mercadopago/example/mercado/pago/config/MercadoPagoConfiguracion.java" beforeDir="false" afterPath="$PROJECT_DIR$/backendmercadopago/src/main/java/mercadopago/example/mercado/pago/config/MercadoPagoConfiguracion.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backendmercadopago/src/main/java/mercadopago/example/mercado/pago/controller/MercadoPagoController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backendmercadopago/src/main/java/mercadopago/example/mercado/pago/controller/MercadoPagoController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-menu/admin-menu.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-menu/admin-menu.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-menu/admin-menu.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-menu/admin-menu.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-menu/admin-menu.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-menu/admin-menu.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cocinero/cocinero/cocinero.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cocinero/cocinero/cocinero.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cocinero/cocinero/cocinero.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cocinero/cocinero/cocinero.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cocinero/cocinero/cocinero.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cocinero/cocinero/cocinero.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/delivery/delivery/delivery.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/delivery/delivery/delivery.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/delivery/delivery/delivery.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/delivery/delivery/delivery.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/delivery/delivery/delivery.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/delivery/delivery/delivery.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-python/src/services/dashboard_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend-python/src/services/dashboard_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-python/src/services/reportes_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend-python/src/services/reportes_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/AdminController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/AdminController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cliente/checkout/checkout.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/checkout/checkout.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cliente/checkout/checkout.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/checkout/checkout.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/publico/index/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/publico/index/index.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -27,6 +21,7 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
+        <option value="Python Script" />
         <option value="Class" />
       </list>
     </option>
@@ -67,22 +62,24 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Application.MercadoPagoApplication.executor": "Run",
-    "Application.SistemaApolloAngularApplication.executor": "Run",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "backend",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Users/Michel/Documents/GitHub/proyecto-sistema-angular",
-    "project.structure.last.edited": "Modules",
-    "project.structure.proportion": "0.0",
-    "project.structure.side.proportion": "0.0"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.MercadoPagoApplication.executor&quot;: &quot;Run&quot;,
+    &quot;Application.SistemaApolloAngularApplication.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.app.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Michel/Documents/GitHub/proyecto-sistema-angular&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;configurable.group.language&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\Michel\Documents\GitHub\proyecto-sistema-angular\frontend\src\assets\archivos" />
@@ -90,7 +87,33 @@
       <recent name="C:\Users\Michel\Documents\GitHub\proyecto-sistema-angular\backend" />
     </key>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Application.MercadoPagoApplication">
+    <configuration name="MercadoPagoApplication" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="mercadopago.example.mercado.pago.MercadoPagoApplication" />
+      <module name="mercado-pago" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="mercadopago.example.mercado.pago.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="SistemaApolloAngularApplication" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="com.sistemaapolloAngular.sistema_apolloAngular.SistemaApolloAngularApplication" />
+      <module name="sistema-apollo" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.sistemaapolloAngular.sistema_apolloAngular.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <configuration default="true" type="JetRunConfigurationType">
       <module name="proyecto-sistema-angular" />
       <method v="2">
@@ -102,6 +125,36 @@
       <option name="filePath" />
       <method v="2" />
     </configuration>
+    <configuration name="app" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="sistema-apollo" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="SDK_NAME" value="Python 3.14 (proyecto-sistema-angular)" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/backend-python" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/backend-python/app.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.app" />
+        <item itemvalue="Application.SistemaApolloAngularApplication" />
+        <item itemvalue="Application.MercadoPagoApplication" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">

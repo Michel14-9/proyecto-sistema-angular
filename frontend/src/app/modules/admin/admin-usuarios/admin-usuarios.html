@@ -1,0 +1,154 @@
+c<!-- src/app/modules/admin/admin-usuarios/admin-usuarios.html -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3>Gestión de Usuarios</h3>
+  <button class="btn btn-primary" (click)="abrirModalUsuario()">
+    <i class="fas fa-user-plus"></i> Agregar Usuario
+  </button>
+</div>
+
+<div class="search-filter-container">
+  <div class="search-box">
+    <div class="input-group">
+      <input type="text" class="form-control" placeholder="Buscar usuarios..." [(ngModel)]="busquedaUsuarios" (input)="filtrarUsuarios()">
+      <button class="btn btn-outline-secondary" type="button" (click)="filtrarUsuarios()">
+        <i class="fas fa-search"></i>
+      </button>
+    </div>
+  </div>
+  <div class="filter-buttons">
+    <select class="form-select" [(ngModel)]="filtroRol" (change)="filtrarUsuarios()">
+      <option value="">Todos los roles</option>
+      <option value="admin">Administrador</option>
+      <option value="cajero">Cajero</option>
+      <option value="cocinero">Cocinero</option>
+      <option value="delivery">Delivery</option>
+    </select>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+        <tr>
+          <th>ID</th>
+          <th>Avatar</th>
+          <th>Nombre</th>
+          <th>Email</th>
+          <th>Rol</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let usuario of usuariosFiltrados">
+          <td>{{ usuario.id }}</td>
+          <td>
+            <div class="user-avatar-small">{{ usuario.nombres.charAt(0) }}{{ usuario.apellidos.charAt(0) }}</div>
+          </td>
+          <td>
+            <strong>{{ usuario.nombres }} {{ usuario.apellidos }}</strong>
+            <br><small class="text-muted">{{ usuario.tipoDocumento }}: {{ usuario.numeroDocumento }}</small>
+          </td>
+          <td>{{ usuario.username }}</td>
+          <td><span class="badge" [class]="getRolBadgeClass(usuario.rol)">{{ usuario.rol }}</span></td>
+          <td><span class="badge bg-success">Activo</span></td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn btn-sm btn-outline-danger" (click)="confirmarEliminarUsuario(usuario)" title="Eliminar">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+    <div *ngIf="usuariosFiltrados.length === 0" class="text-center py-5">
+      <i class="fas fa-users fa-3x text-muted mb-3"></i>
+      <h4 class="text-muted">No hay usuarios registrados</h4>
+      <p class="text-muted">Agrega usuarios para comenzar a gestionar tu equipo.</p>
+      <button class="btn btn-primary mt-3" (click)="abrirModalUsuario()">
+        <i class="fas fa-user-plus"></i> Agregar Primer Usuario
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Usuario -->
+<div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="userModalLabel">{{ modalUsuarioTitulo }}</h5>
+        <button type="button" class="btn-close" (click)="cerrarModalUsuario()"></button>
+      </div>
+      <div class="modal-body">
+        <form #userForm="ngForm">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label">Nombres *</label>
+                <input type="text" class="form-control" [(ngModel)]="usuarioForm.nombres" name="nombres" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Apellidos *</label>
+                <input type="text" class="form-control" [(ngModel)]="usuarioForm.apellidos" name="apellidos" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Tipo de Documento *</label>
+                <select class="form-select" [(ngModel)]="usuarioForm.tipoDocumento" name="tipoDocumento" required>
+                  <option value="">Seleccione tipo</option>
+                  <option value="DNI">DNI</option>
+                  <option value="CE">Carnet de Extranjería</option>
+                  <option value="PASAPORTE">Pasaporte</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Número de Documento *</label>
+                <input type="text" class="form-control" [(ngModel)]="usuarioForm.numeroDocumento" name="numeroDocumento" required>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label">Teléfono *</label>
+                <input type="tel" class="form-control" [(ngModel)]="usuarioForm.telefono" name="telefono" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Fecha de Nacimiento *</label>
+                <input type="date" class="form-control" [(ngModel)]="usuarioForm.fechaNacimiento" name="fechaNacimiento" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Email *</label>
+                <input type="email" class="form-control" [(ngModel)]="usuarioForm.username" name="username" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Rol *</label>
+                <select class="form-select" [(ngModel)]="usuarioForm.rol" name="rol" required>
+                  <option value="">Seleccione un rol</option>
+                  <option value="admin">Administrador</option>
+                  <option value="cajero">Cajero</option>
+                  <option value="cocinero">Cocinero</option>
+                  <option value="delivery">Delivery</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Contraseña *</label>
+                <input type="password" class="form-control" [(ngModel)]="usuarioForm.password" name="password" required minlength="6">
+                <div class="form-text">La contraseña debe tener al menos 6 caracteres</div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalUsuario()">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="guardarUsuario()" [disabled]="userForm.invalid || guardandoUsuario">
+          <span *ngIf="!guardandoUsuario"><i class="fas fa-save me-2"></i>Guardar Usuario</span>
+          <span *ngIf="guardandoUsuario"><span class="spinner-border spinner-border-sm me-2"></span>Guardando...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

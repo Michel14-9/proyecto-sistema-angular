@@ -29,25 +29,21 @@ public class CocineroController {
     private UsuarioRepository usuarioRepository;
 
     // ✅ FIX: los pedidos PRESENCIALES (creados y cobrados en caja) nunca deben
-    // aparecer en las bandejas de cocina. El cajero los marca como PAGADO
-    // directamente y el cliente retira en el mostrador — no pasan por
-    // preparación. Antes solo se filtraba por estado, así que un pedido
-    // presencial en estado PAGADO caía igual en "pedidos-por-preparar".
+    // aparecer en las bandejas de cocina.
     private boolean noEsPresencial(Pedido p) {
         return !"PRESENCIAL".equals(p.getOrigen());
     }
 
-    // ✅ OBTENER PEDIDOS POR PREPARAR (PAGADOS) - CON JOIN FETCH
+    // ✅ OBTENER PEDIDOS POR PREPARAR (PAGADOS)
     @GetMapping("/pedidos-por-preparar")
     @ResponseBody
     @Transactional
     public ResponseEntity<?> obtenerPedidosPorPreparar() {
         try {
-            // ✅ Usar findAllWithItemsAndProducts() que tiene JOIN FETCH
             List<Pedido> pedidos = pedidoRepository.findAllWithItemsAndProducts()
                     .stream()
                     .filter(p -> "PAGADO".equals(p.getEstado()) || "CONFIRMADO".equals(p.getEstado()))
-                    .filter(this::noEsPresencial) // ✅ excluir pedidos de caja
+                    .filter(this::noEsPresencial)
                     .collect(Collectors.toList());
 
             List<Map<String, Object>> pedidosDTO = crearPedidosDTO(pedidos);
@@ -61,17 +57,16 @@ public class CocineroController {
         }
     }
 
-    // ✅ OBTENER PEDIDOS EN PREPARACIÓN - CON JOIN FETCH
+    // ✅ OBTENER PEDIDOS EN PREPARACIÓN
     @GetMapping("/pedidos-en-preparacion")
     @ResponseBody
     @Transactional
     public ResponseEntity<?> obtenerPedidosEnPreparacion() {
         try {
-            // ✅ Usar findAllWithItemsAndProducts() que tiene JOIN FETCH
             List<Pedido> pedidos = pedidoRepository.findAllWithItemsAndProducts()
                     .stream()
                     .filter(p -> "PREPARACION".equals(p.getEstado()))
-                    .filter(this::noEsPresencial) // ✅ excluir pedidos de caja
+                    .filter(this::noEsPresencial)
                     .collect(Collectors.toList());
 
             List<Map<String, Object>> pedidosDTO = crearPedidosDTO(pedidos);
@@ -85,23 +80,19 @@ public class CocineroController {
         }
     }
 
-    // ✅ OBTENER PEDIDOS LISTOS DE HOY - CON JOIN FETCH
+    // ✅ OBTENER PEDIDOS LISTOS PARA ENTREGA (SOLO estado LISTO)
+    // Este endpoint es para la COLUMNA de pedidos listos en el frontend
     @GetMapping("/pedidos-listos-hoy")
     @ResponseBody
     @Transactional
     public ResponseEntity<?> obtenerPedidosListosHoy() {
         try {
-            LocalDate hoy = LocalDate.now();
-            LocalDateTime hoyInicio = hoy.atStartOfDay();
-            LocalDateTime hoyFin = hoy.atTime(23, 59, 59);
-
-            // ✅ Usar findAllWithItemsAndProducts() que tiene JOIN FETCH
+            // ✅ SOLO pedidos que están en estado LISTO actualmente
+            // No incluir EN_CAMINO ni ENTREGADO porque ya fueron tomados por delivery
             List<Pedido> pedidos = pedidoRepository.findAllWithItemsAndProducts()
                     .stream()
                     .filter(p -> "LISTO".equals(p.getEstado()))
-                    .filter(p -> p.getFecha() != null)
-                    .filter(p -> !p.getFecha().isBefore(hoyInicio) && !p.getFecha().isAfter(hoyFin))
-                    .filter(this::noEsPresencial) // ✅ excluir pedidos de caja
+                    .filter(this::noEsPresencial)
                     .collect(Collectors.toList());
 
             List<Map<String, Object>> pedidosDTO = crearPedidosDTO(pedidos);
@@ -150,8 +141,6 @@ public class CocineroController {
 
             Pedido pedido = pedidoOpt.get();
 
-            // ✅ Un pedido presencial nunca debería llegar hasta aquí, pero por
-            // seguridad se bloquea explícitamente en el backend también.
             if ("PRESENCIAL".equals(pedido.getOrigen())) {
                 return ResponseEntity.badRequest().body(Map.of(
                         "status", "ERROR",
@@ -248,14 +237,12 @@ public class CocineroController {
         }
     }
 
-    // ✅ MÉTRICAS DE COCINA
+    // ✅ MÉTRICAS DE COCINA - CORREGIDO
     @GetMapping("/metricas-cocina")
     @ResponseBody
     @Transactional
     public ResponseEntity<?> obtenerMetricasCocina() {
         try {
-            // ✅ Usar findAllWithItemsAndProducts() que tiene JOIN FETCH
-            // ✅ Excluir pedidos presenciales de TODAS las métricas de cocina
             List<Pedido> todosLosPedidos = pedidoRepository.findAllWithItemsAndProducts()
                     .stream()
                     .filter(this::noEsPresencial)
@@ -273,17 +260,48 @@ public class CocineroController {
             LocalDateTime hoyInicio = hoy.atStartOfDay();
             LocalDateTime hoyFin = hoy.atTime(23, 59, 59);
 
+            // ✅ CORREGIDO: Contar pedidos que fueron LISTO hoy
+            // Incluye pedidos en estado LISTO, EN_CAMINO y ENTREGADO
+            // que hayan sido actualizados hoy (cuando pasaron a LISTO)
             long listosHoy = todosLosPedidos.stream()
-                    .filter(p -> "LISTO".equals(p.getEstado()))
-                    .filter(p -> p.getFecha() != null)
-                    .filter(p -> !p.getFecha().isBefore(hoyInicio) && !p.getFecha().isAfter(hoyFin))
+                    .filter(p -> {
+                        // ✅ Está en LISTO actualmente y fue creado hoy
+                        if ("LISTO".equals(p.getEstado())) {
+                            return p.getFecha() != null &&
+                                    !p.getFecha().isBefore(hoyInicio) &&
+                                    !p.getFecha().isAfter(hoyFin);
+                        }
+                        // ✅ Está en EN_CAMINO o ENTREGADO (pasó por LISTO)
+                        // Verificar si la fecha de actualización es de hoy
+                        if ("EN_CAMINO".equals(p.getEstado()) || "ENTREGADO".equals(p.getEstado())) {
+                            if (p.getFechaActualizacion() != null) {
+                                return !p.getFechaActualizacion().isBefore(hoyInicio) &&
+                                        !p.getFechaActualizacion().isAfter(hoyFin);
+                            }
+                            if (p.getFecha() != null) {
+                                return !p.getFecha().isBefore(hoyInicio) &&
+                                        !p.getFecha().isAfter(hoyFin);
+                            }
+                        }
+                        return false;
+                    })
                     .count();
 
-            // Calcular tiempo promedio
+            // Calcular tiempo promedio - CORREGIDO
             double tiempoPromedio = 0;
+
+            // ✅ Obtener todos los pedidos que pasaron por LISTO hoy
             List<Pedido> pedidosListos = todosLosPedidos.stream()
-                    .filter(p -> "LISTO".equals(p.getEstado()))
-                    .filter(p -> p.getFecha() != null && p.getFechaActualizacion() != null)
+                    .filter(p -> {
+                        if ("LISTO".equals(p.getEstado()) || "EN_CAMINO".equals(p.getEstado()) || "ENTREGADO".equals(p.getEstado())) {
+                            if (p.getFechaActualizacion() != null) {
+                                return !p.getFechaActualizacion().isBefore(hoyInicio) &&
+                                        !p.getFechaActualizacion().isAfter(hoyFin);
+                            }
+                            return false;
+                        }
+                        return false;
+                    })
                     .collect(Collectors.toList());
 
             if (!pedidosListos.isEmpty()) {
@@ -361,6 +379,7 @@ public class CocineroController {
             pedidoDTO.put("direccionEntrega", pedido.getDireccionEntrega());
             pedidoDTO.put("observaciones", pedido.getObservaciones());
             pedidoDTO.put("origen", pedido.getOrigen());
+            pedidoDTO.put("fechaActualizacion", pedido.getFechaActualizacion());
 
             if (pedido.getUsuario() != null) {
                 Usuario usuario = pedido.getUsuario();
@@ -430,18 +449,5 @@ public class CocineroController {
         pedidoDTO.put("items", itemsDTO);
 
         return pedidoDTO;
-    }
-
-    private String obtenerNombreUsuario(String username) {
-        Optional<Usuario> usuarioOpt = usuarioRepository.findByUsername(username);
-        if (usuarioOpt.isPresent()) {
-            Usuario usuario = usuarioOpt.get();
-            if (usuario.getNombres() != null && usuario.getApellidos() != null) {
-                return usuario.getNombres() + " " + usuario.getApellidos();
-            } else if (usuario.getNombres() != null) {
-                return usuario.getNombres();
-            }
-        }
-        return username;
     }
 }

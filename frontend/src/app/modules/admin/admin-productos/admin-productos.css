@@ -1,0 +1,572 @@
+/* src/app/modules/admin/admin-productos/admin-productos.css */
+
+/* ============================================================
+   ESTILOS GENERALES PARA GESTIÓN DE PRODUCTOS
+   ============================================================ */
+
+/* --- Contenedor de búsqueda y filtros --- */
+.search-filter-container {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.search-filter-container .search-box {
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-filter-container .filter-buttons {
+  min-width: 180px;
+}
+
+.search-filter-container .filter-buttons .form-select {
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  padding: 0.5rem 1rem;
+  background-color: white;
+  transition: all 0.3s ease;
+}
+
+.search-filter-container .filter-buttons .form-select:focus {
+  border-color: #f57c00;
+  box-shadow: 0 0 0 0.2rem rgba(245, 124, 0, 0.25);
+}
+
+/* --- Input de búsqueda --- */
+.search-filter-container .search-box .input-group {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.search-filter-container .search-box .input-group .form-control {
+  border: 1px solid #e2e8f0;
+  border-right: none;
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  background-color: white;
+  transition: all 0.3s ease;
+}
+
+.search-filter-container .search-box .input-group .form-control:focus {
+  border-color: #f57c00;
+  box-shadow: none;
+}
+
+.search-filter-container .search-box .input-group .btn-outline-secondary {
+  border: 1px solid #e2e8f0;
+  border-left: none;
+  background-color: white;
+  color: #6c757d;
+  transition: all 0.3s ease;
+}
+
+.search-filter-container .search-box .input-group .btn-outline-secondary:hover {
+  background-color: #f57c00;
+  color: white;
+  border-color: #f57c00;
+}
+
+/* --- Tarjetas --- */
+.card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+/* --- Tablas --- */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table {
+  margin-bottom: 0;
+  font-size: 0.95rem;
+}
+
+.table thead th {
+  font-weight: 600;
+  color: #4a5568;
+  border-top: none;
+  border-bottom: 2px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 0.75rem 1rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.table tbody td {
+  padding: 0.75rem 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #f7fafc;
+  cursor: default;
+}
+
+/* --- Imagen del producto --- */
+.product-image {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+  transition: transform 0.3s ease;
+}
+
+.product-image:hover {
+  transform: scale(1.1);
+}
+
+/* --- Badges --- */
+.badge {
+  font-weight: 500;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.badge.bg-primary {
+  background: linear-gradient(135deg, #f7971e, #ffd200) !important;
+  color: #1a1a2e;
+}
+
+/* --- Botones de acción --- */
+.action-buttons {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.action-buttons .btn {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  transition: all 0.3s ease;
+  border-width: 1.5px;
+}
+
+.action-buttons .btn-outline-primary {
+  color: #f57c00;
+  border-color: #f57c00;
+}
+
+.action-buttons .btn-outline-primary:hover {
+  background-color: #f57c00;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 124, 0, 0.3);
+}
+
+.action-buttons .btn-outline-danger {
+  color: #e53e3e;
+  border-color: #e53e3e;
+}
+
+.action-buttons .btn-outline-danger:hover {
+  background-color: #e53e3e;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
+}
+
+.action-buttons .btn i {
+  pointer-events: none;
+}
+
+/* --- Estado vacío --- */
+.empty-state {
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
+
+.empty-state i {
+  color: #cbd5e0;
+  margin-bottom: 1rem;
+}
+
+.empty-state h4 {
+  color: #4a5568;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+  color: #a0aec0;
+  margin-bottom: 1.5rem;
+}
+
+/* --- Botón principal --- */
+.btn-primary {
+  background: linear-gradient(135deg, #f7971e, #ffd200);
+  border: none;
+  color: #1a1a2e;
+  font-weight: 600;
+  padding: 0.5rem 1.5rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(245, 124, 0, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(245, 124, 0, 0.4);
+  color: #1a1a2e;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+
+/* --- Modal contenedor --- */
+.modal-content {
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+/* --- Modal header --- */
+.modal-header {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: white;
+  padding: 1.25rem 1.5rem;
+  border-bottom: none;
+}
+
+.modal-header .modal-title {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.modal-header .btn-close {
+  filter: brightness(0) invert(1);
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+.modal-header .btn-close:hover {
+  opacity: 1;
+}
+
+/* --- Modal body --- */
+.modal-body {
+  padding: 1.5rem;
+  background: #f8fafc;
+}
+
+/* --- Modal footer --- */
+.modal-footer {
+  background: white;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  border-radius: 0 0 16px 16px;
+}
+
+/* --- Campos del formulario --- */
+.modal-body .form-label {
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 0.9rem;
+  margin-bottom: 0.3rem;
+}
+
+.modal-body .form-control,
+.modal-body .form-select {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  background-color: white;
+}
+
+.modal-body .form-control:focus,
+.modal-body .form-select:focus {
+  border-color: #f57c00;
+  box-shadow: 0 0 0 0.2rem rgba(245, 124, 0, 0.15);
+}
+
+.modal-body .form-control.is-invalid,
+.modal-body .form-select.is-invalid {
+  border-color: #e53e3e;
+}
+
+.modal-body .form-text {
+  color: #a0aec0;
+  font-size: 0.8rem;
+  margin-top: 0.3rem;
+}
+
+/* --- Vista previa de imagen --- */
+.image-preview {
+  max-width: 150px;
+  max-height: 150px;
+  border-radius: 8px;
+  border: 2px solid #e2e8f0;
+  padding: 4px;
+  background-color: white;
+  transition: transform 0.3s ease;
+  object-fit: cover;
+}
+
+.image-preview:hover {
+  transform: scale(1.05);
+}
+
+/* --- Botones del modal --- */
+.modal-footer .btn-secondary {
+  background-color: #e2e8f0;
+  border: none;
+  color: #4a5568;
+  font-weight: 500;
+  padding: 0.5rem 1.5rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.modal-footer .btn-secondary:hover {
+  background-color: #cbd5e0;
+}
+
+.modal-footer .btn-primary {
+  padding: 0.5rem 2rem;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+/* --- Tablets y pantallas medianas --- */
+@media (max-width: 992px) {
+  .search-filter-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-filter-container .search-box {
+    min-width: auto;
+  }
+
+  .search-filter-container .filter-buttons {
+    min-width: auto;
+  }
+
+  .card-body {
+    padding: 1rem;
+  }
+
+  .table thead th,
+  .table tbody td {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .product-image {
+    width: 40px;
+    height: 40px;
+  }
+
+  .modal-dialog {
+    margin: 1rem;
+  }
+}
+
+/* --- Móviles --- */
+@media (max-width: 768px) {
+  .d-flex.justify-content-between {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .d-flex.justify-content-between .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .table-responsive {
+    font-size: 0.8rem;
+  }
+
+  .table thead th {
+    font-size: 0.7rem;
+    padding: 0.4rem 0.5rem;
+  }
+
+  .table tbody td {
+    padding: 0.4rem 0.5rem;
+  }
+
+  .product-image {
+    width: 35px;
+    height: 35px;
+  }
+
+  .action-buttons .btn {
+    width: 30px;
+    height: 30px;
+    font-size: 0.75rem;
+  }
+
+  .badge {
+    font-size: 0.65rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .modal-body {
+    padding: 1rem;
+  }
+
+  .modal-body .row {
+    flex-direction: column;
+  }
+
+  .modal-body .col-md-6 {
+    width: 100%;
+  }
+
+  .image-preview {
+    max-width: 100px;
+    max-height: 100px;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+  }
+
+  .empty-state {
+    padding: 2rem 1rem;
+  }
+
+  .empty-state i {
+    font-size: 2rem !important;
+  }
+}
+
+/* --- Móviles pequeños --- */
+@media (max-width: 480px) {
+  .table thead {
+    display: none;
+  }
+
+  .table tbody tr {
+    display: block;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+  }
+
+  .table tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.3rem 0;
+    border: none;
+  }
+
+  .table tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #4a5568;
+    font-size: 0.75rem;
+  }
+
+  .table tbody td:last-child {
+    border-bottom: none;
+  }
+
+  .table tbody td .action-buttons {
+    justify-content: flex-end;
+  }
+
+  .search-filter-container .search-box .input-group .form-control {
+    font-size: 0.85rem;
+  }
+}
+
+/* ============================================================
+   ANIMACIONES
+   ============================================================ */
+
+/* --- Transición para filas de la tabla --- */
+.table tbody tr {
+  transition: background-color 0.3s ease;
+}
+
+/* --- Animación de carga de imágenes --- */
+.product-image {
+  transition: opacity 0.3s ease;
+}
+
+.product-image[loading] {
+  opacity: 0.5;
+}
+
+/* --- Animación del modal --- */
+.modal.fade .modal-dialog {
+  transition: transform 0.3s ease-out;
+  transform: scale(0.95);
+}
+
+.modal.show .modal-dialog {
+  transform: scale(1);
+}
+
+/* ============================================================
+   SCROLLBAR PERSONALIZADA
+   ============================================================ */
+
+.table-responsive::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}

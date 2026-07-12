@@ -1,0 +1,365 @@
+<!-- src/app/modules/admin/admin-estadisticas/admin-estadisticas.html -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3>Estadísticas Avanzadas</h3>
+  <div class="d-flex gap-2 align-items-center">
+
+    <select class="form-select form-select-sm" style="width: auto;" [(ngModel)]="filtroPeriodo" (change)="cambiarPeriodo()">
+      <option value="hoy">📅 Hoy</option>
+      <option value="semana">📅 Última Semana</option>
+      <option value="mes" selected>📅 Este Mes</option>
+      <option value="todo">📅 Todo el Historial</option>
+    </select>
+    <button class="btn btn-outline-primary btn-sm" (click)="cargarReporteCompleto()">
+      <i class="fas fa-sync-alt"></i> Actualizar
+    </button>
+  </div>
+</div>
+
+
+<div class="alert alert-info mb-3" *ngIf="reporteCompletoCargado">
+  <i class="fas fa-info-circle me-2"></i>
+  Mostrando datos del período:
+  <strong>{{ filtroPeriodo === 'hoy' ? 'Hoy' : filtroPeriodo === 'semana' ? 'Última semana' : filtroPeriodo === 'mes' ? 'Este mes' : 'Todo el historial' }}</strong>
+  <span *ngIf="filtroPeriodo !== 'todo'">
+    ({{ fechaInicio }} al {{ fechaFin }})
+  </span>
+</div>
+
+<div *ngIf="!reporteCompletoCargado" class="text-center py-5">
+  <div class="spinner-border text-primary" role="status">
+    <span class="visually-hidden">Cargando...</span>
+  </div>
+  <p class="mt-3 text-muted">Cargando estadísticas avanzadas...</p>
+</div>
+
+<div *ngIf="reporteCompletoCargado && reporteCompleto">
+
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card stat-card text-primary">
+        <i class="fas fa-box"></i>
+        <div class="number">{{ reporteCompleto.resumen?.total_productos || 0 }}</div>
+        <div class="label">Productos (Total)</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card text-success">
+        <i class="fas fa-users"></i>
+        <div class="number">{{ reporteCompleto.resumen?.total_usuarios || 0 }}</div>
+        <div class="label">Usuarios (Total)</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card text-warning">
+        <i class="fas fa-shopping-cart"></i>
+        <div class="number">{{ reporteCompleto.resumen?.total_pedidos || 0 }}</div>
+        <div class="label">
+          Pedidos
+          <span class="badge bg-secondary" style="font-size: 0.6rem;">
+            {{ filtroPeriodo === 'hoy' ? 'HOY' : filtroPeriodo === 'semana' ? '7D' : filtroPeriodo === 'mes' ? 'MES' : 'TOTAL' }}
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card text-info">
+        <i class="fas fa-dollar-sign"></i>
+        <div class="number">S/ {{ (reporteCompleto.resumen?.ingresos_totales || 0) | number:'1.2-2' }}</div>
+        <div class="label">
+          Ingresos
+          <span class="badge bg-secondary" style="font-size: 0.6rem;">
+            {{ filtroPeriodo === 'hoy' ? 'HOY' : filtroPeriodo === 'semana' ? '7D' : filtroPeriodo === 'mes' ? 'MES' : 'TOTAL' }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0">🏆 Top Productos por Cantidad</h5>
+        </div>
+        <div class="card-body">
+          <div class="chart-container" style="height: 250px;">
+            <canvas id="chartTopCantidad"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0">💰 Top Productos por Monto</h5>
+        </div>
+        <div class="card-body">
+          <div class="chart-container" style="height: 250px;">
+            <canvas id="chartTopMonto"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0">📊 Top Productos (Cantidad)</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+              <tr>
+                <th>#</th>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Monto</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr *ngFor="let item of reporteCompleto.top_productos_cantidad; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td>{{ item.nombre }}</td>
+                <td>{{ item.cantidad }}</td>
+                <td>S/ {{ item.monto | number:'1.2-2' }}</td>
+              </tr>
+              <tr *ngIf="!reporteCompleto.top_productos_cantidad?.length">
+                <td colspan="4" class="text-center text-muted">No hay datos en este período</td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0">💰 Top Productos (Monto)</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+              <tr>
+                <th>#</th>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Monto</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr *ngFor="let item of reporteCompleto.top_productos_monto; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td>{{ item.nombre }}</td>
+                <td>{{ item.cantidad }}</td>
+                <td>S/ {{ item.monto | number:'1.2-2' }}</td>
+              </tr>
+              <tr *ngIf="!reporteCompleto.top_productos_monto?.length">
+                <td colspan="4" class="text-center text-muted">No hay datos en este período</td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-4">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0">📊 Ventas por Categoría</h5>
+        </div>
+        <div class="card-body">
+          <div class="chart-container" style="height: 280px;">
+            <canvas id="chartCategorias"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0">📊 Distribución de Estados</h5>
+        </div>
+        <div class="card-body">
+          <div class="chart-container" style="height: 280px;">
+            <canvas id="chartEstados"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0">📈 Ventas por Día (Última Semana)</h5>
+        </div>
+        <div class="card-body">
+          <div class="chart-container" style="height: 200px;">
+            <canvas id="chartVentasDia"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="row mt-4">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0">👥 Top Clientes</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+              <tr>
+                <th>#</th>
+                <th>Cliente</th>
+                <th>Pedidos</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr *ngFor="let cliente of reporteCompleto.top_clientes; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td>{{ cliente.nombre }}</td>
+                <td>{{ cliente.pedidos }}</td>
+              </tr>
+              <tr *ngIf="!reporteCompleto.top_clientes?.length">
+                <td colspan="3" class="text-center text-muted">No hay datos en este período</td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0">📊 Ventas por Categoría (Detalle)</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+              <tr>
+                <th>Categoría</th>
+                <th>Monto</th>
+                <th>%</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr *ngFor="let item of reporteCompleto.ventas_categoria | keyValue">
+                <td>{{ item.key }}</td>
+                <td>S/ {{ item.value | number:'1.2-2' }}</td>
+                <td>
+                  <div class="progress" style="height: 20px;">
+                    <div class="progress-bar bg-primary"
+                         [style.width.%]="((item.value || 0) / (reporteCompleto.resumen?.ingresos_totales || 1)) * 100">
+                      {{ ((item.value || 0) / (reporteCompleto.resumen?.ingresos_totales || 1) * 100) | number:'1.0-0' }}%
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="!reporteCompleto.ventas_categoria || (reporteCompleto.ventas_categoria | keyValue)?.length === 0">
+                <td colspan="3" class="text-center text-muted">No hay datos en este período</td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0">📈 Ventas por Día (Detalle)</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+              <tr>
+                <th>Día</th>
+                <th>Ventas</th>
+                <th>% del Total</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr *ngFor="let item of reporteCompleto.ventas_por_dia | keyValue">
+                <td>{{ item.key }}</td>
+                <td>S/ {{ item.value | number:'1.2-2' }}</td>
+                <td>
+                  <div class="progress" style="height: 20px;">
+                    <div class="progress-bar bg-success"
+                         [style.width.%]="((item.value || 0) / (reporteCompleto.resumen?.ingresos_totales || 1)) * 100">
+                      {{ ((item.value || 0) / (reporteCompleto.resumen?.ingresos_totales || 1) * 100) | number:'1.0-0' }}%
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="!reporteCompleto.ventas_por_dia || (reporteCompleto.ventas_por_dia | keyValue)?.length === 0">
+                <td colspan="3" class="text-center text-muted">No hay datos en este período</td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0">💳 Ingresos por Estado</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="d-flex align-items-center">
+                <span class="badge bg-info me-2">PAGADO</span>
+                <span>S/ {{ (reporteCompleto.resumen?.ingresos_pagados || 0) | number:'1.2-2' }}</span>
+              </div>
+              <small class="text-muted">{{ reporteCompleto.resumen?.pedidos_pagados || 0 }} pedidos</small>
+            </div>
+            <div class="col-md-6">
+              <div class="d-flex align-items-center">
+                <span class="badge bg-success me-2">ENTREGADO</span>
+                <span>S/ {{ (reporteCompleto.resumen?.ingresos_entregados || 0) | number:'1.2-2' }}</span>
+              </div>
+              <small class="text-muted">{{ reporteCompleto.resumen?.pedidos_entregados || 0 }} pedidos</small>
+            </div>
+          </div>
+          <hr>
+          <div class="progress" style="height: 30px;">
+            <div class="progress-bar bg-info"
+                 [style.width.%]="((reporteCompleto.resumen?.ingresos_pagados || 0) / (reporteCompleto.resumen?.ingresos_totales || 1)) * 100">
+              Pagado
+            </div>
+            <div class="progress-bar bg-success"
+                 [style.width.%]="((reporteCompleto.resumen?.ingresos_entregados || 0) / (reporteCompleto.resumen?.ingresos_totales || 1)) * 100">
+              Entregado
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

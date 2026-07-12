@@ -43,7 +43,7 @@ public class CarritoController {
 
             List<CarritoItem> carrito = carritoService.obtenerCarrito(usuario.getId());
 
-            // ✅ CONVERTIR A DTO
+
             List<CarritoItemDTO> itemsDTO = carrito.stream()
                     .map(CarritoItemDTO::new)
                     .collect(Collectors.toList());
@@ -59,7 +59,7 @@ public class CarritoController {
                     .sum();
 
             response.put("success", true);
-            response.put("items", itemsDTO); // ✅ Enviar DTO, no la entidad
+            response.put("items", itemsDTO);
             response.put("total", total);
             response.put("cantidadItems", cantidadItems);
             response.put("totalItems", carrito.size());

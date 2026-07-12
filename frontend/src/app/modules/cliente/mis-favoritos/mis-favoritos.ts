@@ -86,27 +86,27 @@ export class MisFavoritosComponent implements OnInit {
     this.isLoading = true;
     this.errorMessage = '';
 
-    console.log('🔄 Cargando favoritos...');
+    console.log(' Cargando favoritos...');
 
     this.http.get(`${this.apiUrl}/api/favoritos/listar`, {
       withCredentials: true
     }).subscribe({
       next: (response: any) => {
-        console.log('📦 Respuesta del servidor:', response);
+        console.log(' Respuesta del servidor:', response);
 
         if (response && response.success === true) {
           this.favoritos = response.favoritos || [];
-          console.log(`✅ ${this.favoritos.length} favoritos cargados`);
+          console.log(` ${this.favoritos.length} favoritos cargados`);
         } else {
           this.errorMessage = response?.message || 'Error al cargar los favoritos';
         }
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('❌ Error al cargar favoritos:', error);
+        console.error(' Error al cargar favoritos:', error);
 
         if (error.status === 401) {
-          this.errorMessage = '⚠️ Debes iniciar sesión para ver tus favoritos';
+          this.errorMessage = '️ Debes iniciar sesión para ver tus favoritos';
         } else {
           this.errorMessage = error.error?.message || 'Error al cargar los favoritos';
         }
@@ -115,7 +115,7 @@ export class MisFavoritosComponent implements OnInit {
     });
   }
 
-  // ✅ ANIMACIÓN: Corazón flotante
+
   private mostrarCorazonFlotante(event: Event): void {
     const rect = (event.target as HTMLElement).getBoundingClientRect();
     const corazon = document.createElement('div');
@@ -127,7 +127,7 @@ export class MisFavoritosComponent implements OnInit {
     setTimeout(() => corazon.remove(), 1300);
   }
 
-  // ✅ ANIMACIÓN: Carrito flotante
+
   private mostrarCarritoFlotante(event: Event): void {
     const rect = (event.target as HTMLElement).getBoundingClientRect();
     const carrito = document.createElement('div');
