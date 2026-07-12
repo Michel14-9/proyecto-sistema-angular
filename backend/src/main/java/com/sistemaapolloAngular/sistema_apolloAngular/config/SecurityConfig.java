@@ -1,11 +1,10 @@
 package com.sistemaapolloAngular.sistema_apolloAngular.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -29,10 +28,13 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 @Configuration
 @EnableWebSecurity
@@ -111,7 +113,8 @@ public class SecurityConfig {
                                 "/login",
                                 "/admin/data/**",
                                 "/admin-menu/**",
-                                "/error"
+                                "/error",
+                                "/api/tracking/**"
 
                         )
                 )
@@ -139,6 +142,7 @@ public class SecurityConfig {
                                 "/api/pago/**",
                                 "/login",
                                 "/error",
+                                "/api/tracking/**",
                                 "/admin/data/**"
                         ).permitAll()
 

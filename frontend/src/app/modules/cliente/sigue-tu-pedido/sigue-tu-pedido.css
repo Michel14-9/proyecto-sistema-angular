@@ -452,3 +452,28 @@
     padding: 0.25rem 0.4rem;
   }
 }
+
+/* ─── TRACKING LIVE PANEL ─────────────────────────────────────────────────── */
+.tracking-live-header {
+  background: linear-gradient(135deg, #c0392b, #e74c3c);
+  border-radius: 10px 10px 0 0;
+}
+
+.tracking-metric-valor {
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tracking-metric-label {
+  font-size: 0.72rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+}
+
+.tracking-live-panel .card {
+  border-radius: 12px;
+  overflow: hidden;
+}

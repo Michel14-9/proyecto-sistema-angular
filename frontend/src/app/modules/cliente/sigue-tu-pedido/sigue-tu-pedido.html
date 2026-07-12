@@ -49,12 +49,9 @@
                     </div>
                     <div class="col-md-6">
                       <label class="form-label fw-bold">Número de pedido</label>
-                      <input type="text" class="form-control" id="numeroPedido"
-                             [(ngModel)]="numeroPedido" name="numeroPedido"
-                             placeholder="Ej: LR000001, LR000002, etc."
-                             pattern="LR\d{6}"
-                             title="Formato: LR seguido de 6 números (Ej: LR000001)"
-                             required>
+                      <input type="text" class="form-control" id="numeroPedido" [(ngModel)]="numeroPedido"
+                        name="numeroPedido" placeholder="Ej: LR000001, LR000002, etc." pattern="LR\d{6}"
+                        title="Formato: LR seguido de 6 números (Ej: LR000001)" required>
                       <div class="form-text">Ingresa el número que recibiste en tu correo</div>
                     </div>
                   </div>
@@ -84,6 +81,93 @@
                   </span>
                 </h4>
               </div>
+              <!-- ══ PANEL DE TRACKING EN VIVO (solo cuando el pedido está EN_CAMINO) ══ -->
+              <div *ngIf="pedido.estado === 'EN_CAMINO'" class="tracking-live-panel mt-4">
+                <div class="card border-0 shadow-sm">
+                  <div class="card-header tracking-live-header text-white">
+                    <i class="fas fa-satellite-dish me-2"></i>
+                    Seguimiento en Tiempo Real
+                    <span class="badge bg-light text-dark ms-2 float-end">
+                      <i class="fas fa-circle text-success me-1" style="font-size:0.6rem"></i>En vivo
+                    </span>
+                  </div>
+                  <div class="card-body">
+
+                    <!-- Métricas principales -->
+                    <div class="row text-center mb-3" *ngIf="trackingData">
+                      <div class="col-4">
+                        <div class="tracking-metric-valor text-primary">
+                          {{ trackingData.distanciaKm !== null ? (trackingData.distanciaKm | number:'1.1-1') : '—' }}
+                        </div>
+                        <div class="tracking-metric-label">km restantes</div>
+                      </div>
+                      <div class="col-4">
+                        <div class="tracking-metric-valor text-danger">
+                          {{ trackingData.etaMinutos ? trackingData.etaMinutos + ' min' : '—' }}
+                        </div>
+                        <div class="tracking-metric-label">tiempo estimado</div>
+                      </div>
+                      <div class="col-4">
+                        <div class="tracking-metric-valor text-success">
+                          {{ trackingData.estado === 'ACTIVE' ? '🛵' : '⏳' }}
+                        </div>
+                        <div class="tracking-metric-label">{{ trackingData.estado === 'ACTIVE' ? 'En camino' :
+                          'Preparando' }}</div>
+                      </div>
+                    </div>
+
+                    <!-- Barra de progreso visual por distancia -->
+                    <div *ngIf="trackingData && trackingData.distanciaKm !== null">
+                      <div class="d-flex justify-content-between mb-1">
+                        <small class="text-muted">🏪 Local Apollo</small>
+                        <small class="text-muted">📍 Tu dirección</small>
+                      </div>
+                      <div class="progress" style="height: 10px; border-radius: 10px;">
+                        <div class="progress-bar bg-danger progress-bar-striped progress-bar-animated"
+                          role="progressbar" [style.width.%]="getProgresoPorcentaje()" aria-valuemin="0"
+                          aria-valuemax="100">
+                        </div>
+                      </div>
+                      <div class="d-flex justify-content-between mt-1">
+                        <small class="text-muted">Origen</small>
+                        <small class="text-primary fw-bold">{{ getProgresoPorcentaje() }}% recorrido</small>
+                      </div>
+                    </div>
+
+                    <!-- Dirección de entrega -->
+                    <div class="mt-3 d-flex align-items-start gap-2" *ngIf="trackingData?.direccionCliente">
+                      <i class="fas fa-map-marker-alt text-danger mt-1"></i>
+                      <div>
+                        <small class="text-muted d-block">Dirección de entrega</small>
+                        <span class="fw-semibold">{{ trackingData.direccionCliente }}</span>
+                      </div>
+                    </div>
+
+                    <!-- Repartidor -->
+                    <div class="mt-2 d-flex align-items-center gap-2" *ngIf="trackingData?.nombreRepartidor">
+                      <i class="fas fa-user-circle text-primary"></i>
+                      <div>
+                        <small class="text-muted d-block">Repartidor</small>
+                        <span class="fw-semibold">{{ trackingData.nombreRepartidor }}</span>
+                      </div>
+                    </div>
+
+                    <!-- Sin tracking aún -->
+                    <div *ngIf="!trackingData" class="text-center py-3 text-muted">
+                      <i class="fas fa-satellite-dish fa-2x mb-2 d-block"></i>
+                      <small>Conectando con el repartidor...</small>
+                    </div>
+
+                    <!-- Última actualización -->
+                    <div *ngIf="ultimaActualizacionTracking" class="text-center mt-3">
+                      <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>Actualizado: {{ ultimaActualizacionTracking }}
+                      </small>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
               <div class="card-body">
                 <!-- Estado actual con mensaje -->
                 <div class="estado-actual mb-4 p-3 rounded" [ngClass]="{
@@ -101,7 +185,7 @@
                         {{ getEstadoTexto(pedido.estado) }}
                       </h5>
                       <small [class.text-white]="pedido.estado !== 'PENDIENTE'"
-                             [class.text-muted]="pedido.estado === 'PENDIENTE'">
+                        [class.text-muted]="pedido.estado === 'PENDIENTE'">
                         {{ getMensajeEstado(pedido.estado) }}
                       </small>
                     </div>
@@ -116,9 +200,8 @@
                 <!-- Timeline del estado -->
                 <div class="timeline-pedido mb-4">
                   <div class="progress progress-pedido">
-                    <div class="progress-bar" role="progressbar"
-                         [style.width.%]="getPorcentajeEstado(pedido.estado)"
-                         [ngClass]="{
+                    <div class="progress-bar" role="progressbar" [style.width.%]="getPorcentajeEstado(pedido.estado)"
+                      [ngClass]="{
                            'bg-warning': pedido.estado === 'PENDIENTE',
                            'bg-success': pedido.estado === 'PAGADO',
                            'bg-info': pedido.estado === 'LISTO',
@@ -155,7 +238,8 @@
                       <h6 class="text-muted mb-2">Información del Pedido</h6>
                       <p><strong>Número de Pedido:</strong> <span>{{ pedido.numeroPedido || pedido.id }}</span></p>
                       <p><strong>Canal:</strong> <span>{{ pedido.canal || 'WEB' }}</span></p>
-                      <p><strong>Fecha:</strong> <span>{{ formatearFecha(pedido.fechaPedido || pedido.fecha) }}</span></p>
+                      <p><strong>Fecha:</strong> <span>{{ formatearFecha(pedido.fechaPedido || pedido.fecha) }}</span>
+                      </p>
                       <p *ngIf="pedido.total"><strong>Total:</strong> S/. {{ pedido.total | number:'1.2-2' }}</p>
                     </div>
                   </div>
@@ -169,7 +253,7 @@
                     <div class="acciones-pedido mt-3">
                       <div class="d-flex flex-wrap gap-2">
                         <button class="btn btn-outline-luren btn-sm" (click)="repetirPedido()"
-                                [disabled]="!pedido.items || pedido.items.length === 0">
+                          [disabled]="!pedido.items || pedido.items.length === 0">
                           <i class="fas fa-redo me-1"></i>Repetir
                         </button>
                         <button class="btn btn-outline-secondary btn-sm" (click)="descargarComprobante()">
@@ -192,26 +276,27 @@
                   <div class="table-responsive">
                     <table class="table table-sm table-pedido">
                       <thead>
-                      <tr>
-                        <th>Producto</th>
-                        <th class="text-center">Cantidad</th>
-                        <th class="text-end">Precio</th>
-                        <th class="text-end">Subtotal</th>
-                      </tr>
+                        <tr>
+                          <th>Producto</th>
+                          <th class="text-center">Cantidad</th>
+                          <th class="text-end">Precio</th>
+                          <th class="text-end">Subtotal</th>
+                        </tr>
                       </thead>
                       <tbody>
-                      <tr *ngFor="let item of pedido.items">
-                        <td>{{ item.nombreProducto || item.nombre }}</td>
-                        <td class="text-center">{{ item.cantidad }}</td>
-                        <td class="text-end">S/. {{ (item.precio || 0) | number:'1.2-2' }}</td>
-                        <td class="text-end">S/. {{ (item.subtotal || (item.precio * item.cantidad) || 0) | number:'1.2-2' }}</td>
-                      </tr>
+                        <tr *ngFor="let item of pedido.items">
+                          <td>{{ item.nombreProducto || item.nombre }}</td>
+                          <td class="text-center">{{ item.cantidad }}</td>
+                          <td class="text-end">S/. {{ (item.precio || 0) | number:'1.2-2' }}</td>
+                          <td class="text-end">S/. {{ (item.subtotal || (item.precio * item.cantidad) || 0) |
+                            number:'1.2-2' }}</td>
+                        </tr>
                       </tbody>
                       <tfoot>
-                      <tr>
-                        <td colspan="3" class="text-end"><strong>Total:</strong></td>
-                        <td class="text-end"><strong>S/. {{ pedido.total | number:'1.2-2' }}</strong></td>
-                      </tr>
+                        <tr>
+                          <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                          <td class="text-end"><strong>S/. {{ pedido.total | number:'1.2-2' }}</strong></td>
+                        </tr>
                       </tfoot>
                     </table>
                   </div>
@@ -234,7 +319,8 @@
                   <div class="col-md-6">
                     <i class="fab fa-whatsapp fa-2x text-success mb-2"></i>
                     <p class="mb-1">Escríbenos por WhatsApp</p>
-                    <a href="https://wa.me/51123456789" class="fw-bold text-decoration-none text-dark">+51 123 456 789</a>
+                    <a href="https://wa.me/51123456789" class="fw-bold text-decoration-none text-dark">+51 123 456
+                      789</a>
                   </div>
                 </div>
               </div>
