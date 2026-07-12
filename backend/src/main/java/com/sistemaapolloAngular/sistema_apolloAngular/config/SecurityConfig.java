@@ -112,7 +112,8 @@ public class SecurityConfig {
                                 "/api/pago/**",
                                 "/login",
                                 "/admin-menu/**",
-                                "/error"
+                                "/error",
+                                "/api/tracking/**"
 
                         )
                 )
@@ -139,7 +140,8 @@ public class SecurityConfig {
                                 "/api/locales/**",
                                 "/api/pago/**",
                                 "/login",
-                                "/error"
+                                "/error",
+                                "/api/tracking/**"
                         ).permitAll()
 
                         // ── ADMIN ────────────────────────────────────────

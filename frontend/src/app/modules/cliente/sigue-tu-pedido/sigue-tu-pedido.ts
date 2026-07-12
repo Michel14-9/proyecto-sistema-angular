@@ -58,7 +58,7 @@ export class SigueTuPedidoComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private router: Router,
     private route: ActivatedRoute
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.isAuthenticated = this.authService.isAuthenticated();
@@ -82,6 +82,7 @@ export class SigueTuPedidoComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.detenerPolling();
+    this.detenerPollingTracking();
   }
 
   buscarPedido(): void {
@@ -112,6 +113,11 @@ export class SigueTuPedidoComponent implements OnInit, OnDestroy {
           this.pedido = response.pedido;
           this.pedidoEncontrado = true;
           this.errorMessage = '';
+
+          // Arrancar tracking si el pedido ya está EN_CAMINO
+          if (response.pedido.estado === 'EN_CAMINO') {
+            this.iniciarPollingTracking(response.pedido.numeroPedido);
+          }
 
           const pedidoId = response.pedido.id;
           if (pedidoId) {
@@ -209,6 +215,13 @@ export class SigueTuPedidoComponent implements OnInit, OnDestroy {
       setTimeout(() => {
         this.mostrarNotificacion('🎉 ¡Pedido entregado exitosamente! Gracias por tu compra', 'success');
       }, 1000);
+    }
+
+    if (estadoNuevo === 'EN_CAMINO' && this.pedido) {
+      this.iniciarPollingTracking(this.pedido.numeroPedido);
+    }
+    if (estadoNuevo === 'ENTREGADO' || estadoNuevo === 'RECHAZADO') {
+      this.detenerPollingTracking();
     }
   }
 
@@ -455,5 +468,58 @@ export class SigueTuPedidoComponent implements OnInit, OnDestroy {
     this.detenerPolling();
     this.authService.logout();
     this.router.navigate(['/login']);
+  }
+
+  // ── NUEVAS PROPIEDADES (añadir al bloque de propiedades de la clase) ──────────
+  private trackingApiUrl = 'http://localhost:8082';
+  trackingData: any = null;
+  ultimaActualizacionTracking: string = '';
+  private trackingPollingInterval: any = null;
+  private distanciaInicial: number | null = null; // para calcular progreso
+
+  // ── NUEVO MÉTODO: iniciar polling de tracking ──────────────────────────────────
+  iniciarPollingTracking(numeroPedido: string): void {
+    this.detenerPollingTracking();
+    this.consultarTracking(numeroPedido);
+    this.trackingPollingInterval = setInterval(() => {
+      this.consultarTracking(numeroPedido);
+    }, 10000); // cada 10 segundos
+  }
+
+  consultarTracking(numeroPedido: string): void {
+    this.http.get<any>(`${this.trackingApiUrl}/api/tracking/${numeroPedido}`).subscribe({
+      next: (data) => {
+        if (data && data.id) {
+          this.trackingData = data;
+          // Guardar distancia inicial para calcular progreso
+          if (this.distanciaInicial === null && data.distanciaKm) {
+            this.distanciaInicial = data.distanciaKm;
+          }
+          const ahora = new Date();
+          this.ultimaActualizacionTracking = ahora.toLocaleTimeString('es-PE', {
+            hour: '2-digit', minute: '2-digit', second: '2-digit'
+          });
+          // Detener si ya fue entregado
+          if (data.estado === 'COMPLETED') {
+            this.detenerPollingTracking();
+          }
+        }
+      },
+      error: () => { /* tracking no disponible, continúa sin él */ }
+    });
+  }
+
+  detenerPollingTracking(): void {
+    if (this.trackingPollingInterval) {
+      clearInterval(this.trackingPollingInterval);
+      this.trackingPollingInterval = null;
+    }
+  }
+
+  getProgresoPorcentaje(): number {
+    if (!this.trackingData?.distanciaKm || !this.distanciaInicial) return 0;
+    const recorrido = this.distanciaInicial - this.trackingData.distanciaKm;
+    const pct = Math.round((recorrido / this.distanciaInicial) * 100);
+    return Math.min(Math.max(pct, 0), 100);
   }
 }
