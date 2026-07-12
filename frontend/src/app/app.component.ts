@@ -5,7 +5,7 @@ import { FooterComponent } from './core/components/footer/footer.component';
 import { LayoutService } from './core/services/layout.service';
 import { CommonModule } from '@angular/common';
 import { AlertComponent } from './shared/alert/alert.component';
-
+import { ChatbotComponent } from './shared/components/chatbot/chatbot.component';
 import { ConfigService } from './core/services/config.service';
 
 @Component({
@@ -16,7 +16,8 @@ import { ConfigService } from './core/services/config.service';
     HeaderComponent,
     FooterComponent,
     CommonModule,
-    AlertComponent
+    AlertComponent,
+    ChatbotComponent  // ✅ Ya debe funcionar si ChatbotComponent es standalone
   ],
   templateUrl: './app.html',
   styleUrls: ['./app.css']
@@ -30,7 +31,6 @@ export class AppComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-
     this.configService.loadConfig().then(() => {
       console.log(' Configuración cargada en AppComponent');
     }).catch((error) => {

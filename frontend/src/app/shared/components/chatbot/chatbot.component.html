@@ -1,0 +1,61 @@
+<!-- Botón flotante -->
+<div class="chatbot-button" (click)="toggleChat()" *ngIf="!isOpen">
+  <i class="fas fa-drumstick-bite"></i>
+  <span class="badge">✦</span>
+</div>
+
+<!-- Ventana del chat -->
+<div class="chatbot-window" *ngIf="isOpen" [class.minimized]="isMinimized">
+
+  <!-- Header Premium -->
+  <div class="chat-header">
+    <div class="header-info">
+      <div class="logo-icon">
+        <i class="fas fa-utensils"></i>
+      </div>
+      <div>
+        <h4>🍗 Chicken Luren Bot</h4>
+        <span class="status">En línea · Tu asistente gastronómico</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button (click)="minimizeChat()" title="Minimizar">
+        <i class="fas" [class.fa-minus]="!isMinimized" [class.fa-expand]="isMinimized"></i>
+      </button>
+      <button (click)="toggleChat()" title="Cerrar">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mensajes -->
+  <div class="chat-messages" #chatContainer *ngIf="!isMinimized">
+    <div *ngFor="let msg of messages" class="message-wrapper">
+      <div class="message" [class.user-message]="msg.isUser" [class.bot-message]="!msg.isUser">
+        <div class="message-content">{{ msg.text }}</div>
+        <div class="message-time">
+          <i class="fas fa-clock"></i> {{ formatTime(msg.timestamp) }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Escribiendo -->
+    <div class="typing-indicator" *ngIf="isLoading">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="chat-input" *ngIf="!isMinimized">
+    <input
+      [(ngModel)]="newMessage"
+      (keyup.enter)="sendMessage()"
+      placeholder="Pregúntame sobre nuestro menú..."
+      [disabled]="isLoading">
+    <button (click)="sendMessage()" [disabled]="!newMessage.trim() || isLoading">
+      <i class="fas fa-paper-plane"></i>
+    </button>
+  </div>
+</div>

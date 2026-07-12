@@ -114,7 +114,8 @@ public class SecurityConfig {
                                 "/admin/data/**",
                                 "/admin-menu/**",
                                 "/error",
-                                "/api/tracking/**"
+                                "/api/tracking/**",
+                                "/api/chatbot/**"
 
                         )
                 )
@@ -143,7 +144,8 @@ public class SecurityConfig {
                                 "/login",
                                 "/error",
                                 "/api/tracking/**",
-                                "/admin/data/**"
+                                "/admin/data/**",
+                                "/api/chatbot/**"
                         ).permitAll()
 
                         // ── ADMIN ────────────────────────────────────────
