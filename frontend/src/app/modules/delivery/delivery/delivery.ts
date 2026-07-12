@@ -74,7 +74,7 @@ export class DeliveryComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private router: Router,
     private layoutService: LayoutService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.isAuthenticated = this.authService.isAuthenticated();
@@ -286,11 +286,17 @@ export class DeliveryComponent implements OnInit, OnDestroy {
   confirmarIniciarEntrega(): void {
     if (!this.pedidoSeleccionado) return;
     this.cerrarModalIniciarEntrega();
-    this.iniciarEntrega(this.pedidoSeleccionado);
+    this.iniciarEntrega(this.pedidoSeleccionado.id);
   }
 
   iniciarEntrega(pedidoId: number): void {
     console.log(` Iniciando entrega del pedido ${pedidoId}...`);
+
+    const pedido = this.pedidoSeleccionado;
+
+    if (!pedido) {
+      return;
+    }
 
     this.http.post(`${this.apiUrl}/delivery/iniciar-entrega/${pedidoId}`, {}, {
       headers: this.getHeaders(),
@@ -328,7 +334,7 @@ export class DeliveryComponent implements OnInit, OnDestroy {
 
           setTimeout(() => this.router.navigate(['/login']), 2000);
         } else {
-          this.mostrarToastError(e.error || 'Error al iniciar entrega');
+          this.mostrarToastError(error.error || 'Error al iniciar entrega');
         }
       }
     });
@@ -349,7 +355,7 @@ export class DeliveryComponent implements OnInit, OnDestroy {
   confirmarMarcarEntregado(): void {
     if (!this.pedidoSeleccionado) return;
     this.cerrarModalMarcarEntregado();
-    this.marcarComoEntregado(this.pedidoSeleccionado);
+    this.marcarComoEntregado(this.pedidoSeleccionado.id);
   }
 
   marcarComoEntregado(pedidoId: number): void {
@@ -373,7 +379,7 @@ export class DeliveryComponent implements OnInit, OnDestroy {
 
           setTimeout(() => this.router.navigate(['/login']), 2000);
         } else {
-          this.mostrarToastError(e.error || 'Error al marcar como entregado');
+          this.mostrarToastError(error.error || 'Error al marcar como entregado');
         }
       }
     });
