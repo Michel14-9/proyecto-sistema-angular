@@ -74,12 +74,14 @@ class ReportesService:
             return 'Otros'
 
     # ============================================================
-    # OBTENER REPORTE DE VENTAS
+    # OBTENER REPORTE DE VENTAS - CORREGIDO
     # ============================================================
 
     def obtener_reporte_ventas(self, fecha_inicio=None, fecha_fin=None, tipo='ventas'):
         """Obtener reporte de ventas con filtro de fechas y tipo"""
         try:
+            print(f"📅 Parámetros recibidos - inicio: {fecha_inicio}, fin: {fecha_fin}, tipo: {tipo}")
+
             # Obtener TODOS los pedidos
             response = requests.get(
                 f'{self.java_url}/admin/data/pedidos',
@@ -102,7 +104,9 @@ class ReportesService:
                     pedidos_filtrados.append(p)
             pedidos = pedidos_filtrados
 
-            # Filtrar por fechas
+            print(f"📊 Pedidos pagados/entregados totales: {len(pedidos)}")
+
+            # 🔥 CORREGIDO: Filtrar por fechas correctamente
             if fecha_inicio and fecha_fin:
                 try:
                     print(f"📅 Filtrando por fechas: {fecha_inicio} - {fecha_fin}")
@@ -113,7 +117,7 @@ class ReportesService:
 
                     print(f"📅 Fechas parseadas: inicio={inicio}, fin={fin}")
 
-                    pedidos_filtrados_temp = []
+                    pedidos_temp = []
                     for p in pedidos:
                         fecha_pedido_str = p.get('fecha')
                         if fecha_pedido_str:
@@ -127,18 +131,47 @@ class ReportesService:
                                 fecha_pedido = datetime.strptime(fecha_limpia, '%Y-%m-%d')
 
                                 if inicio <= fecha_pedido <= fin:
-                                    pedidos_filtrados_temp.append(p)
+                                    pedidos_temp.append(p)
+                                    print(f"✅ Pedido {p.get('id')} - {fecha_limpia} está en el rango")
                             except Exception as e:
                                 print(f"⚠️ Error parseando fecha {fecha_pedido_str}: {e}")
                                 continue
 
-                    print(f"📊 Total pedidos después de filtrar: {len(pedidos_filtrados_temp)}")
-                    pedidos = pedidos_filtrados_temp
+                    print(f"📊 Total pedidos después de filtrar: {len(pedidos_temp)}")
+                    pedidos = pedidos_temp
 
                 except Exception as e:
                     print(f"❌ Error filtrando fechas: {e}")
                     import traceback
                     traceback.print_exc()
+                    return {
+                        'success': False,
+                        'error': f'Error al filtrar fechas: {str(e)}'
+                    }
+
+            # 🔥 Si no hay pedidos en el rango, devolver estructura vacía
+            if not pedidos:
+                print("📊 No hay pedidos en el rango de fechas seleccionado")
+                return {
+                    'success': True,
+                    'metricas': {
+                        'totalVentas': 0,
+                        'totalPedidos': 0,
+                        'productosVendidos': 0,
+                        'crecimiento': 0
+                    },
+                    'data': [],
+                    'datos_grafico': {
+                        'labels': [],
+                        'datos': [],
+                        'pedidos': []
+                    },
+                    'categorias': {
+                        'labels': ['Sin datos'],
+                        'datos': [0]
+                    },
+                    'message': 'No hay ventas en el período seleccionado'
+                }
 
             # PROCESAR SEGÚN EL TIPO DE REPORTE
             if tipo == 'productos':
@@ -168,11 +201,34 @@ class ReportesService:
             }
 
     # ============================================================
-    # PROCESAR VENTAS (INCLUYE CLIENTES PRESENCIALES)
+    # PROCESAR VENTAS - CORREGIDO
     # ============================================================
 
     def _procesar_ventas(self, pedidos, fecha_inicio, fecha_fin):
         """Procesar reporte de VENTAS (gráfico de líneas con fechas)"""
+
+        # 🔥 Si no hay pedidos, devolver estructura vacía
+        if not pedidos:
+            return {
+                'success': True,
+                'metricas': {
+                    'totalVentas': 0,
+                    'totalPedidos': 0,
+                    'productosVendidos': 0,
+                    'crecimiento': 0
+                },
+                'data': [],
+                'datos_grafico': {
+                    'labels': [],
+                    'datos': [],
+                    'pedidos': []
+                },
+                'categorias': {
+                    'labels': ['Sin datos'],
+                    'datos': [0]
+                }
+            }
+
         ventas_por_dia = defaultdict(float)
         pedidos_por_dia = defaultdict(int)
 
@@ -224,11 +280,9 @@ class ReportesService:
             if primera_mitad > 0:
                 crecimiento = ((segunda_mitad - primera_mitad) / primera_mitad) * 100
 
-
         tabla_datos = []
         for p in pedidos[:50]:
             cliente = 'Cliente general'
-
 
             if p.get('usuario'):
                 usuario = p.get('usuario', {})
@@ -301,6 +355,28 @@ class ReportesService:
 
     def _procesar_productos(self, pedidos, fecha_inicio, fecha_fin):
         """Procesar reporte de PRODUCTOS MÁS VENDIDOS"""
+
+        if not pedidos:
+            return {
+                'success': True,
+                'metricas': {
+                    'totalVentas': 0,
+                    'totalPedidos': 0,
+                    'productosVendidos': 0,
+                    'crecimiento': 0
+                },
+                'data': [],
+                'datos_grafico': {
+                    'labels': [],
+                    'datos': [],
+                    'pedidos': []
+                },
+                'categorias': {
+                    'labels': ['Sin datos'],
+                    'datos': [0]
+                }
+            }
+
         productos_map = defaultdict(lambda: {'cantidad': 0, 'monto': 0})
 
         for p in pedidos:
@@ -373,6 +449,28 @@ class ReportesService:
 
     def _procesar_pedidos(self, pedidos, fecha_inicio, fecha_fin):
         """Procesar reporte de ESTADÍSTICAS DE PEDIDOS"""
+
+        if not pedidos:
+            return {
+                'success': True,
+                'metricas': {
+                    'totalVentas': 0,
+                    'totalPedidos': 0,
+                    'productosVendidos': 0,
+                    'crecimiento': 0
+                },
+                'data': [],
+                'datos_grafico': {
+                    'labels': [],
+                    'datos': [],
+                    'pedidos': []
+                },
+                'categorias': {
+                    'labels': ['Sin datos'],
+                    'datos': [0]
+                }
+            }
+
         estados_map = defaultdict(int)
         for p in pedidos:
             estado = p.get('estado', 'PENDIENTE')
@@ -411,14 +509,39 @@ class ReportesService:
             }
         }
 
-
+    # ============================================================
     # PROCESAR USUARIOS
-
+    # ============================================================
 
     def _procesar_usuarios(self, pedidos, fecha_inicio, fecha_fin):
         """Procesar reporte de ACTIVIDAD DE USUARIOS"""
-        usuarios_map = defaultdict(int)
 
+        if not pedidos:
+            return {
+                'success': True,
+                'metricas': {
+                    'totalVentas': 0,
+                    'totalPedidos': 0,
+                    'productosVendidos': 0,
+                    'crecimiento': 0,
+                    'totalClientes': 0,
+                    'clientesConPedidos': 0,
+                    'clientesSinPedidos': 0
+                },
+                'data': [],
+                'datos_grafico': {
+                    'labels': [],
+                    'datos': [],
+                    'pedidos': []
+                },
+                'categorias': {
+                    'labels': ['Clientes activos', 'Clientes inactivos'],
+                    'datos': [0, 0]
+                },
+                'titulo': 'Actividad de Usuarios'
+            }
+
+        usuarios_map = defaultdict(int)
 
         for p in pedidos:
             if p.get('usuario'):
@@ -428,18 +551,15 @@ class ReportesService:
                     nombre = usuario.get('username', 'Usuario registrado')
                 usuarios_map[nombre] += 1
 
-
         for p in pedidos:
             if p.get('usuario') is None and p.get('nombreCliente'):
                 nombre = p.get('nombreCliente', '').strip()
                 if nombre:
                     usuarios_map[nombre] += 1
 
-
         for p in pedidos:
             if p.get('usuario') is None and not p.get('nombreCliente'):
                 usuarios_map['Cliente general'] += 1
-
 
         usuarios_registrados = self._obtener_usuarios()
         for usuario in usuarios_registrados:
@@ -494,12 +614,35 @@ class ReportesService:
             'titulo': 'Actividad de Usuarios'
         }
 
-
+    # ============================================================
     # MÉTODOS DE PAGO
-
+    # ============================================================
 
     def _procesar_metodos_pago(self, pedidos, fecha_inicio, fecha_fin):
         """Reporte de MÉTODOS DE PAGO"""
+
+        if not pedidos:
+            return {
+                'success': True,
+                'metricas': {
+                    'totalVentas': 0,
+                    'totalPedidos': 0,
+                    'metodosUsados': 0,
+                    'crecimiento': 0
+                },
+                'data': [],
+                'datos_grafico': {
+                    'labels': [],
+                    'datos': [],
+                    'montos': []
+                },
+                'categorias': {
+                    'labels': ['Sin datos'],
+                    'datos': [0]
+                },
+                'titulo': 'Métodos de Pago'
+            }
+
         metodos_map = defaultdict(int)
         montos_map = defaultdict(float)
 
@@ -549,12 +692,35 @@ class ReportesService:
             'titulo': 'Métodos de Pago'
         }
 
-
+    # ============================================================
     # TIPOS DE ENTREGA
-
+    # ============================================================
 
     def _procesar_tipos_entrega(self, pedidos, fecha_inicio, fecha_fin):
         """Reporte de TIPOS DE ENTREGA"""
+
+        if not pedidos:
+            return {
+                'success': True,
+                'metricas': {
+                    'totalVentas': 0,
+                    'totalPedidos': 0,
+                    'tiposUsados': 0,
+                    'crecimiento': 0
+                },
+                'data': [],
+                'datos_grafico': {
+                    'labels': [],
+                    'datos': [],
+                    'montos': []
+                },
+                'categorias': {
+                    'labels': ['Sin datos'],
+                    'datos': [0]
+                },
+                'titulo': 'Tipos de Entrega'
+            }
+
         tipos_map = defaultdict(int)
         montos_map = defaultdict(float)
 
@@ -604,12 +770,35 @@ class ReportesService:
             'titulo': 'Tipos de Entrega'
         }
 
-
+    # ============================================================
     # HORARIOS PICO
-
+    # ============================================================
 
     def _procesar_horarios_pico(self, pedidos, fecha_inicio, fecha_fin):
         """Reporte de HORARIOS PICO"""
+
+        if not pedidos:
+            return {
+                'success': True,
+                'metricas': {
+                    'totalPedidos': 0,
+                    'totalVentas': 0,
+                    'horaPico': 'No hay datos',
+                    'pedidosHoraPico': 0
+                },
+                'data': [],
+                'datos_grafico': {
+                    'labels': [],
+                    'datos': [],
+                    'montos': []
+                },
+                'categorias': {
+                    'labels': ['Mañana (6-12)', 'Tarde (12-18)', 'Noche (18-24)'],
+                    'datos': [0, 0, 0]
+                },
+                'titulo': 'Horarios Pico'
+            }
+
         horas_map = defaultdict(int)
         montos_map = defaultdict(float)
 
@@ -664,17 +853,17 @@ class ReportesService:
             'categorias': {
                 'labels': ['Mañana (6-12)', 'Tarde (12-18)', 'Noche (18-24)'],
                 'datos': [
-                    sum(montos_map[h] for h in horas_map.keys() if '06' in h or '07' in h or '08' in h or '09' in h or '10' in h or '11' in h),
-                    sum(montos_map[h] for h in horas_map.keys() if '12' in h or '13' in h or '14' in h or '15' in h or '16' in h or '17' in h),
-                    sum(montos_map[h] for h in horas_map.keys() if '18' in h or '19' in h or '20' in h or '21' in h or '22' in h or '23' in h)
+                    sum(montos_map[h] for h in horas_map.keys() if any(x in h for x in ['06', '07', '08', '09', '10', '11'])),
+                    sum(montos_map[h] for h in horas_map.keys() if any(x in h for x in ['12', '13', '14', '15', '16', '17'])),
+                    sum(montos_map[h] for h in horas_map.keys() if any(x in h for x in ['18', '19', '20', '21', '22', '23']))
                 ]
             },
             'titulo': 'Horarios Pico'
         }
 
-
+    # ============================================================
     # FAVORITOS
-
+    # ============================================================
 
     def _procesar_favoritos(self, fecha_inicio, fecha_fin):
         """Reporte de PRODUCTOS FAVORITOS"""
@@ -766,9 +955,9 @@ class ReportesService:
             print(f"❌ Error en favoritos: {e}")
             return self._procesar_productos_como_favoritos(fecha_inicio, fecha_fin)
 
-
+    # ============================================================
     # FALLBACK: PRODUCTOS COMO FAVORITOS
-
+    # ============================================================
 
     def _procesar_productos_como_favoritos(self, fecha_inicio, fecha_fin):
         """Fallback: usar productos más vendidos como favoritos"""
@@ -842,9 +1031,9 @@ class ReportesService:
                 'error': str(e)
             }
 
-
+    # ============================================================
     # REPORTE COMPLETO
-
+    # ============================================================
 
     def obtener_reporte_completo(self, fecha_inicio=None, fecha_fin=None):
         """Obtener reporte completo con estadísticas avanzadas filtrado por fechas"""

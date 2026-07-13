@@ -92,12 +92,43 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit, OnDestroy
     });
   }
 
+  // ============================================================
+  // 🔥 CORREGIDO: cargarVentasRecientes - Filtra solo las de hoy
+  // ============================================================
   cargarVentasRecientes(): void {
     this.dashboardService.getVentasRecientes().subscribe({
       next: (data: any) => {
+        console.log('📦 Ventas recientes recibidas:', data);
+
         if (data?.success) {
-          this.ventasRecientes = data.data || [];
+          const todasLasVentas = data.data || [];
+
+          // 🔥 Filtrar solo las ventas de HOY
+          const hoy = new Date();
+          const hoyStr = hoy.toISOString().split('T')[0];
+
+          const ventasHoy = todasLasVentas.filter((venta: any) => {
+            if (!venta.fecha) return false;
+            try {
+              const fechaVenta = new Date(venta.fecha);
+              const fechaVentaStr = fechaVenta.toISOString().split('T')[0];
+              return fechaVentaStr === hoyStr;
+            } catch {
+              return false;
+            }
+          });
+
+          console.log(`📦 Ventas de hoy: ${ventasHoy.length} de ${todasLasVentas.length} totales`);
+
+          // 🔥 Mostrar solo las ventas de hoy
+          this.ventasRecientes = ventasHoy;
+        } else {
+          this.ventasRecientes = [];
         }
+      },
+      error: (err) => {
+        console.error('❌ Error cargando ventas recientes:', err);
+        this.ventasRecientes = [];
       }
     });
   }
@@ -159,7 +190,9 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit, OnDestroy
     });
   }
 
-  // ===== PREDICCIONES =====
+  // ============================================================
+  // PREDICCIONES
+  // ============================================================
   cargarPredicciones(): void {
     this.predictionsService.getPredicciones(this.diasPrediccion).subscribe({
       next: (data: any) => {

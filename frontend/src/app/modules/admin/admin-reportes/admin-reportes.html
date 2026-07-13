@@ -337,7 +337,15 @@
             </thead>
             <tbody>
             <tr *ngFor="let fila of reporteDatosTabla">
-              <td *ngFor="let col of reporteColumnas">{{ fila[col] }}</td>
+              <!-- 🔥 CORREGIDO: Usar formatearFecha para la columna fecha -->
+              <ng-container *ngFor="let col of reporteColumnas">
+                <td *ngIf="col === 'fecha' || col === 'Fecha'">
+                  {{ formatearFecha(fila[col]) }}
+                </td>
+                <td *ngIf="col !== 'fecha' && col !== 'Fecha'">
+                  {{ fila[col] }}
+                </td>
+              </ng-container>
             </tr>
             </tbody>
           </table>
