@@ -61,7 +61,7 @@ public class AdminController {
     }
 
     // ============================================================
-    // 1. ENDPOINTS PÚBLICOS PARA PYTHON
+    // 1. ENDPOINTS PÚBLICOS PARA PYTHON - CORREGIDOS
     // ============================================================
 
     @GetMapping("/data/productos")
@@ -79,28 +79,108 @@ public class AdminController {
     @GetMapping("/data/pedidos")
     @ResponseBody
     @Transactional
-    public List<Pedido> getPedidosForPython() {
-        return pedidoRepository.findAllWithItemsAndProducts();
+    public List<Map<String, Object>> getPedidosForPython() {
+        List<Pedido> pedidos = pedidoRepository.findAllWithItemsAndProducts();
+
+        System.out.println("========================================");
+        System.out.println("📦 TOTAL PEDIDOS ENCONTRADOS: " + pedidos.size());
+        System.out.println("========================================");
+
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        for (Pedido pedido : pedidos) {
+            Map<String, Object> pedidoMap = new HashMap<>();
+            pedidoMap.put("id", pedido.getId());
+            pedidoMap.put("numeroPedido", pedido.getNumeroPedido());
+            pedidoMap.put("total", pedido.getTotal());
+            pedidoMap.put("estado", pedido.getEstado());
+            pedidoMap.put("fecha", pedido.getFecha());
+            pedidoMap.put("tipoEntrega", pedido.getTipoEntrega());
+            pedidoMap.put("metodoPago", pedido.getMetodoPago());
+            pedidoMap.put("origen", pedido.getOrigen());
+
+            // 👤 Nombre del cliente
+            String nombreCliente = "Cliente general";
+            if (pedido.getUsuario() != null) {
+                Usuario u = pedido.getUsuario();
+                nombreCliente = (u.getNombres() != null ? u.getNombres() : "") + " " +
+                        (u.getApellidos() != null ? u.getApellidos() : "");
+                nombreCliente = nombreCliente.trim().isEmpty() ? u.getUsername() : nombreCliente.trim();
+            } else if (pedido.getNombreCliente() != null && !pedido.getNombreCliente().isEmpty()) {
+                nombreCliente = pedido.getNombreCliente();
+            }
+            pedidoMap.put("nombreCliente", nombreCliente);
+
+            // 🛒 PROCESAR ITEMS
+            List<Map<String, Object>> itemsList = new ArrayList<>();
+
+            if (pedido.getItems() != null && !pedido.getItems().isEmpty()) {
+                System.out.println("✅ Pedido #" + pedido.getId() + " - Items: " + pedido.getItems().size());
+
+                for (ItemPedido item : pedido.getItems()) {
+                    Map<String, Object> itemMap = new HashMap<>();
+                    itemMap.put("id", item.getId());
+                    itemMap.put("cantidad", item.getCantidad());
+                    itemMap.put("precio", item.getPrecio());
+                    itemMap.put("subtotal", item.getSubtotal());
+
+                    String nombreProducto = item.getNombreProductoSeguro();
+                    itemMap.put("nombreProducto", nombreProducto);
+
+                    ProductoFinal productoReal = item.getProductoFinal();
+                    if (productoReal != null) {
+                        itemMap.put("productoId", productoReal.getId());
+                        itemMap.put("productoNombre", productoReal.getNombre());
+                        itemMap.put("productoImagen", productoReal.getImagenUrl());
+                        itemMap.put("productoPrecio", productoReal.getPrecio());
+                        itemMap.put("productoTipo", productoReal.getTipo());
+
+                        System.out.println("   🛍️ " + productoReal.getNombre() +
+                                " x" + item.getCantidad() +
+                                " = S/" + item.getSubtotal());
+                    } else {
+                        System.out.println("   ⚠️ Item sin producto: " + item.getNombreProducto());
+                    }
+
+                    itemsList.add(itemMap);
+                }
+            } else {
+                System.out.println("⚠️ Pedido #" + pedido.getId() + " - NO TIENE ITEMS");
+            }
+
+            pedidoMap.put("items", itemsList);
+            result.add(pedidoMap);
+        }
+
+        System.out.println("========================================");
+        System.out.println("📤 ENVIANDO " + result.size() + " pedidos al frontend");
+        System.out.println("========================================");
+
+        return result;
     }
 
     @GetMapping("/data/pedidos/entregados")
     @ResponseBody
     @Transactional
-    public List<Pedido> getPedidosEntregadosForPython() {
-        return pedidoRepository.findAllWithItemsAndProducts()
+    public List<Map<String, Object>> getPedidosEntregadosForPython() {
+        List<Pedido> pedidos = pedidoRepository.findAllWithItemsAndProducts()
                 .stream()
                 .filter(p -> "ENTREGADO".equals(p.getEstado()))
                 .collect(Collectors.toList());
+
+        return convertirPedidosAMap(pedidos);
     }
 
     @GetMapping("/data/pedidos/pagados")
     @ResponseBody
     @Transactional
-    public List<Pedido> getPedidosPagadosForPython() {
-        return pedidoRepository.findAllWithItemsAndProducts()
+    public List<Map<String, Object>> getPedidosPagadosForPython() {
+        List<Pedido> pedidos = pedidoRepository.findAllWithItemsAndProducts()
                 .stream()
                 .filter(p -> "PAGADO".equals(p.getEstado()))
                 .collect(Collectors.toList());
+
+        return convertirPedidosAMap(pedidos);
     }
 
     @GetMapping("/data/favoritos")
@@ -409,7 +489,7 @@ public class AdminController {
     }
 
     // ============================================================
-    // 5. EXPORTACIONES PROFESIONALES (PDF Y EXCEL)
+    // 5. EXPORTACIONES PROFESIONALES (PDF Y EXCEL) CON LOGS
     // ============================================================
 
     @GetMapping("/exportar-pdf")
@@ -419,12 +499,33 @@ public class AdminController {
             @RequestParam(required = false) String tipo,
             HttpServletResponse response) throws IOException {
         try {
+            System.out.println("========================================");
+            System.out.println("📄 EXPORTANDO PDF");
+            System.out.println("📅 fechaInicio: " + fechaInicio);
+            System.out.println("📅 fechaFin: " + fechaFin);
+            System.out.println("📅 tipo: " + tipo);
+            System.out.println("========================================");
+
             response.setContentType("application/pdf");
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
             String filename = "reporte_" + (tipo != null ? tipo : "ventas") + "_" + timestamp + ".pdf";
             response.setHeader("Content-Disposition", "attachment; filename=" + filename);
 
             List<Pedido> pedidos = obtenerPedidosFiltrados(fechaInicio, fechaFin);
+
+            System.out.println("📊 PEDIDOS PARA PDF: " + pedidos.size());
+            System.out.println("========================================");
+
+            if (pedidos.isEmpty()) {
+                System.out.println("⚠️ No hay pedidos en el rango seleccionado");
+                PdfWriter writer = new PdfWriter(response.getOutputStream());
+                PdfDocument pdfDoc = new PdfDocument(writer);
+                Document document = new Document(pdfDoc);
+                document.add(new Paragraph("No hay pedidos en el rango de fechas seleccionado"));
+                document.close();
+                return;
+            }
+
             List<ProductoFinal> productos = productoFinalService.obtenerTodos();
             List<Usuario> usuarios = usuarioRepository.findAll();
 
@@ -489,6 +590,8 @@ public class AdminController {
             log.info(" Reporte PDF generado: {}", filename);
 
         } catch (Exception e) {
+            System.err.println("❌ Error al generar PDF: " + e.getMessage());
+            e.printStackTrace();
             log.error(" Error al generar PDF: {}", e.getMessage(), e);
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error al generar el PDF");
         }
@@ -501,12 +604,34 @@ public class AdminController {
             @RequestParam(required = false) String tipo,
             HttpServletResponse response) throws IOException {
         try {
+            System.out.println("========================================");
+            System.out.println("📄 EXPORTANDO EXCEL");
+            System.out.println("📅 fechaInicio: " + fechaInicio);
+            System.out.println("📅 fechaFin: " + fechaFin);
+            System.out.println("📅 tipo: " + tipo);
+            System.out.println("========================================");
+
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
             String filename = "reporte_" + (tipo != null ? tipo : "ventas") + "_" + timestamp + ".xlsx";
             response.setHeader("Content-Disposition", "attachment; filename=" + filename);
 
             List<Pedido> pedidos = obtenerPedidosFiltrados(fechaInicio, fechaFin);
+
+            System.out.println("📊 PEDIDOS PARA EXCEL: " + pedidos.size());
+            System.out.println("========================================");
+
+            if (pedidos.isEmpty()) {
+                System.out.println("⚠️ No hay pedidos en el rango seleccionado");
+                Workbook workbook = new XSSFWorkbook();
+                Sheet sheet = workbook.createSheet("Reporte");
+                Row row = sheet.createRow(0);
+                row.createCell(0).setCellValue("No hay pedidos en el rango de fechas seleccionado");
+                workbook.write(response.getOutputStream());
+                workbook.close();
+                return;
+            }
+
             List<ProductoFinal> productos = productoFinalService.obtenerTodos();
             List<Usuario> usuarios = usuarioRepository.findAll();
 
@@ -545,6 +670,8 @@ public class AdminController {
             log.info("✅ Reporte Excel generado: {}", filename);
 
         } catch (Exception e) {
+            System.err.println("❌ Error al generar Excel: " + e.getMessage());
+            e.printStackTrace();
             log.error("💥 Error al generar Excel: {}", e.getMessage(), e);
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error al generar el Excel");
         }
@@ -652,10 +779,6 @@ public class AdminController {
         }
     }
 
-    // ============================================================
-    // ✅ PDF USUARIOS CORREGIDO - INCLUYE CLIENTES PRESENCIALES
-    // ============================================================
-
     private void generarPDFUsuarios(Document document, List<Pedido> pedidos, List<Usuario> usuarios) {
         try {
             document.add(new Paragraph("👥 ACTIVIDAD DE USUARIOS").setBold().setFontSize(12));
@@ -663,7 +786,6 @@ public class AdminController {
 
             Map<String, Integer> pedidosPorUsuario = new HashMap<>();
 
-            // ✅ 1. Contar pedidos de usuarios registrados
             for (Pedido pedido : pedidos) {
                 if (pedido.getUsuario() != null) {
                     String nombre = getNombreCliente(pedido);
@@ -671,7 +793,6 @@ public class AdminController {
                 }
             }
 
-            // ✅ 2. Contar pedidos de clientes presenciales (cajero)
             for (Pedido pedido : pedidos) {
                 if (pedido.getUsuario() == null && pedido.getNombreCliente() != null
                         && !pedido.getNombreCliente().isEmpty()) {
@@ -680,7 +801,6 @@ public class AdminController {
                 }
             }
 
-            // ✅ 3. Asegurar que todos los usuarios registrados aparezcan (incluso sin pedidos)
             for (Usuario usuario : usuarios) {
                 String nombre = (usuario.getNombres() != null ? usuario.getNombres() : "") + " " +
                         (usuario.getApellidos() != null ? usuario.getApellidos() : "");
@@ -716,80 +836,6 @@ public class AdminController {
 
         } catch (Exception e) {
             log.error("❌ Error generando PDF Usuarios: {}", e.getMessage(), e);
-        }
-    }
-
-    // ============================================================
-    // ✅ EXCEL USUARIOS CORREGIDO - INCLUYE CLIENTES PRESENCIALES
-    // ============================================================
-
-    private void generarExcelUsuarios(Workbook workbook, List<Pedido> pedidos, List<Usuario> usuarios) {
-        Sheet sheet = workbook.createSheet("Actividad de Usuarios");
-        CellStyle headerStyle = crearEstiloCabecera(workbook);
-
-        Map<String, Integer> pedidosPorUsuario = new HashMap<>();
-
-        // ✅ 1. Contar pedidos de usuarios registrados
-        for (Pedido pedido : pedidos) {
-            if (pedido.getUsuario() != null) {
-                String nombre = getNombreCliente(pedido);
-                pedidosPorUsuario.put(nombre, pedidosPorUsuario.getOrDefault(nombre, 0) + 1);
-            }
-        }
-
-        // ✅ 2. Contar pedidos de clientes presenciales (cajero)
-        for (Pedido pedido : pedidos) {
-            if (pedido.getUsuario() == null && pedido.getNombreCliente() != null
-                    && !pedido.getNombreCliente().isEmpty()) {
-                String nombre = pedido.getNombreCliente().trim();
-                pedidosPorUsuario.put(nombre, pedidosPorUsuario.getOrDefault(nombre, 0) + 1);
-            }
-        }
-
-        // ✅ 3. Asegurar que todos los usuarios registrados aparezcan
-        for (Usuario usuario : usuarios) {
-            String nombre = (usuario.getNombres() != null ? usuario.getNombres() : "") + " " +
-                    (usuario.getApellidos() != null ? usuario.getApellidos() : "");
-            nombre = nombre.trim().isEmpty() ? usuario.getUsername() : nombre.trim();
-
-            if (!pedidosPorUsuario.containsKey(nombre)) {
-                pedidosPorUsuario.put(nombre, 0);
-            }
-        }
-
-        List<Map.Entry<String, Integer>> sorted = new ArrayList<>(pedidosPorUsuario.entrySet());
-        sorted.sort((a, b) -> b.getValue().compareTo(a.getValue()));
-
-        String[] headers = {"#", "Usuario / Cliente", "Pedidos Realizados"};
-        Row headerRow = sheet.createRow(0);
-        for (int i = 0; i < headers.length; i++) {
-            Cell cell = headerRow.createCell(i);
-            cell.setCellValue(headers[i]);
-            cell.setCellStyle(headerStyle);
-            sheet.setColumnWidth(i, 5000);
-        }
-
-        int rowNum = 1;
-        for (Map.Entry<String, Integer> entry : sorted) {
-            Row row = sheet.createRow(rowNum++);
-            row.createCell(0).setCellValue(rowNum - 1);
-            row.createCell(1).setCellValue(entry.getKey());
-            row.createCell(2).setCellValue(entry.getValue());
-        }
-
-        // ✅ Totales al final
-        Row totalRow = sheet.createRow(rowNum);
-        totalRow.createCell(0).setCellValue("TOTAL:");
-        totalRow.createCell(1).setCellValue(pedidosPorUsuario.size() + " clientes");
-        totalRow.createCell(2).setCellValue(pedidos.size() + " pedidos");
-
-        // ✅ Aplicar estilo negrita a la fila de totales
-        CellStyle totalStyle = workbook.createCellStyle();
-        Font totalFont = workbook.createFont();
-        totalFont.setBold(true);
-        totalStyle.setFont(totalFont);
-        for (int i = 0; i < 3; i++) {
-            totalRow.getCell(i).setCellStyle(totalStyle);
         }
     }
 
@@ -987,7 +1033,7 @@ public class AdminController {
     }
 
     // ============================================================
-    // MÉTODOS AUXILIARES PARA EXCEL (resto sin cambios)
+    // MÉTODOS AUXILIARES PARA EXCEL
     // ============================================================
 
     private void generarExcelVentas(Workbook workbook, List<Pedido> pedidos) {
@@ -1057,6 +1103,71 @@ public class AdminController {
             row.createCell(1).setCellValue(entry.getKey());
             row.createCell(2).setCellValue(entry.getValue());
             row.createCell(3).setCellValue(montosPorProducto.get(entry.getKey()));
+        }
+    }
+
+    private void generarExcelUsuarios(Workbook workbook, List<Pedido> pedidos, List<Usuario> usuarios) {
+        Sheet sheet = workbook.createSheet("Actividad de Usuarios");
+        CellStyle headerStyle = crearEstiloCabecera(workbook);
+
+        Map<String, Integer> pedidosPorUsuario = new HashMap<>();
+
+        for (Pedido pedido : pedidos) {
+            if (pedido.getUsuario() != null) {
+                String nombre = getNombreCliente(pedido);
+                pedidosPorUsuario.put(nombre, pedidosPorUsuario.getOrDefault(nombre, 0) + 1);
+            }
+        }
+
+        for (Pedido pedido : pedidos) {
+            if (pedido.getUsuario() == null && pedido.getNombreCliente() != null
+                    && !pedido.getNombreCliente().isEmpty()) {
+                String nombre = pedido.getNombreCliente().trim();
+                pedidosPorUsuario.put(nombre, pedidosPorUsuario.getOrDefault(nombre, 0) + 1);
+            }
+        }
+
+        for (Usuario usuario : usuarios) {
+            String nombre = (usuario.getNombres() != null ? usuario.getNombres() : "") + " " +
+                    (usuario.getApellidos() != null ? usuario.getApellidos() : "");
+            nombre = nombre.trim().isEmpty() ? usuario.getUsername() : nombre.trim();
+
+            if (!pedidosPorUsuario.containsKey(nombre)) {
+                pedidosPorUsuario.put(nombre, 0);
+            }
+        }
+
+        List<Map.Entry<String, Integer>> sorted = new ArrayList<>(pedidosPorUsuario.entrySet());
+        sorted.sort((a, b) -> b.getValue().compareTo(a.getValue()));
+
+        String[] headers = {"#", "Usuario / Cliente", "Pedidos Realizados"};
+        Row headerRow = sheet.createRow(0);
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+            sheet.setColumnWidth(i, 5000);
+        }
+
+        int rowNum = 1;
+        for (Map.Entry<String, Integer> entry : sorted) {
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(rowNum - 1);
+            row.createCell(1).setCellValue(entry.getKey());
+            row.createCell(2).setCellValue(entry.getValue());
+        }
+
+        Row totalRow = sheet.createRow(rowNum);
+        totalRow.createCell(0).setCellValue("TOTAL:");
+        totalRow.createCell(1).setCellValue(pedidosPorUsuario.size() + " clientes");
+        totalRow.createCell(2).setCellValue(pedidos.size() + " pedidos");
+
+        CellStyle totalStyle = workbook.createCellStyle();
+        Font totalFont = workbook.createFont();
+        totalFont.setBold(true);
+        totalStyle.setFont(totalFont);
+        for (int i = 0; i < 3; i++) {
+            totalRow.getCell(i).setCellStyle(totalStyle);
         }
     }
 
@@ -1223,24 +1334,64 @@ public class AdminController {
     }
 
     // ============================================================
-    // MÉTODOS AUXILIARES
+    // MÉTODOS AUXILIARES GENERALES
     // ============================================================
 
     private String getNombreCliente(Pedido pedido) {
-        // ✅ Si tiene usuario registrado
         if (pedido.getUsuario() != null) {
             String nombre = (pedido.getUsuario().getNombres() != null ? pedido.getUsuario().getNombres() : "") + " " +
                     (pedido.getUsuario().getApellidos() != null ? pedido.getUsuario().getApellidos() : "");
             return nombre.trim().isEmpty() ? pedido.getUsuario().getUsername() : nombre.trim();
         }
 
-        // ✅ Si es cliente presencial (cajero)
         if (pedido.getNombreCliente() != null && !pedido.getNombreCliente().isEmpty()) {
             return pedido.getNombreCliente().trim();
         }
 
-        // ✅ Cliente general (fallback)
         return "Cliente general";
+    }
+
+    private List<Map<String, Object>> convertirPedidosAMap(List<Pedido> pedidos) {
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        for (Pedido pedido : pedidos) {
+            Map<String, Object> pedidoMap = new HashMap<>();
+            pedidoMap.put("id", pedido.getId());
+            pedidoMap.put("numeroPedido", pedido.getNumeroPedido());
+            pedidoMap.put("total", pedido.getTotal());
+            pedidoMap.put("estado", pedido.getEstado());
+            pedidoMap.put("fecha", pedido.getFecha());
+            pedidoMap.put("tipoEntrega", pedido.getTipoEntrega());
+            pedidoMap.put("metodoPago", pedido.getMetodoPago());
+            pedidoMap.put("origen", pedido.getOrigen());
+            pedidoMap.put("nombreCliente", getNombreCliente(pedido));
+
+            List<Map<String, Object>> itemsList = new ArrayList<>();
+            if (pedido.getItems() != null) {
+                for (ItemPedido item : pedido.getItems()) {
+                    Map<String, Object> itemMap = new HashMap<>();
+                    itemMap.put("id", item.getId());
+                    itemMap.put("cantidad", item.getCantidad());
+                    itemMap.put("precio", item.getPrecio());
+                    itemMap.put("subtotal", item.getSubtotal());
+                    itemMap.put("nombreProducto", item.getNombreProductoSeguro());
+
+                    if (item.getProductoFinal() != null) {
+                        ProductoFinal p = item.getProductoFinal();
+                        itemMap.put("productoId", p.getId());
+                        itemMap.put("productoNombre", p.getNombre());
+                        itemMap.put("productoImagen", p.getImagenUrl());
+                        itemMap.put("productoPrecio", p.getPrecio());
+                    }
+
+                    itemsList.add(itemMap);
+                }
+            }
+            pedidoMap.put("items", itemsList);
+            result.add(pedidoMap);
+        }
+
+        return result;
     }
 
     private CellStyle crearEstiloCabecera(Workbook workbook) {
@@ -1259,24 +1410,49 @@ public class AdminController {
     }
 
     // ============================================================
-    // MÉTODO AUXILIAR PARA FILTRAR PEDIDOS
+    // 🔥 MÉTODO CORREGIDO - SOLO PEDIDOS PAGADO O ENTREGADO
     // ============================================================
-
     private List<Pedido> obtenerPedidosFiltrados(String fechaInicio, String fechaFin) {
-        List<Pedido> pedidos = pedidoRepository.findAllWithItemsAndProducts();
+        System.out.println("📊 === OBTENIENDO PEDIDOS FILTRADOS ===");
+        System.out.println("📅 fechaInicio: " + fechaInicio);
+        System.out.println("📅 fechaFin: " + fechaFin);
 
-        if (fechaInicio != null && fechaFin != null) {
+        List<Pedido> pedidos = pedidoRepository.findAllWithItemsAndProducts();
+        System.out.println("📊 Total pedidos en BD: " + pedidos.size());
+
+        if (fechaInicio != null && fechaFin != null && !fechaInicio.isEmpty() && !fechaFin.isEmpty()) {
             try {
+                System.out.println("📅 Parseando fechas...");
                 LocalDateTime inicio = LocalDate.parse(fechaInicio).atStartOfDay();
                 LocalDateTime fin = LocalDate.parse(fechaFin).atTime(23, 59, 59);
 
-                pedidos = pedidos.stream()
+                System.out.println("📅 Inicio parseado: " + inicio);
+                System.out.println("📅 Fin parseado: " + fin);
+
+                // 🔥 FILTRAR POR FECHA Y ESTADO (SOLO PAGADO O ENTREGADO)
+                List<Pedido> pedidosFiltrados = pedidos.stream()
                         .filter(p -> p.getFecha() != null)
                         .filter(p -> !p.getFecha().isBefore(inicio) && !p.getFecha().isAfter(fin))
+                        // 🔥 SOLO PEDIDOS PAGADO O ENTREGADO
+                        .filter(p -> "PAGADO".equals(p.getEstado()) || "ENTREGADO".equals(p.getEstado()))
                         .collect(Collectors.toList());
+
+                System.out.println("📊 Pedidos después de filtrar (PAGADO/ENTREGADO): " + pedidosFiltrados.size());
+
+                System.out.println("📋 Pedidos filtrados:");
+                for (Pedido p : pedidosFiltrados) {
+                    System.out.println("   ✅ Pedido ID: " + p.getId() + " - Fecha: " + p.getFecha() + " - Estado: " + p.getEstado());
+                }
+
+                return pedidosFiltrados;
+
             } catch (Exception e) {
+                System.err.println("❌ Error al parsear fechas: " + e.getMessage());
+                e.printStackTrace();
                 log.warn(" Error al parsear fechas, usando todos los pedidos");
             }
+        } else {
+            System.out.println("⚠️ No se aplicaron filtros de fecha (fechas null o vacías)");
         }
 
         return pedidos;

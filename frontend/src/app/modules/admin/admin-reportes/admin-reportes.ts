@@ -30,7 +30,6 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
   reportChartInstance: any = null;
   categoryChartInstance: any = null;
 
-  // ✅ Mapeo de títulos para todos los tipos
   private readonly titulosReportes: { [key: string]: { grafico: string, tabla: string } } = {
     'ventas': { grafico: 'Ventas por Día', tabla: 'Detalle de Ventas' },
     'productos': { grafico: 'Productos Más Vendidos', tabla: 'Productos Más Vendidos' },
@@ -52,6 +51,7 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
   ngOnInit(): void {
     console.log('✅ AdminReportesComponent ngOnInit');
     this.inicializarFechas();
+    this.cambiarTipoReporte();
   }
 
   ngAfterViewInit(): void {
@@ -72,8 +72,7 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
 
   inicializarFechas(): void {
     const hoy = new Date();
-    const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-    this.reporteFechaInicio = this.formatLocalDate(primerDiaMes);
+    this.reporteFechaInicio = this.formatLocalDate(hoy);
     this.reporteFechaFin = this.formatLocalDate(hoy);
   }
 
@@ -84,20 +83,74 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
     return `${year}-${month}-${day}`;
   }
 
+  formatearFecha(fecha: string): string {
+    if (!fecha) return 'N/A';
+    try {
+      const date = new Date(fecha);
+      return date.toLocaleDateString('es-PE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return 'N/A';
+    }
+  }
+
   cambiarRangoFechas(): void {
     const hoy = new Date();
     let startDate: Date = new Date();
     let endDate: Date = new Date();
+
+    console.log('📅 Cambiando rango a:', this.reporteRango);
+    console.log('📅 Fecha actual:', hoy);
+
     switch (this.reporteRango) {
-      case 'hoy': startDate = hoy; endDate = hoy; break;
-      case 'ayer': startDate = new Date(hoy); startDate.setDate(hoy.getDate() - 1); endDate = startDate; break;
-      case 'semana': startDate = new Date(hoy); startDate.setDate(hoy.getDate() - hoy.getDay()); endDate = hoy; break;
-      case 'mes': startDate = new Date(hoy.getFullYear(), hoy.getMonth(), 1); endDate = hoy; break;
-      case 'personalizado': return;
-      default: return;
+      case 'hoy':
+        startDate = new Date(hoy);
+        endDate = new Date(hoy);
+        break;
+
+      case 'ayer':
+        startDate = new Date(hoy);
+        startDate.setDate(hoy.getDate() - 1);
+        endDate = new Date(startDate);
+        break;
+
+      case 'semana':
+        startDate = new Date(hoy);
+        startDate.setDate(hoy.getDate() - 6);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(hoy);
+        endDate.setHours(23, 59, 59, 999);
+        console.log('📅 Inicio (últimos 7 días):', startDate);
+        console.log('📅 Fin (hoy):', endDate);
+        break;
+
+      case 'mes':
+        startDate = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(hoy);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+
+      case 'personalizado':
+        console.log('📅 Modo personalizado, no se modifican las fechas');
+        return;
+
+      default:
+        return;
     }
+
     this.reporteFechaInicio = this.formatLocalDate(startDate);
     this.reporteFechaFin = this.formatLocalDate(endDate);
+
+    console.log('📅 Fecha Inicio:', this.reporteFechaInicio);
+    console.log('📅 Fecha Fin:', this.reporteFechaFin);
+
+    this.generarReporte();
   }
 
   cambiarTipoReporte(): void {
@@ -105,13 +158,23 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
       this.reporteTituloGrafico = this.titulosReportes[this.reporteTipo].grafico;
       this.reporteTituloTabla = this.titulosReportes[this.reporteTipo].tabla;
     }
+    this.generarReporte();
   }
 
+  // ============================================================
+  // 🔥 CORREGIDO: generarReporte con validación mejorada
+  // ============================================================
   generarReporte(): void {
     if (!this.reporteFechaInicio || !this.reporteFechaFin) {
       this.alertService.mostrar('Seleccione un rango de fechas', 'warning');
       return;
     }
+
+    console.log('📊 GENERANDO REPORTE:');
+    console.log('📅 Tipo:', this.reporteTipo);
+    console.log('📅 Fecha Inicio:', this.reporteFechaInicio);
+    console.log('📅 Fecha Fin:', this.reporteFechaFin);
+
     if (new Date(this.reporteFechaInicio) > new Date(this.reporteFechaFin)) {
       this.alertService.mostrar('La fecha de inicio no puede ser mayor a la fecha fin', 'warning');
       return;
@@ -127,12 +190,98 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
       next: (data: any) => {
         console.log('📊 Datos recibidos del backend:', data);
 
+        // 🔥 ANÁLISIS DE ESTRUCTURA DE DATOS
+        console.log('📊 === ANÁLISIS DE ESTRUCTURA ===');
+        console.log('📊 data.success:', data?.success);
+        console.log('📊 data.data:', data?.data);
+        console.log('📊 data.data es array?', Array.isArray(data?.data));
+        console.log('📊 data.data length:', data?.data?.length);
+        console.log('📊 data.metricas:', data?.metricas);
+        console.log('📊 data.datos_grafico:', data?.datos_grafico);
+        console.log('📊 === FIN ANÁLISIS ===');
+
         if (data && data.success) {
-          //  Actualizar métricas según el tipo
+          // 🔥 CORREGIDO: Verificar si hay datos reales de varias formas
+          let tieneDatos = false;
+          let datosTabla = [];
+
+          // Caso 1: data.data es un array con datos
+          if (Array.isArray(data.data) && data.data.length > 0) {
+            tieneDatos = true;
+            datosTabla = data.data;
+          }
+          // Caso 2: data es un array directamente
+          else if (Array.isArray(data) && data.length > 0) {
+            tieneDatos = true;
+            datosTabla = data;
+          }
+          // Caso 3: data.data es un objeto con datos
+          else if (data.data && typeof data.data === 'object' && !Array.isArray(data.data)) {
+            // Intentar convertir a array si es un objeto con propiedades
+            const values = Object.values(data.data);
+            if (values.length > 0) {
+              tieneDatos = true;
+              datosTabla = values;
+            }
+          }
+          // Caso 4: data.metricas tiene totalPedidos > 0
+          else if (data.metricas && data.metricas.totalPedidos > 0) {
+            tieneDatos = true;
+          }
+
+          console.log('📊 ¿Tiene datos?', tieneDatos);
+          console.log('📊 Datos tabla:', datosTabla);
+
+          if (!tieneDatos) {
+            // 🔥 NO HAY DATOS - Limpiar todo
+            console.log('📊 No hay datos en el rango seleccionado');
+
+            this.reporteMetricas = {
+              totalVentas: 0,
+              totalPedidos: 0,
+              productosVendidos: 0,
+              crecimiento: 0
+            };
+
+            this.reporteDatosGrafico = {
+              labels: ['Sin datos'],
+              datos: [0],
+              categorias: {
+                labels: ['Sin datos'],
+                datos: [1]
+              }
+            };
+
+            this.reporteDatosTabla = [];
+            this.reporteColumnas = ['Sin datos'];
+
+            if (this.reportChartInstance) {
+              this.reportChartInstance.destroy();
+              this.reportChartInstance = null;
+            }
+            if (this.categoryChartInstance) {
+              this.categoryChartInstance.destroy();
+              this.categoryChartInstance = null;
+            }
+
+            setTimeout(() => this.actualizarGraficosReporte(), 100);
+            this.alertService.mostrar(data.message || 'No hay ventas en el período seleccionado', 'info');
+            return;
+          }
+
+          // 🔥 HAY DATOS - Procesar normalmente
+          // Si tenemos datosTabla, usarlos
+          if (datosTabla.length > 0) {
+            this.reporteDatosTabla = datosTabla;
+          } else if (Array.isArray(data.data)) {
+            this.reporteDatosTabla = data.data;
+          } else {
+            this.reporteDatosTabla = [];
+          }
+
           this.actualizarMetricas(data);
 
-          //  Actualizar datos del gráfico
-          if (data.datos_grafico) {
+          if (data.datos_grafico && data.datos_grafico.labels && data.datos_grafico.labels.length > 0) {
             this.reporteDatosGrafico = {
               labels: data.datos_grafico.labels || [],
               datos: data.datos_grafico.datos || [],
@@ -145,15 +294,17 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
             this.reporteDatosGrafico = this.procesarDatosLocalmente(data);
           }
 
-          //  Actualizar columnas
           this.actualizarColumnas();
 
-          this.reporteDatosTabla = data.data || [];
-
           setTimeout(() => this.actualizarGraficosReporte(), 300);
-          this.alertService.mostrar('Reporte generado', 'success');
+
+          if (data.message) {
+            this.alertService.mostrar(data.message, 'info');
+          } else {
+            this.alertService.mostrar('Reporte generado exitosamente', 'success');
+          }
         } else {
-          this.alertService.mostrar(data.error || 'Error al generar reporte', 'danger');
+          this.alertService.mostrar(data?.error || 'Error al generar reporte', 'danger');
         }
       },
       error: (error: any) => {
@@ -164,7 +315,7 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   // ============================================================
-  //  ACTUALIZAR MÉTRICAS SEGÚN EL TIPO
+  // ACTUALIZAR MÉTRICAS
   // ============================================================
   actualizarMetricas(data: any): void {
     const metricas = data.metricas || {};
@@ -204,7 +355,7 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
           totalPedidos: metricas.totalPedidos || 0,
           productosVendidos: 0,
           crecimiento: 0,
-          totalUsuarios: data.data?.length || 0
+          totalUsuarios: this.reporteDatosTabla?.length || 0
         };
         break;
 
@@ -250,7 +401,7 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   // ============================================================
-  // ACTUALIZAR COLUMNAS SEGÚN EL TIPO
+  // ACTUALIZAR COLUMNAS
   // ============================================================
   actualizarColumnas(): void {
     switch (this.reporteTipo) {
@@ -281,12 +432,24 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   // ============================================================
-  //  MÉTODO FALLBACK PARA PROCESAR DATOS LOCALMENTE
+  // PROCESAR DATOS LOCALMENTE (FALLBACK)
   // ============================================================
   procesarDatosLocalmente(data: any): any {
+    const datos = Array.isArray(data.data) ? data.data :
+                  Array.isArray(data) ? data :
+                  [];
+
+    if (!datos || datos.length === 0) {
+      return {
+        labels: ['Sin datos'],
+        datos: [0],
+        categorias: { labels: ['Sin datos'], datos: [1] }
+      };
+    }
+
     if (this.reporteTipo === 'productos') {
       const productosMap = new Map();
-      data.data.forEach((item: any) => {
+      datos.forEach((item: any) => {
         if (item.productos) {
           const nombres = item.productos.split(', ');
           nombres.forEach((nombre: string) => {
@@ -304,16 +467,16 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
       return {
         labels: productosOrdenados.map(([nombre]) => nombre),
         datos: productosOrdenados.map(([, cantidad]) => cantidad),
-        categorias: this.calcularCategoriasProductos(data.data)
+        categorias: this.calcularCategoriasProductos(datos)
       };
     }
 
     if (this.reporteTipo === 'ventas') {
-      const labels = data.data.map((item: any) => {
+      const labels = datos.map((item: any) => {
         const fecha = new Date(item.fecha);
         return fecha.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
       });
-      const values = data.data.map((item: any) => item.total || 0);
+      const values = datos.map((item: any) => item.total || 0);
 
       return {
         labels: labels,
@@ -325,20 +488,10 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
       };
     }
 
-    if (this.reporteTipo === 'pedidos' || this.reporteTipo === 'metodos-pago' ||
-        this.reporteTipo === 'tipos-entrega' || this.reporteTipo === 'horarios' ||
-        this.reporteTipo === 'favoritos') {
-      return {
-        labels: data.datos_grafico?.labels || [],
-        datos: data.datos_grafico?.datos || [],
-        categorias: data.categorias || { labels: [], datos: [] }
-      };
-    }
-
     if (this.reporteTipo === 'usuarios') {
       const usuariosMap = new Map();
-      data.data.forEach((item: any) => {
-        const cliente = item.cliente || 'Cliente general';
+      datos.forEach((item: any) => {
+        const cliente = item.cliente || item.usuario || 'Cliente general';
         usuariosMap.set(cliente, (usuariosMap.get(cliente) || 0) + 1);
       });
 
@@ -356,15 +509,23 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
       };
     }
 
+    if (data.datos_grafico) {
+      return {
+        labels: data.datos_grafico.labels || [],
+        datos: data.datos_grafico.datos || [],
+        categorias: data.categorias || { labels: [], datos: [] }
+      };
+    }
+
     return {
-      labels: [],
-      datos: [],
-      categorias: { labels: [], datos: [] }
+      labels: ['Sin datos'],
+      datos: [0],
+      categorias: { labels: ['Sin datos'], datos: [1] }
     };
   }
 
   // ============================================================
-  //  MÉTODO PARA CALCULAR CATEGORÍAS DE PRODUCTOS
+  // CALCULAR CATEGORÍAS DE PRODUCTOS
   // ============================================================
   calcularCategoriasProductos(data: any[]): any {
     const categoriasMap = new Map();
@@ -408,19 +569,59 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
     return { labels, datos };
   }
 
+  // ============================================================
+  // ACTUALIZAR GRÁFICOS
+  // ============================================================
   actualizarGraficosReporte(): void {
     const reportCtx = document.getElementById('reportChart') as HTMLCanvasElement;
-    if (reportCtx && this.reporteDatosGrafico) {
+
+    const tieneDatos = this.reporteDatosGrafico &&
+                       this.reporteDatosGrafico.labels &&
+                       this.reporteDatosGrafico.labels.length > 0 &&
+                       this.reporteDatosGrafico.datos &&
+                       this.reporteDatosGrafico.datos.some((v: number) => v > 0);
+
+    if (reportCtx) {
       if (this.reportChartInstance) {
         this.reportChartInstance.destroy();
         this.reportChartInstance = null;
       }
 
-      //  Tipos que usan gráfico de barras
+      if (!tieneDatos) {
+        this.reportChartInstance = new Chart(reportCtx, {
+          type: 'line',
+          data: {
+            labels: ['Sin datos'],
+            datasets: [{
+              label: 'No hay ventas en el período',
+              data: [0],
+              backgroundColor: 'rgba(200, 200, 200, 0.2)',
+              borderColor: 'rgba(200, 200, 200, 1)',
+              borderWidth: 2,
+              fill: false
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { display: true, position: 'top' }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: (value: any) => 'S/ ' + Number(value).toFixed(2)
+                }
+              }
+            }
+          }
+        });
+        return;
+      }
+
       const tiposBarra = ['productos', 'usuarios', 'metodos-pago', 'tipos-entrega', 'favoritos'];
       const isBar = tiposBarra.includes(this.reporteTipo);
 
-      //  Tipos que usan formato de moneda
       const tiposMoneda = ['ventas', 'pedidos', 'metodos-pago', 'tipos-entrega'];
       const isMoneda = tiposMoneda.includes(this.reporteTipo);
 
@@ -460,21 +661,27 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
     }
 
     const categoryCtx = document.getElementById('categoryChart') as HTMLCanvasElement;
-    if (categoryCtx && this.reporteDatosGrafico?.categorias) {
+    if (categoryCtx) {
       if (this.categoryChartInstance) {
         this.categoryChartInstance.destroy();
         this.categoryChartInstance = null;
       }
 
-      const categorias = this.reporteDatosGrafico.categorias;
-      if (categorias.labels && categorias.labels.length > 0) {
+      const categorias = this.reporteDatosGrafico?.categorias;
+      const tieneDatosCategorias = categorias &&
+                                   categorias.labels &&
+                                   categorias.labels.length > 0 &&
+                                   categorias.datos &&
+                                   categorias.datos.some((v: number) => v > 0);
+
+      if (!tieneDatosCategorias) {
         this.categoryChartInstance = new Chart(categoryCtx, {
           type: 'doughnut',
           data: {
-            labels: categorias.labels,
+            labels: ['Sin datos'],
             datasets: [{
-              data: categorias.datos,
-              backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF']
+              data: [1],
+              backgroundColor: ['#e0e0e0']
             }]
           },
           options: {
@@ -482,17 +689,56 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
             plugins: { legend: { position: 'bottom' } }
           }
         });
+        return;
       }
+
+      this.categoryChartInstance = new Chart(categoryCtx, {
+        type: 'doughnut',
+        data: {
+          labels: categorias.labels,
+          datasets: [{
+            data: categorias.datos,
+            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF']
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: 'bottom' } }
+        }
+      });
     }
   }
 
+  // ============================================================
+  // EXPORTAR PDF Y EXCEL
+  // ============================================================
   exportarPDF(): void {
     if (!this.reporteDatosTabla?.length) {
       this.alertService.mostrar('Primero genere un reporte', 'warning');
       return;
     }
+
+    if (!this.reporteFechaInicio || !this.reporteFechaFin) {
+      this.alertService.mostrar('No hay fechas seleccionadas', 'warning');
+      return;
+    }
+
+    console.log('📄 Exportando PDF con fechas:', {
+      inicio: this.reporteFechaInicio,
+      fin: this.reporteFechaFin,
+      tipo: this.reporteTipo
+    });
+
     this.alertService.mostrar('Generando PDF...', 'info');
-    window.open(this.reportsService.exportarPDF(this.reporteFechaInicio, this.reporteFechaFin, this.reporteTipo), '_blank');
+
+    const url = this.reportsService.exportarPDF(
+      this.reporteFechaInicio,
+      this.reporteFechaFin,
+      this.reporteTipo
+    );
+
+    console.log('📄 Abriendo URL:', url);
+    window.open(url, '_blank');
   }
 
   exportarExcel(): void {
@@ -500,7 +746,27 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
       this.alertService.mostrar('Primero genere un reporte', 'warning');
       return;
     }
+
+    if (!this.reporteFechaInicio || !this.reporteFechaFin) {
+      this.alertService.mostrar('No hay fechas seleccionadas', 'warning');
+      return;
+    }
+
+    console.log('📄 Exportando Excel con fechas:', {
+      inicio: this.reporteFechaInicio,
+      fin: this.reporteFechaFin,
+      tipo: this.reporteTipo
+    });
+
     this.alertService.mostrar('Generando Excel...', 'info');
-    window.open(this.reportsService.exportarExcel(this.reporteFechaInicio, this.reporteFechaFin, this.reporteTipo), '_blank');
+
+    const url = this.reportsService.exportarExcel(
+      this.reporteFechaInicio,
+      this.reporteFechaFin,
+      this.reporteTipo
+    );
+
+    console.log('📄 Abriendo URL:', url);
+    window.open(url, '_blank');
   }
 }

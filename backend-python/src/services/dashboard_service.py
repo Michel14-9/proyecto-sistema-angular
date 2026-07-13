@@ -24,7 +24,7 @@ class DashboardService:
             hoy_inicio = datetime.combine(hoy, datetime.min.time())
             hoy_fin = datetime.combine(hoy, datetime.max.time())
 
-            #  Filtrar pedidos PAGADOS o ENTREGADOS (ventas)
+            # Filtrar pedidos PAGADOS o ENTREGADOS (ventas)
             pedidos_ventas = []
             for p in pedidos:
                 estado = p.get('estado', '')
@@ -114,17 +114,17 @@ class DashboardService:
                 'error': str(e)
             }
 
-
-    #  VENTAS RECIENTES - INCLUYE CLIENTES PRESENCIALES
-
+    # ============================================================
+    # ✅ VENTAS RECIENTES - CORREGIDO CON ITEMS COMPLETOS
+    # ============================================================
 
     def obtener_ventas_recientes(self, limit=10):
         """Obtener ventas recientes con datos de clientes (incluye presenciales)"""
         try:
-            #  Obtener TODOS los pedidos
+            # Obtener TODOS los pedidos
             pedidos = self.java_repo.get_pedidos()
 
-            #  Filtrar pedidos pagados o entregados
+            # Filtrar pedidos pagados o entregados
             pedidos_filtrados = []
             for p in pedidos:
                 estado = p.get('estado', '')
@@ -140,29 +140,36 @@ class DashboardService:
 
             ventas = []
             for p in pedidos_recientes:
-                #  Obtener cliente correctamente
+                # Obtener cliente correctamente
                 cliente = 'Cliente general'
 
-                #  Si tiene usuario registrado
+                # Si tiene usuario registrado
                 if p.get('usuario'):
                     usuario = p.get('usuario', {})
                     nombre = f"{usuario.get('nombres', '')} {usuario.get('apellidos', '')}".strip()
                     cliente = nombre if nombre else usuario.get('username', 'Cliente general')
-                #  Si es cliente presencial (cajero)
+                # Si es cliente presencial (cajero)
                 elif p.get('nombreCliente'):
                     cliente = p.get('nombreCliente', '').strip()
-                #  Si tiene campo 'cliente' directo
+                # Si tiene campo 'cliente' directo
                 elif p.get('cliente'):
                     cliente = p.get('cliente', 'Cliente general')
 
-                #  Obtener productos
-                productos_nombres = []
+                # 🔥 PROCESAR ITEMS COMPLETOS
+                items = []
                 for item in p.get('items', []):
-                    nombre = item.get('nombreProducto', 'Producto')
-                    if nombre:
-                        productos_nombres.append(nombre)
+                    items.append({
+                        'id': item.get('id'),
+                        'cantidad': item.get('cantidad', 0),
+                        'precio': item.get('precio', 0),
+                        'subtotal': item.get('subtotal', 0),
+                        'nombreProducto': item.get('nombreProducto', 'Producto'),
+                        'productoId': item.get('productoId'),
+                        'productoNombre': item.get('productoNombre'),
+                        'productoImagen': item.get('productoImagen')
+                    })
 
-                #  Formatear fecha
+                # Formatear fecha
                 fecha_str = p.get('fecha', '')
                 fecha_formateada = fecha_str
                 if fecha_str:
@@ -180,8 +187,9 @@ class DashboardService:
                 ventas.append({
                     'id': p.get('id'),
                     'numeroPedido': p.get('numeroPedido', 'N/A'),
-                    'cliente': cliente,
-                    'productos': ', '.join(productos_nombres[:3]) + ('...' if len(productos_nombres) > 3 else ''),
+                    'nombreCliente': cliente,  # 🔥 Campo principal para el frontend
+                    'cliente': cliente,  # 🔥 Mantenemos ambos para compatibilidad
+                    'items': items,  # 🔥 Enviamos items completos
                     'total': round(p.get('total', 0), 2),
                     'fecha': fecha_formateada,
                     'estado': p.get('estado', 'PAGADO')
@@ -195,16 +203,14 @@ class DashboardService:
             traceback.print_exc()
             return []
 
-
-    #  ESTADÍSTICAS DE VENTAS
-
+    # ============================================================
+    # ESTADÍSTICAS DE VENTAS
+    # ============================================================
 
     def obtener_estadisticas_ventas(self):
         """Estadísticas de ventas por día (última semana)"""
         try:
-
             pedidos = self.java_repo.get_pedidos()
-
 
             pedidos_filtrados = []
             for p in pedidos:

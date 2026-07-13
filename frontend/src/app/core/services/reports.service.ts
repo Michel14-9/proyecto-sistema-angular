@@ -13,21 +13,60 @@ export class ReportsService {
     return this.api.pythonGet(`/api/reportes/ventas?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}&tipo=${tipo}`);
   }
 
-  // ✅ Método con fechas (para filtrar por período)
   getReporteCompletoConFechas(fechaInicio: string, fechaFin: string): Observable<any> {
     return this.api.pythonGet(`/api/reportes/completo?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`);
   }
 
-  // ✅ Método sin fechas (histórico completo) - SOLO UNO
   getReporteCompleto(): Observable<any> {
     return this.api.pythonGet('/api/reportes/completo');
   }
 
+  // 🔥 CORREGIDO: Usar la URL correcta de Java
   exportarPDF(fechaInicio: string, fechaFin: string, tipo: string): string {
-    return `${this.api['baseUrlJava']}/admin/exportar-pdf?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}&tipo=${tipo}`;
+    // 🔥 Verificar que las fechas existan
+    let url = 'http://localhost:8080/admin/exportar-pdf';
+    const params = new URLSearchParams();
+
+    if (fechaInicio) {
+      params.set('fechaInicio', fechaInicio);
+    }
+    if (fechaFin) {
+      params.set('fechaFin', fechaFin);
+    }
+    if (tipo) {
+      params.set('tipo', tipo);
+    }
+
+    const queryString = params.toString();
+    if (queryString) {
+      url += '?' + queryString;
+    }
+
+    console.log('📄 URL PDF generada:', url);
+    return url;
   }
 
+  // 🔥 CORREGIDO: Usar la URL correcta de Java
   exportarExcel(fechaInicio: string, fechaFin: string, tipo: string): string {
-    return `${this.api['baseUrlJava']}/admin/exportar-excel?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}&tipo=${tipo}`;
+    let url = 'http://localhost:8080/admin/exportar-excel';
+    const params = new URLSearchParams();
+
+    if (fechaInicio) {
+      params.set('fechaInicio', fechaInicio);
+    }
+    if (fechaFin) {
+      params.set('fechaFin', fechaFin);
+    }
+    if (tipo) {
+      params.set('tipo', tipo);
+    }
+
+    const queryString = params.toString();
+    if (queryString) {
+      url += '?' + queryString;
+    }
+
+    console.log('📄 URL Excel generada:', url);
+    return url;
   }
 }
