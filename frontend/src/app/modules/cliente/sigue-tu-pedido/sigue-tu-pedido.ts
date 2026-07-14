@@ -53,6 +53,13 @@ export class SigueTuPedidoComponent implements OnInit, OnDestroy {
 
   estadosReales = ['PENDIENTE', 'PAGADO', 'LISTO', 'EN_CAMINO', 'RECHAZADO', 'ENTREGADO'];
 
+  // ── TRACKING ──
+  private trackingApiUrl = 'http://localhost:5002';
+  trackingData: any = null;
+  ultimaActualizacionTracking: string = '';
+  private trackingPollingInterval: any = null;
+  private distanciaInicial: number | null = null;
+
   constructor(
     private http: HttpClient,
     private authService: AuthService,
@@ -114,7 +121,6 @@ export class SigueTuPedidoComponent implements OnInit, OnDestroy {
           this.pedidoEncontrado = true;
           this.errorMessage = '';
 
-          // Arrancar tracking si el pedido ya está EN_CAMINO
           if (response.pedido.estado === 'EN_CAMINO') {
             this.iniciarPollingTracking(response.pedido.numeroPedido);
           }
@@ -390,9 +396,6 @@ export class SigueTuPedidoComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * ✅ Descargar comprobante en PDF
-   */
   descargarComprobante(): void {
     if (!this.pedido) {
       this.mostrarNotificacion('No hay pedido para descargar', 'error');
@@ -400,8 +403,6 @@ export class SigueTuPedidoComponent implements OnInit, OnDestroy {
     }
 
     this.mostrarNotificacion('📄 Generando comprobante PDF...', 'info');
-
-    // ✅ Abrir el PDF en nueva pestaña para descargar
     const url = `${this.apiUrl}/api/sigue-tu-pedido/${this.pedido.id}/comprobante`;
     window.open(url, '_blank');
   }
@@ -470,20 +471,14 @@ export class SigueTuPedidoComponent implements OnInit, OnDestroy {
     this.router.navigate(['/login']);
   }
 
-  // ── NUEVAS PROPIEDADES (añadir al bloque de propiedades de la clase) ──────────
-  private trackingApiUrl = 'http://localhost:8082';
-  trackingData: any = null;
-  ultimaActualizacionTracking: string = '';
-  private trackingPollingInterval: any = null;
-  private distanciaInicial: number | null = null; // para calcular progreso
+  // ── TRACKING ──
 
-  // ── NUEVO MÉTODO: iniciar polling de tracking ──────────────────────────────────
   iniciarPollingTracking(numeroPedido: string): void {
     this.detenerPollingTracking();
     this.consultarTracking(numeroPedido);
     this.trackingPollingInterval = setInterval(() => {
       this.consultarTracking(numeroPedido);
-    }, 10000); // cada 10 segundos
+    }, 10000);
   }
 
   consultarTracking(numeroPedido: string): void {
@@ -491,7 +486,6 @@ export class SigueTuPedidoComponent implements OnInit, OnDestroy {
       next: (data) => {
         if (data && data.id) {
           this.trackingData = data;
-          // Guardar distancia inicial para calcular progreso
           if (this.distanciaInicial === null && data.distanciaKm) {
             this.distanciaInicial = data.distanciaKm;
           }
@@ -499,13 +493,12 @@ export class SigueTuPedidoComponent implements OnInit, OnDestroy {
           this.ultimaActualizacionTracking = ahora.toLocaleTimeString('es-PE', {
             hour: '2-digit', minute: '2-digit', second: '2-digit'
           });
-          // Detener si ya fue entregado
           if (data.estado === 'COMPLETED') {
             this.detenerPollingTracking();
           }
         }
       },
-      error: () => { /* tracking no disponible, continúa sin él */ }
+      error: () => { /* tracking no disponible */ }
     });
   }
 

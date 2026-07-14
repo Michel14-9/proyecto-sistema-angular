@@ -86,6 +86,7 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit, OnDestroy
             ventaMaxima: data.ventaMaxima || 0,
             totalPedidos: data.totalPedidos || 0
           };
+          console.log('📊 Estadísticas cargadas:', this.estadisticas);
         }
       },
       error: () => this.alertService.mostrar('Error al cargar estadísticas', 'danger')
@@ -93,7 +94,7 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit, OnDestroy
   }
 
   // ============================================================
-  // 🔥 CORREGIDO: cargarVentasRecientes - Filtra solo las de hoy
+  // 🔥 CORREGIDO: cargarVentasRecientes - Usa la fecha directamente del backend
   // ============================================================
   cargarVentasRecientes(): void {
     this.dashboardService.getVentasRecientes().subscribe({
@@ -103,15 +104,22 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit, OnDestroy
         if (data?.success) {
           const todasLasVentas = data.data || [];
 
-          // 🔥 Filtrar solo las ventas de HOY
-          const hoy = new Date();
-          const hoyStr = hoy.toISOString().split('T')[0];
+          // 🔥 Obtener fecha de hoy en Perú (UTC-5)
+          const now = new Date();
+          // Ajustar a UTC-5 manualmente
+          const hoyPeru = new Date(now.getTime() - (5 * 60 * 60 * 1000));
+          const hoyStr = hoyPeru.toISOString().split('T')[0];
 
+          console.log(`📅 Fecha de hoy (Perú): ${hoyStr}`);
+
+          // 🔥 Filtrar ventas de hoy - comparar solo la parte de fecha
           const ventasHoy = todasLasVentas.filter((venta: any) => {
             if (!venta.fecha) return false;
             try {
               const fechaVenta = new Date(venta.fecha);
-              const fechaVentaStr = fechaVenta.toISOString().split('T')[0];
+              // Ajustar a UTC-5
+              const fechaVentaPeru = new Date(fechaVenta.getTime() - (5 * 60 * 60 * 1000));
+              const fechaVentaStr = fechaVentaPeru.toISOString().split('T')[0];
               return fechaVentaStr === hoyStr;
             } catch {
               return false;
@@ -120,7 +128,6 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit, OnDestroy
 
           console.log(`📦 Ventas de hoy: ${ventasHoy.length} de ${todasLasVentas.length} totales`);
 
-          // 🔥 Mostrar solo las ventas de hoy
           this.ventasRecientes = ventasHoy;
         } else {
           this.ventasRecientes = [];
@@ -156,13 +163,17 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit, OnDestroy
       this.salesChartInstance = null;
     }
 
+    // 🔥 Ordenar fechas del gráfico
+    const labels = Object.keys(ventasPorDia).sort();
+    const data = labels.map(key => ventasPorDia[key]);
+
     this.salesChartInstance = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: Object.keys(ventasPorDia),
+        labels: labels,
         datasets: [{
           label: 'Ventas (S/)',
-          data: Object.values(ventasPorDia),
+          data: data,
           borderColor: '#007bff',
           backgroundColor: 'rgba(0, 123, 255, 0.1)',
           borderWidth: 2,

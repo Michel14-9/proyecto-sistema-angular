@@ -277,6 +277,8 @@ public class SecurityConfig {
                 "http://localhost:4200",
                 "http://localhost:4201",
                 "http://127.0.0.1:4200",
+                "http://localhost",
+                "http://localhost:80",
                 "http://localhost:8080",
                 "https://michel14-9.github.io",
                 "https://tu-dominio.com"

@@ -1,4 +1,6 @@
 {
+  "apiUrl": "http://localhost:8080",
+  "trackingUrl": "http://localhost:5002",
   "maintenanceMode": false,
   "maintenanceMessage": "Estamos realizando mejoras en el sistema. Vuelve en 15-30 minutos.",
   "maintenanceTime": "15-30 minutos"

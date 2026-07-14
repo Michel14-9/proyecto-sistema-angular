@@ -125,8 +125,6 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
         startDate.setHours(0, 0, 0, 0);
         endDate = new Date(hoy);
         endDate.setHours(23, 59, 59, 999);
-        console.log('📅 Inicio (últimos 7 días):', startDate);
-        console.log('📅 Fin (hoy):', endDate);
         break;
 
       case 'mes':
@@ -161,9 +159,6 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
     this.generarReporte();
   }
 
-  // ============================================================
-  // 🔥 CORREGIDO: generarReporte con validación mejorada
-  // ============================================================
   generarReporte(): void {
     if (!this.reporteFechaInicio || !this.reporteFechaFin) {
       this.alertService.mostrar('Seleccione un rango de fechas', 'warning');
@@ -190,52 +185,23 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
       next: (data: any) => {
         console.log('📊 Datos recibidos del backend:', data);
 
-        // 🔥 ANÁLISIS DE ESTRUCTURA DE DATOS
-        console.log('📊 === ANÁLISIS DE ESTRUCTURA ===');
-        console.log('📊 data.success:', data?.success);
-        console.log('📊 data.data:', data?.data);
-        console.log('📊 data.data es array?', Array.isArray(data?.data));
-        console.log('📊 data.data length:', data?.data?.length);
-        console.log('📊 data.metricas:', data?.metricas);
-        console.log('📊 data.datos_grafico:', data?.datos_grafico);
-        console.log('📊 === FIN ANÁLISIS ===');
-
         if (data && data.success) {
-          // 🔥 CORREGIDO: Verificar si hay datos reales de varias formas
           let tieneDatos = false;
           let datosTabla = [];
 
-          // Caso 1: data.data es un array con datos
           if (Array.isArray(data.data) && data.data.length > 0) {
             tieneDatos = true;
             datosTabla = data.data;
-          }
-          // Caso 2: data es un array directamente
-          else if (Array.isArray(data) && data.length > 0) {
+          } else if (Array.isArray(data) && data.length > 0) {
             tieneDatos = true;
             datosTabla = data;
-          }
-          // Caso 3: data.data es un objeto con datos
-          else if (data.data && typeof data.data === 'object' && !Array.isArray(data.data)) {
-            // Intentar convertir a array si es un objeto con propiedades
-            const values = Object.values(data.data);
-            if (values.length > 0) {
-              tieneDatos = true;
-              datosTabla = values;
-            }
-          }
-          // Caso 4: data.metricas tiene totalPedidos > 0
-          else if (data.metricas && data.metricas.totalPedidos > 0) {
+          } else if (data.metricas && data.metricas.totalPedidos > 0) {
             tieneDatos = true;
           }
 
           console.log('📊 ¿Tiene datos?', tieneDatos);
-          console.log('📊 Datos tabla:', datosTabla);
 
           if (!tieneDatos) {
-            // 🔥 NO HAY DATOS - Limpiar todo
-            console.log('📊 No hay datos en el rango seleccionado');
-
             this.reporteMetricas = {
               totalVentas: 0,
               totalPedidos: 0,
@@ -265,12 +231,10 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
             }
 
             setTimeout(() => this.actualizarGraficosReporte(), 100);
-            this.alertService.mostrar(data.message || 'No hay ventas en el período seleccionado', 'info');
+            this.alertService.mostrar('No hay ventas en el período seleccionado', 'info');
             return;
           }
 
-          // 🔥 HAY DATOS - Procesar normalmente
-          // Si tenemos datosTabla, usarlos
           if (datosTabla.length > 0) {
             this.reporteDatosTabla = datosTabla;
           } else if (Array.isArray(data.data)) {
@@ -314,9 +278,6 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
     });
   }
 
-  // ============================================================
-  // ACTUALIZAR MÉTRICAS
-  // ============================================================
   actualizarMetricas(data: any): void {
     const metricas = data.metricas || {};
 
@@ -400,9 +361,6 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
     }
   }
 
-  // ============================================================
-  // ACTUALIZAR COLUMNAS
-  // ============================================================
   actualizarColumnas(): void {
     switch (this.reporteTipo) {
       case 'productos':
@@ -431,9 +389,6 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
     }
   }
 
-  // ============================================================
-  // PROCESAR DATOS LOCALMENTE (FALLBACK)
-  // ============================================================
   procesarDatosLocalmente(data: any): any {
     const datos = Array.isArray(data.data) ? data.data :
                   Array.isArray(data) ? data :
@@ -524,9 +479,6 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
     };
   }
 
-  // ============================================================
-  // CALCULAR CATEGORÍAS DE PRODUCTOS
-  // ============================================================
   calcularCategoriasProductos(data: any[]): any {
     const categoriasMap = new Map();
 
@@ -569,9 +521,6 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
     return { labels, datos };
   }
 
-  // ============================================================
-  // ACTUALIZAR GRÁFICOS
-  // ============================================================
   actualizarGraficosReporte(): void {
     const reportCtx = document.getElementById('reportChart') as HTMLCanvasElement;
 
@@ -709,9 +658,6 @@ export class AdminReportesComponent implements OnInit, AfterViewInit, OnDestroy 
     }
   }
 
-  // ============================================================
-  // EXPORTAR PDF Y EXCEL
-  // ============================================================
   exportarPDF(): void {
     if (!this.reporteDatosTabla?.length) {
       this.alertService.mostrar('Primero genere un reporte', 'warning');

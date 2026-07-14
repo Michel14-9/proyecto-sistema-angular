@@ -5,39 +5,33 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4e10dce1-a503-4051-8fa1-2dbc492f7fbc" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/config/RestTemplateConfig.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/controller/ChatbotController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/dto/ChatbotResponse.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/service/ChatbotService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/chatbot-service/.gitattributes" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/chatbot-service/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/chatbot-service/.mvn/wrapper/maven-wrapper.properties" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/chatbot-service/mvnw" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/chatbot-service/mvnw.cmd" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/chatbot-service/pom.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/chatbot-service/src/main/java/com/chatbot/chatbot_service/ChatbotServiceApplication.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/chatbot-service/src/main/java/com/chatbot/chatbot_service/client/BackendClient.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/chatbot-service/src/main/java/com/chatbot/chatbot_service/config/WebClientConfig.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/chatbot-service/src/main/java/com/chatbot/chatbot_service/controller/ChatbotController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/chatbot-service/src/main/java/com/chatbot/chatbot_service/dto/ChatRequest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/chatbot-service/src/main/java/com/chatbot/chatbot_service/dto/ChatResponse.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/chatbot-service/src/main/java/com/chatbot/chatbot_service/dto/GroqRequest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/chatbot-service/src/main/java/com/chatbot/chatbot_service/service/GroqService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/chatbot-service/src/main/resources/application.properties" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/chatbot-service/src/test/java/com/chatbot/chatbot_service/ChatbotServiceApplicationTests.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/app/core/services/chatbot.service.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/app/shared/components/chatbot/chatbot.component.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/app/shared/components/chatbot/chatbot.component.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/app/shared/components/chatbot/chatbot.component.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend-python/Dockerfile" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/.dockerignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/Dockerfile" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backendmercadopago/Dockerfile" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backendtracking/Dockerfile" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/chatbot-service/Dockerfile" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-python/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend-python/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-python/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/backend-python/requirements.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/config/SecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/service/MercadoPagoProxyService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/sistemaapolloAngular/sistema_apolloAngular/service/MercadoPagoProxyService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/resources/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/app.component.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/app.component.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/app.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/app.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backendmercadopago/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/backendmercadopago/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backendtracking/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/backendtracking/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chatbot-service/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/chatbot-service/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/angular.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/angular.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/nginx.conf" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/nginx.conf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-dashboard/admin-dashboard.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-dashboard/admin-dashboard.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-reportes/admin-reportes.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/admin/admin-reportes/admin-reportes.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/cliente/sigue-tu-pedido/sigue-tu-pedido.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/cliente/sigue-tu-pedido/sigue-tu-pedido.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/modules/delivery/delivery/delivery.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/modules/delivery/delivery/delivery.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/assets/config/config.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/config/config.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -88,25 +82,26 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Application.ChatbotServiceApplication.executor": "Run",
-    "Application.MercadoPagoApplication.executor": "Run",
-    "Application.SistemaApolloAngularApplication.executor": "Run",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python.app.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "chatbot",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Users/Michel/Documents/GitHub/proyecto-sistema-angular",
-    "project.structure.last.edited": "Modules",
-    "project.structure.proportion": "0.15",
-    "project.structure.side.proportion": "0.2",
-    "settings.editor.selected.configurable": "configurable.group.language"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.BackendtrackingApplication.executor&quot;: &quot;Run&quot;,
+    &quot;Application.ChatbotServiceApplication.executor&quot;: &quot;Run&quot;,
+    &quot;Application.MercadoPagoApplication.executor&quot;: &quot;Run&quot;,
+    &quot;Application.SistemaApolloAngularApplication.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.app.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;docker&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Michel/Documents/GitHub/proyecto-sistema-angular&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;configurable.group.language&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\Michel\Documents\GitHub\proyecto-sistema-angular\frontend\src\assets\archivos" />
@@ -114,7 +109,7 @@
       <recent name="C:\Users\Michel\Documents\GitHub\proyecto-sistema-angular\backend" />
     </key>
   </component>
-  <component name="RunManager" selected="Application.ChatbotServiceApplication">
+  <component name="RunManager" selected="Docker.docker-compose.yml: Compose Deployment">
     <configuration name="ChatbotServiceApplication" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="com.chatbot.chatbot_service.ChatbotServiceApplication" />
       <module name="chatbot-service" />
@@ -188,11 +183,21 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="docker-compose.yml: Compose Deployment" type="docker-deploy" factoryName="docker-compose.yml" temporary="true" server-name="Docker">
+      <deployment type="docker-compose.yml">
+        <settings>
+          <option name="sourceFilePath" value="docker-compose.yml" />
+        </settings>
+      </deployment>
+      <method v="2" />
+    </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Application.ChatbotServiceApplication" />
-        <item itemvalue="Application.SistemaApolloAngularApplication" />
+        <item itemvalue="Docker.docker-compose.yml: Compose Deployment" />
+        <item itemvalue="Python.app" />
         <item itemvalue="Application.MercadoPagoApplication" />
+        <item itemvalue="Application.SistemaApolloAngularApplication" />
+        <item itemvalue="Application.ChatbotServiceApplication" />
       </list>
     </recent_temporary>
   </component>

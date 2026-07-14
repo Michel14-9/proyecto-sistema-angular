@@ -7,9 +7,16 @@ from src.controllers.predicciones_controller import predicciones_bp
 
 app = Flask(__name__)
 
-# ============ CONFIGURACIÓN CORS ============
+# ============ CONFIGURACIÓN CORS CORREGIDA ============
 CORS(app,
-     origins=["http://localhost:4200"],
+     origins=[
+         "http://localhost:4200",
+         "http://localhost",
+         "http://localhost:80",
+         "http://127.0.0.1",
+         "http://127.0.0.1:4200",
+         "http://localhost:5000"
+     ],
      supports_credentials=True,
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"],

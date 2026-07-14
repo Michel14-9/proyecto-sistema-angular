@@ -41,14 +41,13 @@ interface TrackingInfo {
 export class DeliveryComponent implements OnInit, OnDestroy {
 
   private apiUrl = 'http://localhost:8080';
-  private trackingUrl = 'http://localhost:8082'; // microservicio tracking
+  private trackingUrl = 'http://localhost:5002'; // ✅ CORREGIDO
 
   pedidosPendientesEntrega: Pedido[] = [];
   pedidosEnCamino: Pedido[] = [];
   pedidoSeleccionado: Pedido | null = null;
   estadoSeleccionado: string = '';
 
-  // Tracking del pedido seleccionado
   trackingActivo: TrackingInfo | null = null;
   enviandoUbicacion = false;
 
@@ -65,7 +64,6 @@ export class DeliveryComponent implements OnInit, OnDestroy {
 
   private intervalReloj: any;
   private intervalRecarga: any;
-  // Intervalo GPS automático (ms) — empieza en 2 min, pasa a 5 min si dist > 3 km
   private intervalGPS: any;
   gpsActivo = false;
 
@@ -106,8 +104,7 @@ export class DeliveryComponent implements OnInit, OnDestroy {
       return;
     }
     this.gpsActivo = true;
-    this.enviarUbicacionGPS(numeroPedido); // envío inmediato al arrancar
-    // Luego cada 2 min (120 000 ms)
+    this.enviarUbicacionGPS(numeroPedido);
     this.intervalGPS = setInterval(() => {
       this.ajustarIntervaloGPS(numeroPedido);
     }, 120000);
@@ -117,14 +114,12 @@ export class DeliveryComponent implements OnInit, OnDestroy {
   private ajustarIntervaloGPS(numeroPedido: string): void {
     this.enviarUbicacionGPS(numeroPedido);
 
-    // Si la distancia restante es > 3 km, extender intervalo a 5 min
     if (this.trackingActivo && (this.trackingActivo.distanciaKm || 0) > 3) {
       clearInterval(this.intervalGPS);
       this.intervalGPS = setInterval(() => {
         this.ajustarIntervaloGPS(numeroPedido);
-      }, 300000); // 5 min
+      }, 300000);
     } else if (this.trackingActivo && (this.trackingActivo.distanciaKm || 0) <= 3) {
-      // Cerca del cliente → volver a 2 min
       clearInterval(this.intervalGPS);
       this.intervalGPS = setInterval(() => {
         this.ajustarIntervaloGPS(numeroPedido);
@@ -166,7 +161,7 @@ export class DeliveryComponent implements OnInit, OnDestroy {
     this.gpsActivo = false;
   }
 
-  // ─── NAVEGACIÓN A MAPS (sin API key requerida) ─────────────────────────────
+  // ─── NAVEGACIÓN A MAPS ────────────────────────────────────────────────────
 
   abrirNavegacionMaps(): void {
     if (!this.pedidoSeleccionado) return;
@@ -174,10 +169,8 @@ export class DeliveryComponent implements OnInit, OnDestroy {
     let url: string;
 
     if (this.trackingActivo?.urlNavegacion) {
-      // URL provista por el microservicio con coordenadas exactas
       url = this.trackingActivo.urlNavegacion;
     } else if (this.pedidoSeleccionado.direccionEntrega) {
-      // Fallback: buscar la dirección textual en Google Maps
       const dir = encodeURIComponent(
         this.pedidoSeleccionado.direccionEntrega + ', Ica, Peru'
       );
@@ -195,7 +188,6 @@ export class DeliveryComponent implements OnInit, OnDestroy {
   cargarPedidosDelivery(): void {
     console.log('📦 Cargando pedidos para delivery...');
 
-    // Cargar pedidos pendientes de entrega (LISTO)
     this.http.get(`${this.apiUrl}/delivery/pedidos-para-entrega`, {
       headers: this.getHeaders(), withCredentials: true
     }).subscribe({
@@ -246,7 +238,6 @@ export class DeliveryComponent implements OnInit, OnDestroy {
     this.estadoSeleccionado = estado;
     this.trackingActivo = null;
 
-    // Consultar si ya hay tracking activo para este pedido
     this.http.get<TrackingInfo>(
       `${this.trackingUrl}/api/tracking/${pedido.numeroPedido}`
     ).subscribe({
@@ -292,7 +283,6 @@ export class DeliveryComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // ✅ CORREGIDO: Eliminar responseType: 'text' para recibir JSON
     this.http.post(`${this.apiUrl}/delivery/iniciar-entrega/${pedidoId}`, {}, {
       headers: this.getHeaders(),
       withCredentials: true
@@ -305,10 +295,8 @@ export class DeliveryComponent implements OnInit, OnDestroy {
 
         this.mostrarToastExito(response.message || 'Entrega iniciada correctamente');
 
-        // Recargar la lista de pedidos
         this.cargarPedidosDelivery();
 
-        // Crear sesión de tracking en el microservicio
         const trackingBody = {
           pedidoId: pedido.id,
           numeroPedido: pedido.numeroPedido,
@@ -322,7 +310,6 @@ export class DeliveryComponent implements OnInit, OnDestroy {
           next: (t) => {
             console.log('✅ Tracking creado:', t);
             this.trackingActivo = t;
-            // Iniciar envío automático de GPS
             this.iniciarEnvioGPS(pedido.numeroPedido);
           },
           error: (err) => {
@@ -337,12 +324,9 @@ export class DeliveryComponent implements OnInit, OnDestroy {
         console.error('💬 Mensaje:', error.error?.message || error.message);
         console.error('📦 Error completo:', error.error);
 
-        // Manejar errores específicos
         if (error.status === 400) {
-          // Error de validación de negocio - el pedido no está LISTO
           const mensaje = error.error?.message || 'El pedido no está en estado LISTO';
           this.mostrarToastError(mensaje);
-          // Recargar pedidos para actualizar el estado
           setTimeout(() => this.cargarPedidosDelivery(), 2000);
         } else if (error.status === 401 || error.status === 403) {
           this.mostrarToastError('Sesión expirada. Redirigiendo...');
@@ -352,7 +336,6 @@ export class DeliveryComponent implements OnInit, OnDestroy {
         } else if (error.status === 500) {
           this.mostrarToastError('Error interno del servidor. Intente nuevamente.');
         } else {
-          // Error genérico
           const mensaje = error.error?.message || error.message || 'Error al iniciar entrega';
           this.mostrarToastError(mensaje);
         }
@@ -381,7 +364,6 @@ export class DeliveryComponent implements OnInit, OnDestroy {
   marcarComoEntregado(pedidoId: number): void {
     console.log(`✅ Marcando pedido ${pedidoId} como ENTREGADO...`);
 
-
     this.http.post(`${this.apiUrl}/delivery/marcar-entregado/${pedidoId}`, {}, {
       headers: this.getHeaders(),
       withCredentials: true
@@ -402,10 +384,8 @@ export class DeliveryComponent implements OnInit, OnDestroy {
         console.error(' Mensaje:', error.error?.message || error.message);
 
         if (error.status === 400) {
-          // El pedido no está en estado EN_CAMINO
           const mensaje = error.error?.message || 'El pedido no está en estado EN_CAMINO';
           this.mostrarToastError(mensaje);
-          // Recargar pedidos para actualizar el estado
           setTimeout(() => this.cargarPedidosDelivery(), 2000);
         } else if (error.status === 401 || error.status === 403) {
           this.mostrarToastError('Sesión expirada. Redirigiendo...');
